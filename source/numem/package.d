@@ -3,6 +3,8 @@ import std.conv : emplace;
 import core.stdc.stdlib : free, exit, malloc;
 import std.traits;
 
+extern(C):
+nothrow @nogc:
 
 //
 //          MANUAL MEMORY MANAGMENT
@@ -36,7 +38,6 @@ private {
     Allocates a new struct on the heap.
     Immediately exits the application if out of memory.
 */
-nothrow @nogc
 T* nogc_new(T, Args...)(Args args) if (is(T == struct)) {
     void* rawMemory = malloc(T.sizeof);
     if (!rawMemory) {
@@ -53,7 +54,6 @@ T* nogc_new(T, Args...)(Args args) if (is(T == struct)) {
     Allocates a new class on the heap.
     Immediately exits the application if out of memory.
 */
-nothrow @nogc
 T nogc_new(T, Args...)(Args args) if (is(T == class)) {
     immutable size_t allocSize = __traits(classInstanceSize, T);
     void* rawMemory = malloc(allocSize);
@@ -70,7 +70,7 @@ T nogc_new(T, Args...)(Args args) if (is(T == class)) {
 
     For structs this will call the struct's destructor if it has any.
 */
-void nogc_delete(T)(T obj_) nothrow @nogc {
+void nogc_delete(T)(T obj_) {
 
     // If type is a pointer (to eg a struct) or a class
     static if (isPointer!T || is(T == class)) {
