@@ -276,6 +276,16 @@ public:
         }
     }
 
+
+    /**
+        Gets the value of the weak pointer
+
+        Returns null if the item is no longer valid.
+    */
+    T* getAtomic() {
+        return rc ? atomicLoad(rc.ref_) : null;
+    }
+
     /**
         Gets the value of the weak pointer
 
