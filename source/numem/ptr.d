@@ -110,9 +110,6 @@ private:
 
 public:
 
-    /// Can't be created without ref
-    @disable this();
-
     /// Can't be created as a copy.
     @disable this(this);
 
@@ -272,8 +269,6 @@ private:
     }
 
 public:
-    @disable this();
-
     ~this() {
         if (rc) {
             this.rc.subRef!true;
