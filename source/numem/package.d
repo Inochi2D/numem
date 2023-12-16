@@ -75,9 +75,14 @@ void nogc_delete(T)(T obj_) nothrow @nogc {
     // If type is a pointer (to eg a struct) or a class
     static if (isPointer!T || is(T == class)) {
         if (obj_) {
+        
+            // Try to call elaborate destructor first before attempting __dtor
             static if (__traits(hasMember, T, "__xdtor")) {
                 assumeNothrowNoGC(&obj_.__xdtor)();
+            } else static if (__traits(hasMember, T, "__dtor")) {
+                assumeNothrowNoGC(&obj_.__dtor)();
             }
+
             if (obj_) free(cast(void*)obj_);
         }
 

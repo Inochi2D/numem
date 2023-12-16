@@ -52,16 +52,16 @@ private {
 
         void free() {
 
-            // Enforce that strongRefs is set to 0.
-            atomicStore(strongRefs, 0);
-            atomicStore(ref_, null);
-
             // Free and atomically store null in the pointer.
             static if (is(T == class)) {
                 nogc_delete!T(cast(T)ref_);
             } else {
                 nogc_delete!T(ref_);
             }
+
+            // Enforce that strongRefs is set to 0.
+            atomicStore(strongRefs, 0);
+            atomicStore(ref_, null);
         }
     }
 }
