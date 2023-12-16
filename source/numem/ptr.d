@@ -7,98 +7,7 @@
 module numem.ptr;
 import core.atomic : atomicFetchAdd, atomicFetchSub, atomicStore, atomicLoad;
 import std.traits;
-import core.stdc.stdlib : free, exit, malloc;
-import std.conv : emplace;
-
-
-//
-//          MANUAL MEMORY MANAGMENT
-//
-private {
-    // Based on code from dplug:core
-    // which is released under the Boost license.
-
-    auto assumeNoGC(T) (T t) {
-        static if (isFunctionPointer!T || isDelegate!T)
-        {
-            enum attrs = functionAttributes!T | FunctionAttribute.nogc;
-            return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs)) t;
-        }
-        else
-            static assert(false);
-    }
-
-    auto assumeNothrowNoGC(T) (T t) {
-        static if (isFunctionPointer!T || isDelegate!T)
-        {
-            enum attrs = functionAttributes!T | FunctionAttribute.nogc | FunctionAttribute.nothrow_;
-            return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs)) t;
-        }
-        else
-            static assert(false);
-    }
-}
-
-/**
-    Allocates a new struct on the heap.
-    Immediately exits the application if out of memory.
-*/
-nothrow @nogc
-T* nogc_new(T, Args...)(Args args) if (is(T == struct)) {
-    void* rawMemory = malloc(T.sizeof);
-    if (!rawMemory) {
-        exit(-1);
-    }
-
-    T* obj = cast(T*)rawMemory;
-    emplace!T(obj, args);
-
-    return obj;
-}
-
-/**
-    Allocates a new class on the heap.
-    Immediately exits the application if out of memory.
-*/
-nothrow @nogc
-T nogc_new(T, Args...)(Args args) if (is(T == class)) {
-    immutable size_t allocSize = __traits(classInstanceSize, T);
-    void* rawMemory = malloc(allocSize);
-    if (!rawMemory) {
-        exit(-1);
-    }
-
-    T obj = emplace!T(rawMemory[0 .. allocSize], args);
-    return obj;
-}
-
-/**
-    Destroys and frees the memory.
-
-    For structs this will call the struct's destructor if it has any.
-*/
-void nogc_delete(T)(T obj_) nothrow @nogc {
-
-    // If type is a pointer (to eg a struct) or a class
-    static if (isPointer!T || is(T == class)) {
-        if (obj_) {
-            static if (__traits(hasMember, T, "__xdtor")) {
-                assumeNothrowNoGC(&obj_.__xdtor)();
-            }
-            if (obj_) free(cast(void*)obj_);
-        }
-
-    // Otherwise it's *probably* stack allocated, in which case we don't want to call free.
-    } else {
-        
-        // Try to call elaborate destructor first before attempting __dtor
-        static if (__traits(hasMember, T, "__xdtor")) {
-            assumeNothrowNoGC(&obj_.__xdtor)();
-        } else static if (__traits(hasMember, T, "__dtor")) {
-            assumeNothrowNoGC(&obj_.__dtor)();
-        }
-    }
-}
+import numem;
 
 //
 //          SMART POINTERS
@@ -136,15 +45,22 @@ private {
                 
                 // We just subtracted the refcount to 0
                 if (oldSize == 1) {
-
-                    // Free and atomically store null in the pointer.
-                    static if (is(T == class)) {
-                        nogc_delete!T(cast(T)ref_);
-                    } else {
-                        nogc_delete!T(ref_);
-                    }
-                    atomicStore(ref_, null);
+                    this.free();
                 }
+            }
+        }
+
+        void free() {
+
+            // Enforce that strongRefs is set to 0.
+            atomicStore(strongRefs, 0);
+            atomicStore(ref_, null);
+
+            // Free and atomically store null in the pointer.
+            static if (is(T == class)) {
+                nogc_delete!T(cast(T)ref_);
+            } else {
+                nogc_delete!T(ref_);
             }
         }
     }
@@ -161,6 +77,106 @@ shared_ptr!T shared_new(T, Args...)(Args args) nothrow @nogc {
         T item = nogc_new!T(args);
         return shared_ptr!T(cast(T*)item);
     }
+}
+
+/**
+    Allocates a new unique pointer.
+*/
+unique_ptr!T unique_new(T, Args...)(Args args) nothrow @nogc {
+    static if (is(T == struct)) {
+        T* item = nogc_new!T(args);
+        return unique_ptr!T(item);
+    } else {
+        T item = nogc_new!T(args);
+        return unique_ptr!T(cast(T*)item);
+    }
+}
+
+/**
+    Unique non-copyable smart pointer
+*/
+struct unique_ptr(T) {
+nothrow @nogc:
+private:
+    refcountmg_t!(T)* rc;
+
+    // Creation constructor
+    this(T* ref_) {
+        rc = nogc_new!(refcountmg_t!T);
+        rc.ref_ = ref_;
+        rc.strongRefs = 1;
+        rc.weakRefs = 0;
+    }
+
+public:
+
+    /// Can't be created without ref
+    @disable this();
+
+    /// Can't be created as a copy.
+    @disable this(this);
+
+    // Destructor
+    ~this() {
+
+        // This *should not* be needed, but just in case to prevent finalized stale pointers from doing shenanigans.
+        if (rc) {
+            rc.free();
+            rc = null;
+        }
+    }
+
+    /**
+        Gets the value of the unique pointer
+
+        Returns null if the item is no longer valid.
+    */
+    T* getAtomic() {
+        return rc ? atomicLoad(rc.ref_) : null;
+    }
+
+    /**
+        Gets the value of the unique pointer
+
+        Returns null if the item is no longer valid.
+    */
+    T* get() {
+        return rc ? rc.ref_ : null;
+    }
+
+    /**
+        Gets the value of the unique pointer
+
+        Returns null if the item is no longer valid.
+    */
+    T* opCast() {
+        return rc ? rc.ref_ : null;
+    }
+
+    /**
+        Makes a weak borrow of the unique pointer,
+        weak borrows do not affect whether the object can be deleted by ref count reaching 0.
+
+        weak refs will return null if the ref count reaches 0 of their parent shared pointer.
+    */
+    weak_ptr!T borrow() {
+        return weak_ptr!T(rc);
+    }
+
+    /**
+        Moves the unique pointer to the specified other pointer
+    */
+    void moveTo(ref unique_ptr!T other) {
+
+        // First destruct the target unique_ptr if neccessary.
+        if (other.get()) nogc_delete(other);
+
+        // atomically moves the reference from this unique_ptr to the other unique_ptr reference
+        // after this is done, rc is set to null to make this unique_ptr invalid.
+        atomicStore(other.rc, this.rc);
+        atomicStore(this.rc, null);
+    }
+
 }
 
 /**
