@@ -9,6 +9,7 @@ import numem;
     it also automatically adds null-terminators for C interopability.
 */
 struct basic_string(T) if (is(T == char) || is(T == dchar) || is(T == wchar)) {
+nothrow @nogc:
 private:
     vector!(T) vec_;
 
