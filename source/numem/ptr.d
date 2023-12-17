@@ -56,7 +56,7 @@ private {
             static if (is(T == class)) {
                 nogc_delete!T(cast(T)ref_);
             } else {
-                nogc_delete!T(ref_);
+                nogc_delete!(T*)(ref_);
             }
 
             // Enforce that strongRefs is set to 0.

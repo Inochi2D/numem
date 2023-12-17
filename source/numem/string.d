@@ -191,6 +191,12 @@ public:
     ref immutable(T) opIndex(size_t index) {
         return cast(immutable(T))(this.vec_.data()[index]);
     }
+
+    static if (is(T == char)) {
+        string toString() {
+            return toDString();
+        }
+    }
 }
 
 alias nstring = basic_string!char;
