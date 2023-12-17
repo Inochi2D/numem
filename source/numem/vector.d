@@ -1,8 +1,10 @@
 module numem.vector;
 import numem.ptr;
-import core.stdc.stdlib : malloc, realloc;
+import numem;
+import core.stdc.stdlib : malloc, realloc, free;
 import core.stdc.string : memcpy;
 import core.atomic : atomicFetchAdd, atomicFetchSub, atomicStore, atomicLoad;
+import std.math.rounding : quantize, ceil;
 
 /**
     C++ style vector
@@ -12,9 +14,9 @@ nothrow @nogc:
 private:
     enum VECTOR_ALIGN = 32;
 
-    T* memory;
-    size_t capacity_;
-    size_t size_;
+    T* memory = null;
+    size_t capacity_ = 0;
+    size_t size_ = 0;
 
     // Internal resize function
     pragma(inline, true)
@@ -30,12 +32,11 @@ private:
         if (capacity >= capacity_) {
 
             // Quantize to vector alignment
-            capacity_ = cast(size_t)quantize!(ceil)(size+1, VECTOR_ALIGN);
+            capacity_ = cast(size_t)quantize!(ceil, double)(cast(double)size+1, cast(double)VECTOR_ALIGN);
 
-            // copy old data to new memory block
-            // then free old memory.
-            if (oldMemory) realloc(memory, capacity);
-            else malloc(memory, size);
+            // Reallocate the malloc'd portion if there is anything to realloc.
+            if (memory) realloc(cast(void*)memory, capacity);
+            else memory = cast(T*)malloc(size);
         }
     }
 
@@ -50,12 +51,20 @@ public:
         }
 
         // Free the pointer
-        free(memory);
+        free(cast(void*)memory);
     }
 
     /// Constructor
     this(size_t size) {
         this.resize_(size);
+    }
+
+    /**
+        Makes a copy of a string
+    */
+    this(ref return scope vector!T rhs) {
+        this.resize_(rhs.size_);
+        this.memory[0..size_] = rhs.memory[0..rhs.size_];
     }
 
     /**
@@ -84,37 +93,6 @@ public:
     */
     T[] toSliceAtomic() {
         return atomicLoad(memory)[0..size_];
-    }
-
-    /**
-        Add value to vector
-    */
-    auto opOpAssign(string op = "~")(T value) {
-        memory[size_] = value;
-        this.resize_(size_+1);
-        return this;
-    }
-
-    /**
-        Add vector items to vector
-    */
-    auto opOpAssign(string op = "~")(vector!T other) {
-        size_t cSize = size_;
-        this.resize_(size_ + other.size_);
-        this.memory[cSize..cSize+other.size_] = other.memory[0..other.size_];
-        
-        return this;
-    }
-
-    /**
-        Add slice to vector
-    */
-    auto opOpAssign(string op = "~")(T[] other) {
-        size_t cSize = size_;
-        this.resize_(size_ + other.length);
-        this.memory[cSize..cSize+other.length] = other.memory[0..other.length];
-        
-        return this;
     }
 
     /**
@@ -227,5 +205,57 @@ public:
     */
     void popFront() {
         this.remove(0);
+    }
+
+    /**
+        Add value to vector
+    */
+    auto opOpAssign(string op = "~")(T value) {
+        memory[size_] = value;
+        this.resize_(size_+1);
+        return this;
+    }
+
+    /**
+        Add vector items to vector
+    */
+    auto opOpAssign(string op = "~")(vector!T other) {
+        size_t cSize = size_;
+        this.resize_(size_ + other.size_);
+        this.memory[cSize..cSize+other.size_] = other.memory[0..other.size_];
+        
+        return this;
+    }
+
+    /**
+        Add slice to vector
+    */
+    auto opOpAssign(string op = "~")(T[] other) {
+        size_t cSize = size_;
+        this.resize_(size_ + other.length);
+        this.memory[cSize..cSize+other.length] = other[0..other.length];
+        
+        return this;
+    }
+
+    /**
+        Override for $ operator
+    */
+    size_t opDollar() {
+        return size_;
+    }
+
+    /**
+        Allows slicing the string to get a substring.
+    */
+    T[] opIndex(size_t[2] slice) {
+        return memory[slice[0]..slice[1]];
+    }
+
+    /**
+        Allows getting a character from the string.
+    */
+    ref T opIndex(size_t index) {
+        return memory[index];
     }
 }
