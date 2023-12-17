@@ -14,6 +14,7 @@ This is a incomplete and unordered roadmap of features I want to add and have ad
    - [x] shared_ptr (strong reference)
    - [x] weak_ptr (weak, borrowed reference)
    - [x] unique_ptr (strong, single-owner reference)
+ - [x] C++ style vector struct
  - [ ] String and slice memory managment
  - [ ] Safe nogc streams (memory and file)
  - [ ] Safe(r) nogc array and buffer types.
