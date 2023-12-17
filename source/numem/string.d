@@ -13,29 +13,31 @@ nothrow @nogc:
 private:
     vector!(T) vec_;
 
-    void append_(immutable(T)[] charSpan) {
+    void append_(immutable(T)[] span) {
 
         // If size of string is > 0, then it should have the null terminator.
-        size_t baseSize = vec_.size();
-        if (baseSize > 0) baseSize--;
+        size_t baseSize = size();
 
         // First resize vector to fit the new span + null terminator.
-        vec_.resize(baseSize+charSpan.length+1);
+        vec_.resize(baseSize+span.length+1);
 
         // append text, then add null terminator after.
-        (cast(T*)vec_.data)[baseSize..baseSize+charSpan.length] = charSpan[0..$];
-        (cast(T*)vec_.data)[vec_.size] = '\0';
+        (cast(T*)vec_.data)[baseSize..baseSize+span.length] = span[0..$];
+        (cast(T*)vec_.data)[this.size()] = '\0';
     }
 
-    void set_(immutable(T)[] charSpan) {
-        vec_.resize(charSpan.length);
-        (cast(T*)vec_.data)[0..charSpan.length] = charSpan[0..$];
+    void set_(immutable(T)[] span) {
+        vec_.resize(span.length+1);
+        (cast(T*)vec_.data)[0..span.length] = span[0..$];
+        (cast(T*)vec_.data)[this.size()] = '\0';
     }
 
 public:
 
     ~this() {
-        nogc_delete(vec_);
+        if (this.vec_.data()) {
+            nogc_delete(this.vec_);
+        }
     }
 
     /**
@@ -142,7 +144,7 @@ public:
     /**
         Set content of string
     */
-    auto opAssign(T)(immutable(T)[] value) {
+    ref auto opAssign(T)(immutable(T)[] value) {
         this.set_(value);
         return this;
     }
@@ -150,7 +152,7 @@ public:
     /**
         Appends value to string
     */
-    auto opOpAssign(string op = "~", T)(immutable(T)[] value) {
+    ref auto opOpAssign(string op = "~", T)(immutable(T)[] value) {
         this.append_(value);
         return this;
     }

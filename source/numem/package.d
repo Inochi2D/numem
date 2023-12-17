@@ -70,25 +70,24 @@ T nogc_new(T, Args...)(Args args) if (is(T == class)) {
 
     For structs this will call the struct's destructor if it has any.
 */
-void nogc_delete(T)(T obj_) {
-
-    // If type is a pointer (to eg a struct) or a class
+void nogc_delete(T)(ref T obj_)  {
     static if (isPointer!T || is(T == class)) {
         if (obj_) {
         
-            // Try to call elaborate destructor first before attempting __dtor
-            static if (__traits(hasMember, T, "__xdtor")) {
-                assumeNothrowNoGC(&obj_.__xdtor)();
-            } else static if (__traits(hasMember, T, "__dtor")) {
-                assumeNothrowNoGC(&obj_.__dtor)();
+            static if (is(T == class) || is(T == struct)) {
+
+                // Try to call elaborate destructor first before attempting __dtor
+                static if (__traits(hasMember, T, "__xdtor")) {
+                    assumeNothrowNoGC(&obj_.__xdtor)();
+                } else static if (__traits(hasMember, T, "__dtor")) {
+                    assumeNothrowNoGC(&obj_.__dtor)();
+                }
             }
 
-            if (obj_) free(cast(void*)obj_);
+            free(cast(void*)obj_);
         }
+    } else static if (is(T == struct)) {
 
-    // Otherwise it's *probably* stack allocated, in which case we don't want to call free.
-    } else {
-        
         // Try to call elaborate destructor first before attempting __dtor
         static if (__traits(hasMember, T, "__xdtor")) {
             assumeNothrowNoGC(&obj_.__xdtor)();

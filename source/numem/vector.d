@@ -32,11 +32,11 @@ private:
         if (capacity >= capacity_) {
 
             // Quantize to vector alignment
-            capacity_ = cast(size_t)quantize!(ceil, double)(cast(double)size+1, cast(double)VECTOR_ALIGN);
+            capacity_ = cast(size_t)quantize!(ceil, double)(cast(double)capacity+1, cast(double)VECTOR_ALIGN);
 
             // Reallocate the malloc'd portion if there is anything to realloc.
             if (memory) realloc(cast(void*)memory, capacity);
-            else memory = cast(T*)malloc(size);
+            else memory = cast(T*)malloc(capacity);
         }
     }
 
@@ -44,14 +44,20 @@ public:
 
     /// Destructor
     ~this() {
-        
-        // Delete elements in the array.
-        foreach(item; 0..size_) {
-            nogc_delete(memory[item]);
+        if (this.memory) {
+            
+            // Delete elements in the array.
+            foreach(item; 0..size_) {
+                nogc_delete(this.memory[item]);
+            }
+
+            // Free the pointer
+            free(cast(void*)this.memory);
         }
 
-        // Free the pointer
-        free(cast(void*)memory);
+        this.memory = null;
+        this.size_ = 0;
+        this.capacity_ = 0;
     }
 
     /// Constructor
@@ -63,8 +69,10 @@ public:
         Makes a copy of a string
     */
     this(ref return scope vector!T rhs) {
-        this.resize_(rhs.size_);
-        this.memory[0..size_] = rhs.memory[0..rhs.size_];
+        if (rhs.memory) {
+            this.resize_(rhs.size_);
+            this.memory[0..size_] = rhs.memory[0..rhs.size_];
+        }
     }
 
     /**
@@ -210,7 +218,7 @@ public:
     /**
         Add value to vector
     */
-    auto opOpAssign(string op = "~")(T value) {
+    ref auto opOpAssign(string op = "~")(T value) {
         memory[size_] = value;
         this.resize_(size_+1);
         return this;
@@ -219,8 +227,9 @@ public:
     /**
         Add vector items to vector
     */
-    auto opOpAssign(string op = "~")(vector!T other) {
+    ref auto opOpAssign(string op = "~")(vector!T other) {
         size_t cSize = size_;
+        
         this.resize_(size_ + other.size_);
         this.memory[cSize..cSize+other.size_] = other.memory[0..other.size_];
         
@@ -230,10 +239,10 @@ public:
     /**
         Add slice to vector
     */
-    auto opOpAssign(string op = "~")(T[] other) {
+    ref auto opOpAssign(string op = "~")(T[] other) {
         size_t cSize = size_;
         this.resize_(size_ + other.length);
-        this.memory[cSize..cSize+other.length] = other[0..other.length];
+        this.memory[cSize..cSize+other.length] = other[0..$];
         
         return this;
     }
