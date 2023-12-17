@@ -246,14 +246,28 @@ public:
     }
 
     /**
-        Allows slicing the string to get a substring.
+        Slicing operator
+    */
+    T[] opSlice(size_t start, size_t end) {
+        return memory[start..end];
+    }
+
+    /**
+        Allows slicing the string to the full vector
+    */
+    T[] opIndex() {
+        return memory[0..size_];
+    }
+
+    /**
+        Allows slicing the vector to get a sub vector.
     */
     T[] opIndex(size_t[2] slice) {
         return memory[slice[0]..slice[1]];
     }
 
     /**
-        Allows getting a character from the string.
+        Allows getting an item from the vector.
     */
     ref T opIndex(size_t index) {
         return memory[index];

@@ -163,10 +163,24 @@ public:
     }
 
     /**
+        Slicing operator
+    */
+    immutable(T)[] opSlice(size_t start, size_t end) {
+        return cast(immutable(T)[])this.vec_[start..end];
+    }
+
+    /**
+        Allows slicing the string to the full vector
+    */
+    immutable(T)[] opIndex() {
+        return cast(immutable(T)[])this.vec_[];
+    }
+
+    /**
         Allows slicing the string to get a substring.
     */
     immutable(T)[] opIndex(size_t[2] slice) {
-        return cast(immutable(T)[])(this.vec_.data()[slice[0]..slice[1]]);
+        return cast(immutable(T)[])this.vec_[slice[0]..slice[1]];
     }
 
     /**
