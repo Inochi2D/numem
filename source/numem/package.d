@@ -2,7 +2,6 @@ module numem;
 import std.conv : emplace;
 import core.stdc.stdlib : free, exit, malloc;
 import std.traits;
-import core.stdc.stdio : printf;
 
 nothrow @nogc:
 
@@ -34,53 +33,48 @@ private {
     }
 
     version(minimal_rt) {
-        
-        struct classDestructorList(T) {
-        @nogc nothrow:
-            void function(T) destructorFunc;
 
-            void initialize() {
-                destructorFunc = (T instance) {
-                    import std.traits : BaseTypeTuple;
+        // The type of the destructor caller
+        alias _impl_mrt_dfunctype = nothrow @nogc @system void function(void*);
 
-                    // Scope for base class destructor
-                    static foreach(item; BaseClassesTuple!T) {
-                        {
-                            static if (!is(item == Object) && !is(item == T)) {
-                                static if (__traits(hasMember, item, "__xdtor")) {
-                                    auto dtorptr = &item.init.__xdtor;
-                                    dtorptr.ptr = cast(void*)instance;
-                                    dtorptr();
-                                } else static if (__traits(hasMember, item, "__dtor")) {
-                                    auto dtorptr = &item.init.__dtor;
-                                    dtorptr.ptr = cast(void*)instance;
-                                    dtorptr();
-                                }
-                            }
-                        }
-                    }
+        // Generic destructor call
+        void _impl_destructorCall(T)(void* instance) nothrow @nogc {
+            import std.traits : BaseTypeTuple;
 
-                    // Scope for self destructor
-                    {
-                        static if (__traits(hasMember, T, "__xdtor")) {
-                            auto dtorptr = &T.init.__xdtor;
-                            dtorptr.ptr = cast(void*)instance;
+            // Scope for base class destructor
+            static foreach(item; BaseClassesTuple!T) {
+                {
+                    static if (!is(item == Object) && !is(item == T)) {
+                        static if (__traits(hasMember, item, "__xdtor")) {
+                            auto dtorptr = &item.init.__xdtor;
+                            dtorptr.ptr = instance;
                             dtorptr();
-                        } else static if (__traits(hasMember, T, "__dtor")) {
-                            auto dtorptr = &T.init.__dtor;
-                            dtorptr.ptr = cast(void*)instance;
+                        } else static if (__traits(hasMember, item, "__dtor")) {
+                            auto dtorptr = &item.init.__dtor;
+                            dtorptr.ptr = instance;
                             dtorptr();
                         }
                     }
-                };
+                }
             }
 
-            /**
-                Destruct
-            */
-            void destruct(T instance) {
-                destructorFunc(instance);
+            // Scope for self destructor
+            {
+                static if (__traits(hasMember, T, "__xdtor")) {
+                    auto dtorptr = &T.init.__xdtor;
+                    dtorptr.ptr = instance;
+                    dtorptr();
+                } else static if (__traits(hasMember, T, "__dtor")) {
+                    auto dtorptr = &T.init.__dtor;
+                    dtorptr.ptr = instance;
+                    dtorptr();
+                }
             }
+        }
+
+        // Structure for storing the destructor reference.
+        struct _impl_destructorStruct {
+            _impl_mrt_dfunctype destruct;
         }
     }
 }
@@ -109,7 +103,7 @@ T* nogc_new(T, Args...)(Args args) if (is(T == struct)) {
 */
 T nogc_new(T, Args...)(Args args) if (is(T == class)) {
     version(minimal_rt) {
-        immutable(size_t) destructorObjSize = classDestructorList!T.sizeof;
+        immutable(size_t) destructorObjSize = _impl_destructorStruct.sizeof;
         immutable(size_t) classObjSize = __traits(classInstanceSize, T);
         immutable size_t allocSize = classObjSize + destructorObjSize;
 
@@ -119,8 +113,7 @@ T nogc_new(T, Args...)(Args args) if (is(T == class)) {
         }
 
         // Allocate class destructor list
-        auto dlist = emplace!(classDestructorList!(T))(rawMemory[0..destructorObjSize]);
-        dlist.initialize();
+        emplace!_impl_destructorStruct(rawMemory[0..destructorObjSize], &_impl_destructorCall!T);
 
         // Allocate class
         T obj = emplace!T(rawMemory[destructorObjSize .. allocSize], args);
@@ -152,9 +145,9 @@ void nogc_delete(T)(ref T obj_)  {
                 static if (is(T == class)) {
 
                     // Do pointer arithmetic to fetch the class destructor list and call it.
-                    void* chunkStart = (cast(void*)obj_)-(classDestructorList!T).sizeof;
-                    classDestructorList!(T)* destructorList = (cast(classDestructorList!(T)*)chunkStart);
-                    destructorList.destruct(obj_);
+                    void* chunkStart = (cast(void*)obj_)-_impl_destructorStruct.sizeof;
+                    auto store = cast(_impl_destructorStruct*)chunkStart;
+                    store.destruct(cast(void*)obj_);
                     free(chunkStart);
 
                 } else static if (is(T == struct)) {
