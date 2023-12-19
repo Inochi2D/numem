@@ -173,6 +173,7 @@ void nogc_delete(T)(ref T obj_)  {
 
     } else {
 
+
         // With a normal runtime we can use destroy
         static if (isPointer!T || is(T == class)) {
             static if (is(T == class)) {
@@ -180,11 +181,22 @@ void nogc_delete(T)(ref T obj_)  {
             } else {
                 auto objptr_ = &obj_;
             }
+            
+            // First create an internal function that calls with the correct parameters
+            alias destroyFuncRef = void function(typeof(objptr_));
+            destroyFuncRef dfunc = (typeof(objptr_) objptr_) { destroy!false(objptr_); };
 
-            destroy!false(objptr_);
+            // Then assume it's nothrow nogc
+            assumeNothrowNoGC!destroyFuncRef(dfunc)(objptr_);
         } else static if (is(T == struct)) {
             auto objptr_ = &obj_;
-            destroy!false(objptr_);
+
+            // First create an internal function that calls with the correct parameters
+            alias destroyFuncRef = void function(typeof(objptr_));
+            destroyFuncRef dfunc = (typeof(objptr_) objptr_) { destroy!false(objptr_); };
+            
+            // Then assume it's nothrow nogc
+            assumeNothrowNoGC!destroyFuncRef(dfunc)(objptr_);
         }
     }
 }
