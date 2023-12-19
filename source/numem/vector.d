@@ -219,8 +219,8 @@ public:
         Add value to vector
     */
     ref auto opOpAssign(string op = "~")(T value) {
-        memory[size_] = value;
         this.resize_(size_+1);
+        memory[size_] = value;
         return this;
     }
 
