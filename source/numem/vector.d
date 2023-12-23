@@ -256,8 +256,10 @@ public:
 
     /**
         Slicing operator
+
+        D slices are short lived and may end up pointing to invalid memory if their string is modified.
     */
-    T[] opSlice(size_t start, size_t end) {
+    T[] opSlice(size_t start, size_t end) @system {
         return memory[start..end];
     }
 

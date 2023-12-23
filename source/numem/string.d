@@ -166,8 +166,10 @@ public:
 
     /**
         Slicing operator
+
+        D slices are short lived and may end up pointing to invalid memory if their string is modified.
     */
-    immutable(T)[] opSlice(size_t start, size_t end) {
+    immutable(T)[] opSlice(size_t start, size_t end) @system {
         return cast(immutable(T)[])this.vec_[start..end];
     }
 
