@@ -123,6 +123,28 @@ public:
         }
     }
 
+    static if (is(T == struct)) {
+
+        /**
+            - This function is incredibly unsafe, but is there as a backdoor if need be.
+
+            Creates a unique_ptr reference from a existing reference
+        */
+        static unique_ptr!T fromPtr(T* ptr) @system {
+            return unique_ptr!T(ptr);
+        }
+    } else static if (is(T == class)) {
+
+        /**
+            - This function is incredibly unsafe, but is there as a backdoor if need be.
+
+            Creates a unique_ptr reference from a existing reference
+        */
+        static unique_ptr!T fromPtr(T ptr) @system {
+            return unique_ptr!T(cast(void*)ptr);
+        }
+    }
+
     /**
         Gets the value of the unique pointer
 
@@ -174,6 +196,15 @@ public:
         atomicStore(this.rc, null);
     }
 
+    /**
+        Resets the unique_ptr, emptying its contents.
+    */
+    void reset() {
+        if (rc) {
+            rc.free();
+            rc = null;
+        }
+    }
 }
 
 /**
@@ -205,6 +236,28 @@ public:
         if (rc) {
             rc.subRef!false;
             rc = null;
+        }
+    }
+
+    static if (is(T == struct)) {
+        
+        /**
+            - This function is incredibly unsafe, but is there as a backdoor if need be.
+
+            Creates a shared_ptr reference from a existing reference
+        */
+        static shared_ptr!T fromPtr(T* ptr) @system {
+            return shared_ptr!T(ptr);
+        }
+    } else static if (is(T == class)) {
+
+        /**
+            - This function is incredibly unsafe, but is there as a backdoor if need be.
+
+            Creates a shared_ptr reference from a existing reference
+        */
+        static shared_ptr!T fromPtr(T ptr) @system {
+            return shared_ptr!T(cast(void*)ptr);
         }
     }
 
@@ -251,6 +304,16 @@ public:
     */
     shared_ptr!T copy() {
         return shared_ptr!T(this);
+    }
+
+    /**
+        Resets the shared_ptr, emptying its contents.
+    */
+    void reset() {
+        if (rc) {
+            rc.subRef!false;
+            rc = null;
+        }
     }
 }
 
