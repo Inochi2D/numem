@@ -54,7 +54,11 @@ private {
 
             // Free and atomically store null in the pointer.
             static if (is(T == class)) {
-                nogc_delete!T(cast(T)ref_);
+
+                // Store reference in variable as casting makes it an rvalue
+                // rvalues can't be sent to ref parameters.
+                T refT = cast(T)ref_;
+                nogc_delete!T(refT);
             } else {
                 nogc_delete!(T*)(ref_);
             }
@@ -79,6 +83,13 @@ shared_ptr!T shared_new(T, Args...)(Args args) nothrow @nogc {
     }
 }
 
+unittest {
+    import numem.ptr;
+    class A { }
+    shared_ptr!A p = shared_new!A();
+}
+
+
 /**
     Allocates a new unique pointer.
 */
@@ -91,6 +102,13 @@ unique_ptr!T unique_new(T, Args...)(Args args) nothrow @nogc {
         return unique_ptr!T(cast(T*)item);
     }
 }
+
+unittest {
+    import numem.ptr;
+    class A { }
+    unique_ptr!A p = unique_new!A();
+}
+
 
 /**
     Unique non-copyable smart pointer
@@ -141,7 +159,7 @@ public:
             Creates a unique_ptr reference from a existing reference
         */
         static unique_ptr!T fromPtr(T ptr) @system {
-            return unique_ptr!T(cast(void*)ptr);
+            return unique_ptr!T(cast(T*)ptr);
         }
     }
 
@@ -257,7 +275,7 @@ public:
             Creates a shared_ptr reference from a existing reference
         */
         static shared_ptr!T fromPtr(T ptr) @system {
-            return shared_ptr!T(cast(void*)ptr);
+            return shared_ptr!T(cast(T*)ptr);
         }
     }
 
