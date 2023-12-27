@@ -13,7 +13,7 @@ nothrow @nogc:
 private:
     vector!(T) vec_;
 
-    void append_(immutable(T)[] span) {
+    void append_(const(T)[] span) {
 
         // If size of string is > 0, then it should have the null terminator.
         size_t baseSize = size();
@@ -26,7 +26,7 @@ private:
         (cast(T*)vec_.data)[this.size()] = '\0';
     }
 
-    void set_(immutable(T)[] span) {
+    void set_(const(T)[] span) {
         vec_.resize(span.length+1);
         (cast(T*)vec_.data)[0..span.length] = span[0..$];
         (cast(T*)vec_.data)[this.size()] = '\0';
@@ -43,7 +43,7 @@ public:
     /**
         Creates a string with specified text
     */
-    this(immutable(T)[] text) {
+    this(const(T)[] text) {
         this.set_(text);
     }
 
@@ -135,7 +135,7 @@ public:
     }
 
     /**
-        Casts nstring to C string
+        Casts nstring to D string
     */
     immutable(T)[] opCast()() {
         return toDString();
@@ -144,7 +144,7 @@ public:
     /**
         Set content of string
     */
-    ref auto opAssign(T)(immutable(T)[] value) {
+    ref auto opAssign(T)(const(T)[] value) {
         this.set_(value);
         return this;
     }
@@ -152,7 +152,7 @@ public:
     /**
         Appends value to string
     */
-    ref auto opOpAssign(string op = "~", T)(immutable(T)[] value) {
+    ref auto opOpAssign(string op = "~", T)(const(T)[] value) {
         this.append_(value);
         return this;
     }
@@ -169,29 +169,29 @@ public:
 
         D slices are short lived and may end up pointing to invalid memory if their string is modified.
     */
-    immutable(T)[] opSlice(size_t start, size_t end) @system {
-        return cast(immutable(T)[])this.vec_[start..end];
+    const(T)[] opSlice(size_t start, size_t end) @system {
+        return cast(const(T)[])this.vec_[start..end];
     }
 
     /**
         Allows slicing the string to the full vector
     */
-    immutable(T)[] opIndex() {
-        return cast(immutable(T)[])this.vec_[];
+    const(T)[] opIndex() {
+        return cast(const(T)[])this.vec_[];
     }
 
     /**
         Allows slicing the string to get a substring.
     */
-    immutable(T)[] opIndex(size_t[2] slice) {
-        return cast(immutable(T)[])this.vec_[slice[0]..slice[1]];
+    const(T)[] opIndex(size_t[2] slice) {
+        return cast(const(T)[])this.vec_[slice[0]..slice[1]];
     }
 
     /**
         Allows getting a character from the string.
     */
-    ref immutable(T) opIndex(size_t index) {
-        return cast(immutable(T))(this.vec_.data()[index]);
+    ref const(T) opIndex(size_t index) {
+        return cast(const(T))(this.vec_.data()[index]);
     }
 
     static if (is(T == char)) {
