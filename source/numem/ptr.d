@@ -74,12 +74,12 @@ private {
     Allocates a new shared pointer.
 */
 shared_ptr!T shared_new(T, Args...)(Args args) nothrow @nogc {
-    static if (is(T == struct)) {
-        T* item = nogc_new!T(args);
-        return shared_ptr!T(item);
-    } else {
+    static if (is(T == class)) {
         T item = nogc_new!T(args);
         return shared_ptr!T(cast(T*)item);
+    } else {
+        T* item = nogc_new!T(args);
+        return shared_ptr!T(item);
     }
 }
 
@@ -94,12 +94,12 @@ unittest {
     Allocates a new unique pointer.
 */
 unique_ptr!T unique_new(T, Args...)(Args args) nothrow @nogc {
-    static if (is(T == struct)) {
-        T* item = nogc_new!T(args);
-        return unique_ptr!T(item);
-    } else {
+    static if (is(T == class)) {
         T item = nogc_new!T(args);
         return unique_ptr!T(cast(T*)item);
+    } else {
+        T* item = nogc_new!T(args);
+        return unique_ptr!T(item);
     }
 }
 
@@ -126,6 +126,11 @@ private:
         rc.weakRefs = 0;
     }
 
+package(numem):
+    void nullify() {
+        rc = null;
+    }
+    
 public:
 
     /// Can't be created as a copy.
