@@ -38,12 +38,26 @@ private:
     void reserve_(size_t capacity) {
         if (capacity >= capacity_) {
 
+            // Capacity before extension.
+            size_t before = capacity_;
+
             // Quantize to vector alignment
             capacity_ = cast(size_t)quantize!(ceil, double)(cast(double)capacity+1, cast(double)VECTOR_ALIGN);
 
             // Reallocate the malloc'd portion if there is anything to realloc.
             if (memory) realloc(cast(void*)memory, capacity_*T.sizeof);
             else memory = cast(T*)malloc(capacity_*T.sizeof);
+
+            // Initialize newly allocated memory, else if T has postblit or move constructors,
+            // those slots will be mistaken for live objects and their destructor called during
+            // a opOpAssign operation.
+            // But, we need to do this without triggering the postblit or move-constructor here,
+            // or the same problem happen!
+            for (size_t n = before; n < capacity_; ++n)
+            {
+                T tmp = T.init;
+                memcpy(memory + n, &tmp, T.sizeof);
+            }
         }
     }
 
@@ -370,4 +384,12 @@ public:
     ref T opIndex(size_t index) {
         return memory[index];
     }
+}
+
+unittest {
+    class A {
+    }
+    shared_ptr!A a = shared_new!A();
+    vector!(shared_ptr!A) v;
+    v ~= a; // Used to crash, see Issue #2
 }
