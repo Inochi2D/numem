@@ -163,31 +163,60 @@ public:
         }
     }
 
-    /**
-        Gets the value of the unique pointer
+    static if (is(T == class)) {
+        /**
+            Gets the value of the unique pointer
 
-        Returns null if the item is no longer valid.
-    */
-    T* getAtomic() {
-        return rc ? atomicLoad(rc.ref_) : null;
-    }
+            Returns null if the item is no longer valid.
+        */
+        T getAtomic() {
+            return rc ? cast(T)atomicLoad(rc.ref_) : null;
+        }
 
-    /**
-        Gets the value of the unique pointer
+        /**
+            Gets the value of the unique pointer
 
-        Returns null if the item is no longer valid.
-    */
-    T* get() {
-        return rc ? rc.ref_ : null;
-    }
+            Returns null if the item is no longer valid.
+        */
+        T get() {
+            return rc ? cast(T)rc.ref_ : null;
+        }
 
-    /**
-        Gets the value of the unique pointer
+        /**
+            Gets the value of the unique pointer
 
-        Returns null if the item is no longer valid.
-    */
-    T* opCast() {
-        return rc ? rc.ref_ : null;
+            Returns null if the item is no longer valid.
+        */
+        T opCast() {
+            return rc ? cast(T)rc.ref_ : null;
+        }
+    } else {
+        /**
+            Gets the value of the unique pointer
+
+            Returns null if the item is no longer valid.
+        */
+        T* getAtomic() {
+            return rc ? atomicLoad(rc.ref_) : null;
+        }
+
+        /**
+            Gets the value of the unique pointer
+
+            Returns null if the item is no longer valid.
+        */
+        T* get() {
+            return rc ? rc.ref_ : null;
+        }
+
+        /**
+            Gets the value of the unique pointer
+
+            Returns null if the item is no longer valid.
+        */
+        T* opCast() {
+            return rc ? rc.ref_ : null;
+        }
     }
 
     /**
@@ -279,32 +308,60 @@ public:
         }
     }
 
+    static if (is(T == class)) {
+        /**
+            Gets the value of the shared pointer
 
-    /**
-        Gets the value of the shared pointer
+            Returns null if the item is no longer valid.
+        */
+        T getAtomic() {
+            return rc ? cast(T)atomicLoad(rc.ref_) : null;
+        }
 
-        Returns null if the item is no longer valid.
-    */
-    T* getAtomic() {
-        return rc ? atomicLoad(rc.ref_) : null;
-    }
+        /**
+            Gets the value of the shared pointer
 
-    /**
-        Gets the value of the shared pointer
+            Returns null if the item is no longer valid.
+        */
+        T get() {
+            return rc ? cast(T)rc.ref_ : null;
+        }
 
-        Returns null if the item is no longer valid.
-    */
-    T* get() {
-        return rc ? rc.ref_ : null;
-    }
+        /**
+            Gets the value of the shared pointer
 
-    /**
-        Gets the value of the shared pointer
+            Returns null if the item is no longer valid.
+        */
+        T opCast() {
+            return rc ? cast(T)rc.ref_ : null;
+        }
+    } else {
+        /**
+            Gets the value of the shared pointer
 
-        Returns null if the item is no longer valid.
-    */
-    T* opCast() {
-        return rc ? rc.ref_ : null;
+            Returns null if the item is no longer valid.
+        */
+        T* getAtomic() {
+            return rc ? atomicLoad(rc.ref_) : null;
+        }
+
+        /**
+            Gets the value of the shared pointer
+
+            Returns null if the item is no longer valid.
+        */
+        T* get() {
+            return rc ? rc.ref_ : null;
+        }
+
+        /**
+            Gets the value of the shared pointer
+
+            Returns null if the item is no longer valid.
+        */
+        T* opCast() {
+            return rc ? rc.ref_ : null;
+        }
     }
 
     /**
@@ -357,31 +414,59 @@ public:
         }
     }
 
+    static if (is(T == class)) {
+        /**
+            Gets the value of the weak pointer
 
-    /**
-        Gets the value of the weak pointer
+            Returns null if the item is no longer valid.
+        */
+        T getAtomic() {
+            return rc ? cast(T)atomicLoad(rc.ref_) : null;
+        }
 
-        Returns null if the item is no longer valid.
-    */
-    T* getAtomic() {
-        return rc ? atomicLoad(rc.ref_) : null;
-    }
+        /**
+            Gets the value of the weak pointer
 
-    /**
-        Gets the value of the weak pointer
+            Returns null if the item is no longer valid.
+        */
+        T get() {
+            return rc ? cast(T)rc.ref_ : null;
+        }
 
-        Returns null if the item is no longer valid.
-    */
-    T* get() {
-        return rc ? rc.ref_ : null;
-    }
+        /**
+            Gets the value of the weak pointer
 
-    /**
-        Gets the value of the weak pointer
+            Returns null if the item is no longer valid.
+        */
+        T opCast() {
+            return rc ? cast(T)rc.ref_ : null;
+        }
+    } else {
+        /**
+            Gets the value of the weak pointer
 
-        Returns null if the item is no longer valid.
-    */
-    T* opCast() {
-        return rc ? rc.ref_ : null;
+            Returns null if the item is no longer valid.
+        */
+        T* getAtomic() {
+            return rc ? atomicLoad(rc.ref_) : null;
+        }
+
+        /**
+            Gets the value of the weak pointer
+
+            Returns null if the item is no longer valid.
+        */
+        T* get() {
+            return rc ? rc.ref_ : null;
+        }
+
+        /**
+            Gets the value of the weak pointer
+
+            Returns null if the item is no longer valid.
+        */
+        T* opCast() {
+            return rc ? rc.ref_ : null;
+        }
     }
 }
