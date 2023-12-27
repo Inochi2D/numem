@@ -8,9 +8,10 @@ module numem.vector;
 import numem.ptr;
 import numem;
 import core.stdc.stdlib : malloc, realloc, free;
-import core.stdc.string : memcpy;
+import core.stdc.string : memcpy, memmove;
 import core.atomic : atomicFetchAdd, atomicFetchSub, atomicStore, atomicLoad;
 import std.math.rounding : quantize, ceil;
+import std.traits : isCopyable;
 
 /**
     C++ style vector
@@ -71,13 +72,33 @@ public:
         this.resize_(size);
     }
 
-    /**
-        Makes a copy of a string
-    */
-    this(ref return scope vector!T rhs) {
-        if (rhs.memory) {
-            this.resize_(rhs.size_);
-            this.memory[0..size_] = rhs.memory[0..rhs.size_];
+    static if (!isCopyable!T && __traits(hasMember, T, "moveTo")) {
+
+        /**
+            Moves non-copyable members of one vector to another
+        */
+        this(ref return scope vector!T rhs) {
+            if (rhs.memory) {
+                this.resize_(rhs.size_);
+                foreach(i; 0..rhs.size_) {
+                    rhs.memory[i].moveTo(this.memory[i]);
+                }
+
+                // Clear memory.
+                rhs.resize(0);
+                rhs.shrinkToFit();
+            }
+        }
+    } else {
+
+        /**
+            Makes a copy of a vector
+        */
+        this(ref return scope vector!T rhs) {
+            if (rhs.memory) {
+                this.resize_(rhs.size_);
+                this.memory[0..size_] = rhs.memory[0..rhs.size_];
+            }
         }
     }
 
@@ -115,7 +136,8 @@ public:
     void shrinkToFit() {
         if (capacity_ > size_) {
             capacity_ = size_;
-            realloc(memory, size_);
+            if (size_ > 0) realloc(memory, size_);
+            else free(memory);
         }
     }
 
@@ -174,8 +196,8 @@ public:
         if (position < size_) {
             nogc_delete(memory[position]);
 
-            // Copy memory region around so that the deleted element is overwritten.
-            memory[position..size_-1] = memory[position+1..size_];
+            // Move memory region around so that the deleted element is overwritten.
+            memmove(memory+position, memory+position+1, size_*(T*).sizeof);
          
             size_--;
         }
@@ -201,7 +223,8 @@ public:
 
             // Copy over old elements
             size_t span = (end+1)-start;
-            memory[start..start+span] = memory[end..end+span];
+            // memory[start..start+span] = memory[end..end+span];
+            memmove(memory+start, memory+end, span*(T*).sizeof);
 
             size_ -= span;
         }
@@ -221,36 +244,87 @@ public:
         this.remove(0);
     }
 
-    /**
-        Add value to vector
-    */
-    ref auto opOpAssign(string op = "~")(T value) {
-        this.resize_(size_+1);
-        memory[size_] = value;
-        return this;
-    }
+    static if (is(T : unique_ptr!U, U)) {
 
-    /**
-        Add vector items to vector
-    */
-    ref auto opOpAssign(string op = "~")(vector!T other) {
-        size_t cSize = size_;
-        
-        this.resize_(size_ + other.size_);
-        this.memory[cSize..cSize+other.size_] = other.memory[0..other.size_];
-        
-        return this;
-    }
+        /**
+            Add value to vector
+        */
+        ref auto opOpAssign(string op = "~")(T value) {
+            size_t cSize = size_;
 
-    /**
-        Add slice to vector
-    */
-    ref auto opOpAssign(string op = "~")(T[] other) {
-        size_t cSize = size_;
-        this.resize_(size_ + other.length);
-        this.memory[cSize..cSize+other.length] = other[0..$];
-        
-        return this;
+            // Very hacky move operation
+            this.resize_(size_+1);
+            memcpy(&memory[cSize], &value, T.sizeof);
+            value.nullify();
+
+            return this;
+        }
+
+        /**
+            Add vector items to vector
+        */
+        ref auto opOpAssign(string op = "~")(vector!T other) {
+            size_t cSize = size_;
+
+            // Very hacky move operation
+            this.resize_(size_ + other.size_);
+            memcpy(&memory[cSize], other.memory, other.size_*T.sizeof);
+            foreach(i; 0..other.size) other[i].nullify();
+            
+            return this;
+        }
+
+        /**
+            Add slice to vector
+        */
+        ref auto opOpAssign(string op = "~")(T[] other) {
+            size_t cSize = size_;
+            
+            // Very hacky move operation
+            this.resize_(size_ + other.length);
+            memcpy(&memory[cSize], other.ptr, other.length*T.sizeof);
+            foreach(i; 0..other.length) other[i].nullify();
+
+            return this;
+        }
+
+    } else {
+
+        /**
+            Add value to vector
+        */
+        ref auto opOpAssign(string op = "~")(T value) {
+            size_t cSize = size_;
+
+            this.resize_(size_+1);
+            memory[cSize] = value;
+
+            return this;
+        }
+
+        /**
+            Add vector items to vector
+        */
+        ref auto opOpAssign(string op = "~")(vector!T other) {
+            size_t cSize = size_;
+            
+            this.resize_(size_ + other.size_);
+            this.memory[cSize..cSize+other.size_] = other.memory[0..other.size_];
+            
+            return this;
+        }
+
+        /**
+            Add slice to vector
+        */
+        ref auto opOpAssign(string op = "~")(T[] other) {
+            size_t cSize = size_;
+
+            this.resize_(size_ + other.length);
+            this.memory[cSize..cSize+other.length] = other[0..$];
+            
+            return this;
+        }
     }
 
     /**
