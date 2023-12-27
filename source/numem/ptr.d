@@ -240,7 +240,7 @@ public:
     void moveTo(ref unique_ptr!T other) {
 
         // First destruct the target unique_ptr if neccessary.
-        if (other.get()) nogc_delete(other);
+        if (other.getAtomic()) nogc_delete(other);
 
         // atomically moves the reference from this unique_ptr to the other unique_ptr reference
         // after this is done, rc is set to null to make this unique_ptr invalid.

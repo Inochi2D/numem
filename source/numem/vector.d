@@ -42,8 +42,8 @@ private:
             capacity_ = cast(size_t)quantize!(ceil, double)(cast(double)capacity+1, cast(double)VECTOR_ALIGN);
 
             // Reallocate the malloc'd portion if there is anything to realloc.
-            if (memory) realloc(cast(void*)memory, capacity);
-            else memory = cast(T*)malloc(capacity);
+            if (memory) realloc(cast(void*)memory, capacity_*T.sizeof);
+            else memory = cast(T*)malloc(capacity_*T.sizeof);
         }
     }
 
@@ -174,6 +174,13 @@ public:
     */
     size_t capacity() {
         return capacity_;
+    }
+
+    /**
+        Returns the memory usage of the vector in bytes.
+    */
+    size_t usage() {
+        return capacity_*T.sizeof;
     }
 
     /**
