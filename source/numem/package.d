@@ -138,6 +138,20 @@ T nogc_new(T, Args...)(Args args) if (is(T == class)) {
 }
 
 /**
+    Allocates a new basic type on the heap.
+    Immediately exits the application if out of memory.
+*/
+T* nogc_new(T)(T value = T.init) if (isBasicType!T) {
+    T* rawMemory = cast(T*)malloc(T.sizeof);
+    if (!rawMemory) {
+        exit(-1);
+    }
+
+    *rawMemory = value;
+    return rawMemory;
+}
+
+/**
     Destroys and frees the memory.
 
     For structs this will call the struct's destructor if it has any.
@@ -156,7 +170,7 @@ void nogc_delete(T)(ref T obj_)  {
                     store.destruct(cast(void*)obj_);
                     free(chunkStart);
 
-                } else static if (is(T == struct)) {
+                } else static if (is(T == struct) || is(T == union)) {
 
                     // Try to call elaborate destructor first before attempting __dtor
                     static if (__traits(hasMember, T, "__xdtor")) {
@@ -165,9 +179,11 @@ void nogc_delete(T)(ref T obj_)  {
                         assumeNothrowNoGC(&obj_.__dtor)();
                     }
                     free(cast(void*)obj_);
+                } else {
+                    free(cast(void*)obj_);
                 }
             }
-        } else static if (is(T == struct)) {
+        } else static if (is(T == struct) || is(T == union)) {
 
             // Try to call elaborate destructor first before attempting __dtor
             static if (__traits(hasMember, T, "__xdtor")) {
@@ -194,7 +210,7 @@ void nogc_delete(T)(ref T obj_)  {
 
             // Then assume it's nothrow nogc
             assumeNothrowNoGC!destroyFuncRef(dfunc)(objptr_);
-        } else static if (is(T == struct)) {
+        } else static if (is(T == struct) || is(T == union)) {
             auto objptr_ = &obj_;
 
             // First create an internal function that calls with the correct parameters
@@ -203,6 +219,8 @@ void nogc_delete(T)(ref T obj_)  {
             
             // Then assume it's nothrow nogc
             assumeNothrowNoGC!destroyFuncRef(dfunc)(objptr_);
+        } else {
+            free(cast(void*)obj_);
         }
     }
 }
