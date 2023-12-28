@@ -1,7 +1,13 @@
-# Nu:Mem
+<center>
+  <img src="numem.png" alt="NuMem" style="width: 50%; height: auto;">
+</center>
 Nu:Mem is a package for D which implements various nogc memory managment tools, allowing classes, strings, and more to be handled safely in nogc mode.
 This library is still a work in progress, but is intended to be used within Inochi2D's nogc rewrite to allow the library to have good ergonomics, 
 while allowing more seamless integration with other programming languages.
+
+&nbsp;
+&nbsp;
+&nbsp;
 
 # Roadmap
 This is a incomplete and unordered roadmap of features I want to add and have added
