@@ -45,7 +45,7 @@ private:
             capacity_ = cast(size_t)quantize!(ceil, double)(cast(double)capacity+1, cast(double)VECTOR_ALIGN);
 
             // Reallocate the malloc'd portion if there is anything to realloc.
-            if (memory) realloc(cast(void*)memory, capacity_*T.sizeof);
+            if (memory) memory = cast(T*) realloc(cast(void*)memory, capacity_*T.sizeof);
             else memory = cast(T*)malloc(capacity_*T.sizeof);
 
             // Initialize newly allocated memory, else if T has postblit or move constructors,
@@ -150,7 +150,7 @@ public:
     void shrinkToFit() {
         if (capacity_ > size_) {
             capacity_ = size_;
-            if (size_ > 0) realloc(memory, size_);
+            if (size_ > 0) memory = cast(T*) realloc(memory, size_);
             else free(memory);
         }
     }
