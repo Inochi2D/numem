@@ -132,8 +132,7 @@ T nogc_new(T, Args...)(Args args) if (is(T == class)) {
             exit(-1);
         }
 
-        T obj = emplace!T(rawMemory[0 .. allocSize], args);
-        return obj;
+        return emplace!T(rawMemory[0 .. allocSize], args);
     }
 }
 
@@ -210,6 +209,10 @@ void nogc_delete(T)(ref T obj_)  {
 
             // Then assume it's nothrow nogc
             assumeNothrowNoGC!destroyFuncRef(dfunc)(objptr_);
+
+            // NOTE: We already know it's heap allocated.
+            free(cast(void*)objptr_);
+
         } else static if (is(T == struct) || is(T == union)) {
             auto objptr_ = &obj_;
 
@@ -219,8 +222,13 @@ void nogc_delete(T)(ref T obj_)  {
             
             // Then assume it's nothrow nogc
             assumeNothrowNoGC!destroyFuncRef(dfunc)(objptr_);
+
+            // Free memory
+            static if(isPointer!T) free(cast(void*)obj_);
         } else {
-            free(cast(void*)obj_);
+
+            // Free memory
+            static if(isPointer!T) free(cast(void*)obj_);
         }
     }
 }

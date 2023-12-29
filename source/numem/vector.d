@@ -68,7 +68,7 @@ public:
         if (this.memory) {
             
             // Delete elements in the array.
-            foreach(item; 0..size_) {
+            foreach_reverse(item; 0..size_) {
                 nogc_delete(this.memory[item]);
             }
 
