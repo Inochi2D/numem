@@ -168,8 +168,7 @@ public:
     /**
         Appends a zero-terminated C string to string
     */
-    ref auto appendCString(const(T)* cString) @system
-    {
+    ref auto appendCString(const(T)* cString) @system {
         const(T)[] s = fromStringz(cString);
         if (s != null)
             this.append_(s);
@@ -224,8 +223,7 @@ alias nstring = basic_string!char;
 alias nwstring = basic_string!wchar;
 alias ndstring = basic_string!dchar;
 
-unittest
-{
+unittest {
     nstring s;
     s ~= cast(string)null;
     s ~= "";
