@@ -6,9 +6,8 @@
 */
 module numem.string;
 import numem.vector;
+import numem.internal;
 import numem;
-
-import std.string: fromStringz;
 
 /**
     Basic string type.
@@ -169,7 +168,7 @@ public:
         Appends a zero-terminated C string to string
     */
     ref auto appendCString(const(T)* cString) @system {
-        const(T)[] s = fromStringz(cString);
+        const(T)[] s = numem.internal.fromStringz(cString);
         if (s != null)
             this.append_(s);
         return this;
