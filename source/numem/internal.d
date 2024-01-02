@@ -11,9 +11,7 @@ const(T)[] fromStringz(T)(return scope const(T)* cString) @nogc @system pure not
 
     static if (is(T == char))
         import core.stdc.string : cstrlen = strlen;
-    else static if (is(T == wchar))
-        import core.stdc.wchar_: cstrlen = wcslen;
-    else static if (is(T == dchar)) {
+    else static if (is(T == wchar) || is(T == dchar)) {
         static size_t cstrlen(scope const T* s) {
             const(T)* p = s;
             while (*p)
