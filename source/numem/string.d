@@ -6,6 +6,7 @@
 */
 module numem.string;
 import numem.vector;
+import numem.internal;
 import numem;
 
 /**
@@ -164,6 +165,16 @@ public:
     }
 
     /**
+        Appends a zero-terminated C string to string
+    */
+    ref auto appendCString(const(T)* cString) @system {
+        const(T)[] s = numem.internal.fromStringz(cString);
+        if (s != null)
+            this.append_(s);
+        return this;
+    }
+
+    /**
         Override for $ operator
     */
     size_t opDollar() {
@@ -210,3 +221,19 @@ public:
 alias nstring = basic_string!char;
 alias nwstring = basic_string!wchar;
 alias ndstring = basic_string!dchar;
+
+unittest {
+    nstring s;
+    s ~= cast(string)null;
+    s ~= "";
+    s.appendCString("a zero-terminated string".ptr);
+    assert(s.toDString() == "a zero-terminated string");
+
+    nwstring ws;
+    ws.appendCString("hey"w.ptr);
+    assert(ws.length == 3);
+
+    ndstring wd;
+    wd.appendCString("ho"d.ptr);
+    assert(wd.toDString() == "ho"d);
+}
