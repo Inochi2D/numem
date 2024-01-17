@@ -165,6 +165,23 @@ public:
     }
 
     /**
+        Appends single character to string
+    */
+    ref auto opOpAssign(string op = "~")(T ch) {
+        const(T)[] asSlice = (&ch)[0..1];
+        this.append_(asSlice);
+        return this;
+    }
+
+    /**
+        Appends another nstring to string
+    */
+    ref auto opOpAssign(string op = "~")(basic_string!T s) {
+        this.append_(s[]);
+        return this;
+    }
+
+    /**
         Appends a zero-terminated C string to string
     */
     ref auto appendCString(const(T)* cString) @system {
@@ -221,6 +238,23 @@ public:
 alias nstring = basic_string!char;
 alias nwstring = basic_string!wchar;
 alias ndstring = basic_string!dchar;
+
+unittest {
+    // appending a char
+    nstring s;
+    nwstring ws;
+    ndstring ds;
+    s  ~= 'c';
+    ws ~= '\u4567';
+    ds ~= '\U0000ABCD';
+    assert(s.toDString() == "c" 
+       && ws.toDString() == "\u4567"w 
+       && ds.toDString() == "\U0000ABCD"d);
+
+    // Not working yet: append to itself
+    //s ~= s;
+    //assert(s.toDString() == "cc");
+}
 
 unittest {
     nstring s;
