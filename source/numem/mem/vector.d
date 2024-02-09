@@ -4,9 +4,9 @@
     
     Authors: Luna Nielsen
 */
-module numem.vector;
-import numem.ptr;
-import numem;
+module numem.mem.vector;
+import numem.mem.ptr;
+import numem.mem;
 import core.stdc.stdlib : malloc, realloc, free;
 import core.stdc.string : memcpy, memmove;
 import core.atomic : atomicFetchAdd, atomicFetchSub, atomicStore, atomicLoad;

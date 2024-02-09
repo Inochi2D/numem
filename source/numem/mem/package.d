@@ -4,7 +4,7 @@
     
     Authors: Luna Nielsen
 */
-module numem;
+module numem.mem;
 import std.conv : emplace;
 import core.stdc.stdlib : free, exit, malloc;
 import std.traits;

@@ -7,4 +7,5 @@ public import numem;
 public import numem.ptr;
 public import numem.string;
 public import numem.vector;
+public import numem.map;
 

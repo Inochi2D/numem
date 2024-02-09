@@ -4,7 +4,7 @@
     
     Authors: Luna Nielsen
 */
-module numem.internal;
+module numem.mem.internal;
 
 const(T)[] fromStringz(T)(return scope const(T)* cString) @nogc @system pure nothrow {
     import core.stdc.string: strlen;

@@ -4,10 +4,10 @@
     
     Authors: Luna Nielsen
 */
-module numem.ptr;
+module numem.mem.ptr;
 import core.atomic : atomicFetchAdd, atomicFetchSub, atomicStore, atomicLoad;
 import std.traits;
-import numem;
+import numem.mem;
 
 //
 //          SMART POINTERS

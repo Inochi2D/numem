@@ -4,10 +4,10 @@
     
     Authors: Luna Nielsen
 */
-module numem.string;
-import numem.vector;
-import numem.internal;
-import numem;
+module numem.mem.string;
+import numem.mem.vector;
+import numem.mem.internal;
+import numem.mem;
 
 /**
     Basic string type.
