@@ -3,9 +3,8 @@
 */
 module numem.all;
 
-public import numem;
-public import numem.ptr;
-public import numem.string;
-public import numem.vector;
-public import numem.map;
-
+public import numem.mem;
+public import numem.mem.ptr;
+public import numem.mem.string;
+public import numem.mem.vector;
+public import numem.stream;
