@@ -6,6 +6,7 @@
 */
 module numem.stream;
 import numem.mem.vector;
+import core.stdc.stdio : SEEK_CUR, SEEK_END, SEEK_SET;
 
 /**
     The origin of a seek operation
@@ -15,17 +16,17 @@ enum SeekOrigin {
     /**
         Seek from beginning of stream
     */
-    start,
+    start = SEEK_SET,
 
     /**
         Seek relative to the current position in the stream
     */
-    relative,
+    relative = SEEK_CUR,
 
     /**
         Seek relative to the end of the stream
     */
-    end
+    end = SEEK_END
 }
 
 abstract
@@ -85,8 +86,12 @@ class Stream {
 
     /**
         Clears all buffers of the stream and causes data to be written to the underlying device.
+    
+        Returns
+            * true if the flush operation succeeded
+            * false if it failed.
     */
-    abstract void flush();
+    abstract bool flush();
 
     /**
         Sets the reading position within the stream
