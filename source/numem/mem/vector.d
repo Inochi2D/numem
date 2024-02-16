@@ -16,7 +16,7 @@ import std.traits : isCopyable;
 /**
     C++ style vector
 */
-struct vector(T) {
+struct vector(T, bool ownsMemory=false) {
 nothrow @nogc:
 private:
     enum VECTOR_ALIGN = 32;
@@ -66,10 +66,12 @@ public:
     /// Destructor
     ~this() {
         if (this.memory) {
-            
-            // Delete elements in the array.
-            foreach_reverse(item; 0..size_) {
-                nogc_delete(this.memory[item]);
+            static if (ownsMemory) {
+                
+                // Delete elements in the array.
+                foreach_reverse(item; 0..size_) {
+                    nogc_delete(this.memory[item]);
+                }
             }
 
             // Free the pointer
@@ -385,6 +387,11 @@ public:
         return memory[index];
     }
 }
+
+/**
+    A vector which owns the elements put in to it
+*/
+alias owning_vector(T) = vector!(T, true);
 
 unittest {
     class A {
