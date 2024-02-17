@@ -88,6 +88,26 @@ private {
 extern(C):
 
 /**
+    UDA which allows initializing an empty struct, even when copying is disabled.
+*/
+struct AllowInitEmpty;
+
+/**
+    Constructs a type, this allows initializing types on the stack instead of heap.
+*/
+T nogc_construct(T, Args...)(Args args) if (is(T == struct) || is(T == class) || is (T == union)) {
+    static if (is(T == class)) {
+        return new T(args);
+    } else {
+        static if (hasUDA!(T, AllowInitEmpty) && args.length == 0) {
+            return T.init;
+        } else {
+            return T(args);
+        }
+    }
+}
+
+/**
     Allocates a new struct on the heap.
     Immediately exits the application if out of memory.
 */
@@ -98,7 +118,11 @@ T* nogc_new(T, Args...)(Args args) if (is(T == struct)) {
     }
 
     T* obj = cast(T*)rawMemory;
-    emplace!T(obj, args);
+    static if (hasUDA!(T, AllowInitEmpty) && args.length == 0) {
+        emplace!T(obj);
+    } else {
+        emplace!T(obj, args);
+    }
 
     return obj;
 }
@@ -196,39 +220,41 @@ void nogc_delete(T)(ref T obj_)  {
 
 
         // With a normal runtime we can use destroy
-        static if (isPointer!T || is(T == class)) {
-            static if (is(T == class)) {
-                auto objptr_ = obj_;
-            } else {
-                auto objptr_ = &obj_;
-            }
-            
-            // First create an internal function that calls with the correct parameters
-            alias destroyFuncRef = void function(typeof(objptr_));
-            destroyFuncRef dfunc = (typeof(objptr_) objptr_) { destroy!false(objptr_); };
-
-            // Then assume it's nothrow nogc
-            assumeNothrowNoGC!destroyFuncRef(dfunc)(objptr_);
-
-            // NOTE: We already know it's heap allocated.
-            free(cast(void*)objptr_);
-
-        } else static if (is(T == struct) || is(T == union)) {
+        static if (is(T == struct) || is(T == union)) {
             auto objptr_ = &obj_;
 
-            // First create an internal function that calls with the correct parameters
-            alias destroyFuncRef = void function(typeof(objptr_));
-            destroyFuncRef dfunc = (typeof(objptr_) objptr_) { destroy!false(objptr_); };
-            
-            // Then assume it's nothrow nogc
-            assumeNothrowNoGC!destroyFuncRef(dfunc)(objptr_);
+            if (objptr_) {
 
-            // Free memory
-            static if(isPointer!T) free(cast(void*)obj_);
+                // First create an internal function that calls with the correct parameters
+                alias destroyFuncRef = void function(typeof(objptr_));
+                destroyFuncRef dfunc = (typeof(objptr_) objptr_) { destroy!false(objptr_); };
+                
+                // Then assume it's nothrow nogc
+                assumeNothrowNoGC!destroyFuncRef(dfunc)(objptr_);
+
+                // Free memory
+                static if(isPointer!T) free(cast(void*)obj_);
+            }
+        } else static if (is(T == class)) {
+            if (obj_) {
+
+                // First create an internal function that calls with the correct parameters
+                alias destroyFuncRef = void function(typeof(obj_));
+                destroyFuncRef dfunc = (typeof(obj_) objptr_) { destroy!false(objptr_); };
+
+                // Then assume it's nothrow nogc
+                assumeNothrowNoGC!destroyFuncRef(dfunc)(obj_);
+
+                // NOTE: We already know it's heap allocated.
+                free(cast(void*)obj_);
+            }
+
         } else {
 
             // Free memory
-            static if(isPointer!T) free(cast(void*)obj_);
+            static if(isPointer!T) {
+                if (cast(void*)obj_) free(cast(void*)obj_);
+            }
         }
     }
 }
