@@ -3,5 +3,12 @@ description "Memory managment utilities for D"
 authors "Inochi2D Project"
 copyright "Copyright © 2023, Inochi2D Project"
 license "BSD 2-clause"
-
 targetPath "out/"
+
+configuration "main" {
+    targetType "library"
+}
+
+configuration "unittest" {
+    dependency "silly" version="~>1.1.1"
+}
