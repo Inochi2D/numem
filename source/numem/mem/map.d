@@ -179,8 +179,15 @@ private:
     InternalTree _tree;
 }
 
-alias map(K, V) = MapImpl!(K, V, "a < b", false, false);
-alias owning_map(K, V) = MapImpl!(K, V, "a < b", false, true);
+/**
+    A map which does NOT own the memory of its elements
+*/
+alias weak_map(K, V) = MapImpl!(K, V, "a < b", false, false);
+
+/**
+    A map which owns the memory of its elements
+*/
+alias map(K, V) = MapImpl!(K, V, "a < b", false, true);
 
 @("Map initialization")
 unittest {

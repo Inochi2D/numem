@@ -16,7 +16,7 @@ import std.traits : isCopyable;
 /**
     C++ style vector
 */
-struct vector(T, bool ownsMemory=false) {
+struct VectorImpl(T, bool ownsMemory=false) {
 nothrow @nogc:
 private:
     enum VECTOR_ALIGN = 32;
@@ -391,13 +391,18 @@ public:
 /**
     A vector which owns the elements put in to it
 */
-alias owning_vector(T) = vector!(T, true);
+alias vector(T) = VectorImpl!(T, true);
+
+/**
+    A vector which does NOT own the elements put in to it
+*/
+alias weak_vector(T) = VectorImpl!(T, false);
 
 @("Issue #2")
 unittest {
     class A {
     }
     shared_ptr!A a = shared_new!A();
-    owning_vector!(shared_ptr!A) v;
+    vector!(shared_ptr!A) v;
     v ~= a; // Used to crash, see Issue #2
 }

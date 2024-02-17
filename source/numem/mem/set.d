@@ -118,8 +118,15 @@ private:
 
 }
 
-alias set(K) = SetImpl!(K, "a < b", false, false);
-alias owning_set(K) = SetImpl!(K, "a < b", false, true);
+/**
+    A set which does NOT own the memory of its elements
+*/
+alias weak_set(K) = SetImpl!(K, "a < b", false, false);
+
+/**
+    A set which owns the memory of its elements
+*/
+alias set(K) = SetImpl!(K, "a < b", false, true);
 
 @("Creation")
 unittest {
