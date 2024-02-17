@@ -185,7 +185,7 @@ public:
         Appends a zero-terminated C string to string
     */
     ref auto appendCString(const(T)* cString) @system {
-        const(T)[] s = numem.internal.fromStringz(cString);
+        const(T)[] s = numem.mem.internal.fromStringz(cString);
         if (s != null)
             this.append_(s);
         return this;
@@ -239,6 +239,7 @@ alias nstring = basic_string!char;
 alias nwstring = basic_string!wchar;
 alias ndstring = basic_string!dchar;
 
+@("Char append")
 unittest {
     // appending a char
     nstring s;
@@ -256,6 +257,7 @@ unittest {
     //assert(s.toDString() == "cc");
 }
 
+@("String append")
 unittest {
     nstring s;
     s ~= cast(string)null;
