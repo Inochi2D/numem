@@ -4,6 +4,12 @@ import numem.mem.vector;
 
 import core.stdc.stdio;
 
+/**
+    A file stream.
+    
+    NOTES
+        * The file handle is owned by the stream
+*/
 class FileStream : Stream {
 nothrow @nogc:
 private:

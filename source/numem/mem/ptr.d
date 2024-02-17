@@ -83,12 +83,6 @@ shared_ptr!T shared_new(T, Args...)(Args args) nothrow @nogc {
     }
 }
 
-unittest {
-    import numem.ptr;
-    class A { }
-    shared_ptr!A p = shared_new!A();
-}
-
 
 /**
     Allocates a new unique pointer.
@@ -101,12 +95,6 @@ unique_ptr!T unique_new(T, Args...)(Args args) nothrow @nogc {
         T* item = nogc_new!T(args);
         return unique_ptr!T(item);
     }
-}
-
-unittest {
-    import numem.ptr;
-    class A { }
-    unique_ptr!A p = unique_new!A();
 }
 
 
@@ -474,4 +462,19 @@ public:
             return rc ? rc.ref_ : null;
         }
     }
+}
+
+
+@("Shared pointer")
+unittest {
+    import numem.mem.ptr;
+    class A { }
+    shared_ptr!A p = shared_new!A();
+}
+
+@("Unique pointer")
+unittest {
+    import numem.mem.ptr;
+    class A { }
+    unique_ptr!A p = unique_new!A();
 }

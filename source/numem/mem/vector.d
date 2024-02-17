@@ -393,10 +393,11 @@ public:
 */
 alias owning_vector(T) = vector!(T, true);
 
+@("Issue #2")
 unittest {
     class A {
     }
     shared_ptr!A a = shared_new!A();
-    vector!(shared_ptr!A) v;
+    owning_vector!(shared_ptr!A) v;
     v ~= a; // Used to crash, see Issue #2
 }
