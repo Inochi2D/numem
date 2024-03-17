@@ -42,7 +42,7 @@ unique_ptr!FileStream openFileOwned(nstring filename, scope const(char)* mode) {
 bool exists(nstring str) {
     version(Posix) {
         import uni = core.sys.posix.unistd;
-        return uni.access(str.toCString, F_OK) == 0;
+        return uni.access(str.toCString, uni.F_OK) == 0;
     } else version(Windows) {
         import win = core.sys.windows.core;
         
