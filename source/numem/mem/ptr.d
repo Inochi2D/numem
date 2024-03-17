@@ -144,7 +144,7 @@ public:
             Creates a unique_ptr reference from a existing reference
         */
         @system
-        static unique_ptr!T fromPtr(T* ptr) @system {
+        static unique_ptr!T fromPtr(T* ptr) {
             return unique_ptr!T(ptr);
         }
     } else static if (is(T == class)) {
@@ -155,7 +155,7 @@ public:
             Creates a unique_ptr reference from a existing reference
         */
         @system
-        static unique_ptr!T fromPtr(T ptr) @system {
+        static unique_ptr!T fromPtr(T ptr) {
             return unique_ptr!T(cast(T*)ptr);
         }
     }
@@ -322,7 +322,7 @@ public:
             Creates a shared_ptr reference from a existing reference
         */
         @system
-        static shared_ptr!T fromPtr(T* ptr) @system {
+        static shared_ptr!T fromPtr(T* ptr) {
             return shared_ptr!T(ptr);
         }
     } else static if (is(T == class)) {
@@ -333,7 +333,7 @@ public:
             Creates a shared_ptr reference from a existing reference
         */
         @system
-        static shared_ptr!T fromPtr(T ptr) @system {
+        static shared_ptr!T fromPtr(T ptr) {
             return shared_ptr!T(cast(T*)ptr);
         }
     }
