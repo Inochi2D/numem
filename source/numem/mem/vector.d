@@ -116,6 +116,16 @@ public:
                 this.memory[0..size_] = rhs.memory[0..rhs.size_];
             }
         }
+
+        /**
+            Makes a copy of a vector
+        */
+        this(ref return scope inout(vector!T) rhs) inout {
+            if (rhs.memory) {
+                (cast(vector!T)this).resize_(rhs.size_);
+                (cast(vector!T)this).memory[0..size_] = (cast(vector!T)rhs).memory[0..rhs.size_];
+            }
+        }
     }
 
     /**

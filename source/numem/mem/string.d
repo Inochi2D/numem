@@ -62,6 +62,14 @@ public:
     }
 
     /**
+        Makes a copy of a string
+    */
+    this(ref return scope inout(basic_string!T) rhs) inout {
+        this.vec_ = rhs.vec_;
+    }
+
+
+    /**
         Gets the length of the string
     */
     pragma(inline, true)
