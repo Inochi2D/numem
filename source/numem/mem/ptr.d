@@ -73,6 +73,7 @@ private {
 /**
     Allocates a new shared pointer.
 */
+@trusted
 shared_ptr!T shared_new(T, Args...)(Args args) nothrow @nogc {
     static if (is(T == class)) {
         T item = nogc_new!T(args);
@@ -87,6 +88,7 @@ shared_ptr!T shared_new(T, Args...)(Args args) nothrow @nogc {
 /**
     Allocates a new unique pointer.
 */
+@trusted
 unique_ptr!T unique_new(T, Args...)(Args args) nothrow @nogc {
     static if (is(T == class)) {
         T item = nogc_new!T(args);
@@ -141,6 +143,7 @@ public:
 
             Creates a unique_ptr reference from a existing reference
         */
+        @system
         static unique_ptr!T fromPtr(T* ptr) @system {
             return unique_ptr!T(ptr);
         }
@@ -151,6 +154,7 @@ public:
 
             Creates a unique_ptr reference from a existing reference
         */
+        @system
         static unique_ptr!T fromPtr(T ptr) @system {
             return unique_ptr!T(cast(T*)ptr);
         }
@@ -162,6 +166,7 @@ public:
 
             Returns null if the item is no longer valid.
         */
+        @trusted
         T getAtomic() {
             return rc ? cast(T)atomicLoad(rc.ref_) : null;
         }
@@ -171,6 +176,7 @@ public:
 
             Returns null if the item is no longer valid.
         */
+        @trusted
         T get() {
             return rc ? cast(T)rc.ref_ : null;
         }
@@ -180,6 +186,7 @@ public:
 
             Returns null if the item is no longer valid.
         */
+        @trusted
         T opCast() {
             return rc ? cast(T)rc.ref_ : null;
         }
@@ -189,6 +196,7 @@ public:
 
             Returns null if the item is no longer valid.
         */
+        @trusted
         T* getAtomic() {
             return rc ? atomicLoad(rc.ref_) : null;
         }
@@ -198,6 +206,7 @@ public:
 
             Returns null if the item is no longer valid.
         */
+        @trusted
         T* get() {
             return rc ? rc.ref_ : null;
         }
@@ -207,6 +216,7 @@ public:
 
             Returns null if the item is no longer valid.
         */
+        @trusted
         T* opCast() {
             return rc ? rc.ref_ : null;
         }
@@ -218,6 +228,7 @@ public:
 
         weak refs will return null if the ref count reaches 0 of their parent shared pointer.
     */
+    @trusted
     weak_ptr!T borrow() {
         return weak_ptr!T(rc);
     }
@@ -225,6 +236,7 @@ public:
     /**
         Moves the unique pointer to the specified other pointer
     */
+    @trusted
     void moveTo(ref unique_ptr!T other) {
 
         // First destruct the target unique_ptr if neccessary.
@@ -239,11 +251,34 @@ public:
     /**
         Resets the unique_ptr, emptying its contents.
     */
+    @trusted
     void reset() {
         if (rc) {
             rc.free();
             rc = null;
         }
+    }
+
+    /**
+        Gets the amount of strong references to the object
+    */
+    @trusted
+    size_t getRefCount() {
+        if (rc) {
+            return atomicLoad(rc.strongRefs);
+        }
+        return 0;
+    }
+
+    /**
+        Gets the amount of weak references to the object
+    */
+    @trusted
+    size_t getBorrowCount() {
+        if (rc) {
+            return atomicLoad(rc.weakRefs);
+        }
+        return 0;
     }
 }
 
@@ -286,6 +321,7 @@ public:
 
             Creates a shared_ptr reference from a existing reference
         */
+        @system
         static shared_ptr!T fromPtr(T* ptr) @system {
             return shared_ptr!T(ptr);
         }
@@ -296,6 +332,7 @@ public:
 
             Creates a shared_ptr reference from a existing reference
         */
+        @system
         static shared_ptr!T fromPtr(T ptr) @system {
             return shared_ptr!T(cast(T*)ptr);
         }
@@ -307,6 +344,7 @@ public:
 
             Returns null if the item is no longer valid.
         */
+        @trusted
         T getAtomic() {
             return rc ? cast(T)atomicLoad(rc.ref_) : null;
         }
@@ -316,6 +354,7 @@ public:
 
             Returns null if the item is no longer valid.
         */
+        @trusted
         T get() {
             return rc ? cast(T)rc.ref_ : null;
         }
@@ -325,6 +364,7 @@ public:
 
             Returns null if the item is no longer valid.
         */
+        @trusted
         T opCast() {
             return rc ? cast(T)rc.ref_ : null;
         }
@@ -334,6 +374,7 @@ public:
 
             Returns null if the item is no longer valid.
         */
+        @trusted
         T* getAtomic() {
             return rc ? atomicLoad(rc.ref_) : null;
         }
@@ -343,6 +384,7 @@ public:
 
             Returns null if the item is no longer valid.
         */
+        @trusted
         T* get() {
             return rc ? rc.ref_ : null;
         }
@@ -352,6 +394,7 @@ public:
 
             Returns null if the item is no longer valid.
         */
+        @trusted
         T* opCast() {
             return rc ? rc.ref_ : null;
         }
@@ -363,6 +406,7 @@ public:
 
         weak refs will return null if the ref count reaches 0 of their parent shared pointer.
     */
+    @trusted
     weak_ptr!T borrow() {
         return weak_ptr!T(rc);
     }
@@ -370,6 +414,7 @@ public:
     /**
         Makes a strong copy of the shared pointer.
     */
+    @trusted
     shared_ptr!T copy() {
         return shared_ptr!T(this);
     }
@@ -377,11 +422,54 @@ public:
     /**
         Resets the shared_ptr, emptying its contents.
     */
+    @trusted
     void reset() {
         if (rc) {
             rc.subRef!false;
             rc = null;
         }
+    }
+
+    /**
+        Releases a reference
+    */
+    @system
+    void release() {
+        if (rc) {
+            rc.subRef!false();
+        }
+    }
+
+    /**
+        Adds a reference
+    */
+    @system
+    void retain() {
+        if (rc) {
+            rc.addRef!false();
+        }
+    }
+
+    /**
+        Gets the amount of strong references to the object
+    */
+    @trusted
+    size_t getRefCount() {
+        if (rc) {
+            return atomicLoad(rc.strongRefs);
+        }
+        return 0;
+    }
+
+    /**
+        Gets the amount of weak references to the object
+    */
+    @trusted
+    size_t getBorrowCount() {
+        if (rc) {
+            return atomicLoad(rc.weakRefs);
+        }
+        return 0;
     }
 }
 
@@ -413,6 +501,7 @@ public:
 
             Returns null if the item is no longer valid.
         */
+        @trusted
         T getAtomic() {
             return rc ? cast(T)atomicLoad(rc.ref_) : null;
         }
@@ -422,6 +511,7 @@ public:
 
             Returns null if the item is no longer valid.
         */
+        @trusted
         T get() {
             return rc ? cast(T)rc.ref_ : null;
         }
@@ -431,6 +521,7 @@ public:
 
             Returns null if the item is no longer valid.
         */
+        @trusted
         T opCast() {
             return rc ? cast(T)rc.ref_ : null;
         }
@@ -440,6 +531,7 @@ public:
 
             Returns null if the item is no longer valid.
         */
+        @trusted
         T* getAtomic() {
             return rc ? atomicLoad(rc.ref_) : null;
         }
@@ -449,6 +541,7 @@ public:
 
             Returns null if the item is no longer valid.
         */
+        @trusted
         T* get() {
             return rc ? rc.ref_ : null;
         }
@@ -458,9 +551,32 @@ public:
 
             Returns null if the item is no longer valid.
         */
+        @trusted
         T* opCast() {
             return rc ? rc.ref_ : null;
         }
+    }
+
+    /**
+        Gets the amount of strong references to the object
+    */
+    @trusted
+    size_t getRefCount() {
+        if (rc) {
+            return atomicLoad(rc.strongRefs);
+        }
+        return 0;
+    }
+
+    /**
+        Gets the amount of weak references to the object
+    */
+    @trusted
+    size_t getBorrowCount() {
+        if (rc) {
+            return atomicLoad(rc.weakRefs);
+        }
+        return 0;
     }
 }
 
