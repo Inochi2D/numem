@@ -277,6 +277,75 @@ public:
         this.remove(0);
     }
 
+    /**
+        Pushes an element to the back of the vector
+    */
+    auto pushBack(T)(T item) {
+        this ~= item;
+        return this;
+    }
+
+    /**
+        Pushes an element to the back of the vector
+    */
+    auto pushBack(T)(vector!T item) {
+        this ~= item;
+        return this;
+    }
+
+    /**
+        Pushes an element to the back of the vector
+    */
+    auto pushBack(T)(T[] item) {
+        this ~= item;
+        return this;
+    }
+
+    /**
+        Pushes an element to the front of the vector
+    */
+    ref auto pushFront(T)(T value) {
+        size_t cSize = size_;
+
+        this.resize(size_+1);
+        if (cSize > 0) {
+            memmove(&this.memory[1], this.memory, cSize*(T*).sizeof);
+        }
+        this.memory[0] = value;
+
+        return this;
+    }
+
+    /**
+        Pushes an element to the front of the vector
+    */
+    ref auto pushFront(T)(vector!T value) {
+        size_t cSize = size_;
+
+        this.resize(size_+value.size_);
+        if (cSize > 0) {
+            memmove(&this.memory[value.size_], this.memory, cSize*(T*).sizeof);
+        }
+        this.memory[0..value.size_] = value.memory[0..value.size_];
+
+        return this;
+    }
+
+    /**
+        Pushes an element to the front of the vector
+    */
+    ref auto pushFront(T)(T[] value) {
+        size_t cSize = size_;
+
+        this.resize(size_+value.length);
+        if (cSize > 0) {
+            memmove(&this.memory[value.length], this.memory, cSize*(T*).sizeof);
+        }
+        this.memory[0..value.length] = value.memory[0..value.length];
+
+        return this;
+    }
+
     static if (is(T : unique_ptr!U, U)) {
 
         /**
