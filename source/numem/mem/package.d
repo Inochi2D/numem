@@ -5,9 +5,15 @@
     Authors: Luna Nielsen
 */
 module numem.mem;
-import std.conv : emplace;
 import core.stdc.stdlib : free, exit, malloc;
 import std.traits;
+
+version(Have_tinyd_rt) {
+    private __gshared
+    auto __gc_new(T, Args...)(Args args) {
+        return new T(args);
+    }
+} else import std.conv : emplace;
 
 nothrow @nogc:
 
@@ -97,7 +103,7 @@ struct AllowInitEmpty;
 */
 T nogc_construct(T, Args...)(Args args) if (is(T == struct) || is(T == class) || is (T == union)) {
     static if (is(T == class)) {
-        return new T(args);
+        return (assumeNothrowNoGC(&__gc_new!(T, Args)))(args);
     } else {
         static if (hasUDA!(T, AllowInitEmpty) && args.length == 0) {
             return T.init;
@@ -112,19 +118,23 @@ T nogc_construct(T, Args...)(Args args) if (is(T == struct) || is(T == class) ||
     Immediately exits the application if out of memory.
 */
 T* nogc_new(T, Args...)(Args args) if (is(T == struct)) {
-    void* rawMemory = malloc(T.sizeof);
-    if (!rawMemory) {
-        exit(-1);
-    }
-
-    T* obj = cast(T*)rawMemory;
-    static if (hasUDA!(T, AllowInitEmpty) && args.length == 0) {
-        emplace!T(obj);
+    version(Have_tinyd_rt) {
+        return (assumeNothrowNoGC(&__gc_new!(T, Args)))(args);
     } else {
-        emplace!T(obj, args);
-    }
+        void* rawMemory = malloc(T.sizeof);
+        if (!rawMemory) {
+            exit(-1);
+        }
 
-    return obj;
+        T* obj = cast(T*)rawMemory;
+        static if (hasUDA!(T, AllowInitEmpty) && args.length == 0) {
+            emplace!T(obj);
+        } else {
+            emplace!T(obj, args);
+        }
+
+        return obj;
+    }
 }
 
 /**
@@ -132,7 +142,9 @@ T* nogc_new(T, Args...)(Args args) if (is(T == struct)) {
     Immediately exits the application if out of memory.
 */
 T nogc_new(T, Args...)(Args args) if (is(T == class)) {
-    version(minimal_rt) {
+    version(Have_tinyd_rt) {
+        return (assumeNothrowNoGC(&__gc_new!(T, Args)))(args);
+    } else version(minimal_rt) {
         immutable(size_t) destructorObjSize = _impl_destructorStruct.sizeof;
         immutable(size_t) classObjSize = __traits(classInstanceSize, T);
         immutable size_t allocSize = classObjSize + destructorObjSize;
