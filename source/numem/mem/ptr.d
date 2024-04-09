@@ -143,6 +143,7 @@ public:
 
         This is a reuse of copy-constructors, and is unique to unique_ptr.
     */
+    @trusted
     this(ref unique_ptr!T other) {
 
         // Free our own refcount if need be
@@ -163,6 +164,7 @@ public:
 
         This exists for DMD support.
     */
+    @trusted
     this(ref const(unique_ptr!T) other) {
 
         // Free our own refcount if need be
