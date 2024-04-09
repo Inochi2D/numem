@@ -88,6 +88,12 @@ public:
         this.resize_(size);
     }
 
+    /// Constructor
+    this(T[] data) {
+        this.resize_(data.length);
+        this.memory[0..data.length] = data[0..$];
+    }
+
     static if (!isCopyable!T && __traits(hasMember, T, "moveTo")) {
 
         /**
