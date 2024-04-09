@@ -144,6 +144,11 @@ public:
     }
 
     /**
+        Returns pointer to string data.
+    */
+    alias ptr = toCString;
+
+    /**
         Returns a D string from the numemstring
     */
     immutable(T)[] toDString() {
