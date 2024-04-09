@@ -16,18 +16,35 @@ This is a incomplete and unordered roadmap of features I want to add and have ad
  - [x] Utilities for managing D classes with no gc
    - [x] nogc_new (nogc new alternative)
    - [x] nogc_delete (nogc destroy alternative)
-   - More to be added?
  - [x] Smart (ref-counted) pointers.
    - [x] shared_ptr (strong reference)
    - [x] weak_ptr (weak, borrowed reference)
    - [x] unique_ptr (strong, single-owner reference)
  - [x] C++ style vector struct
  - [x] C++ style string struct
- - [ ] Slice managment functions
- - [ ] Safe nogc streams (memory and file)
- - [ ] Safe(r) nogc array and buffer types.
- - [ ] Special reference counted class type?
+ - [x] C++ style map
+ - [x] C++ style set
+ - [ ] Safe nogc streams\*\*
+   - [x] FileStream\*
+   - [x] MemoryStream\*
+   - [ ] NetworkStream
+ - [x] Endianness utilities
+ - [x] Support for minimal D runtime
+   - [x] tinyd-rt\*\*
+ - [x] File handling\*\*
+   - [x] Check if file exists
+   - [ ] Iterate directories
+   - [ ] Cross platform path handling
+ - [ ] Networking
+   - [ ] Sockets
+   - [ ] IP utilities
+ - [ ] Character encoding handling
+   - [ ] Unicode
+   - [ ] Allow plugging more handlers in?
+ - [ ] String formatting (compatible with phobos syntax?)
 
+\*: Implemented but untested.  
+\*\*: Partially implemented.
 
 # Note
 Some parts of the library will pretend GC'ed types are no-gc, as such you should be careful about mixing GCed code in.
