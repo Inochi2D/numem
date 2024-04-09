@@ -1,0 +1,42 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+name: Unit Tests
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: 'Build & Test'
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+        dc: [dmd-latest, ldc-latest]
+        exclude:
+          - { os: macOS-latest, dc: dmd-latest }
+
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install compiler
+      uses: dlang-community/setup-dlang@v1.4.0
+      with:
+        compiler: ${{ matrix.dc }}
+
+    - name: 'Build and test with ${{ matrix.os }} ${{ matrix.dc }}' 
+      run: |
+        # Build and run tests, as defined by `unittest` configuration
+        # In this mode, `mainSourceFile` is excluded and `version (unittest)` are included
+        # See https://dub.pm/package-format-json.html#configurations
+        dub test
+
+        # Ditto, in release mode.
+        # Sometimes D packages break in release mode, so this is important to test.
+        dub test --build=release

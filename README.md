@@ -2,7 +2,7 @@
   <img src="numem.png" alt="NuMem" style="width: 50%; max-width: 512px; height: auto;">
 </p>
 
-[![Unit Test Status](https://github.com/Inochi2D/numem/actions/workflows/d.yml/badge.svg)](https://github.com/Inochi2D/numem/actions/workflows/d.yml)
+[![Unit Test Status](https://github.com/Inochi2D/numem/actions/workflows/pushes.yml/badge.svg)](https://github.com/Inochi2D/numem/actions/workflows/pushes.yml)
 
 Nu:Mem is a package for D which implements various nogc memory managment tools, allowing classes, strings, and more to be handled safely in nogc mode.
 This library is still a work in progress, but is intended to be used within Inochi2D's nogc rewrite to allow the library to have good ergonomics, 
