@@ -108,7 +108,7 @@ public:
         /**
             Moves non-copyable members of one vector to another
         */
-        this(ref return scope vector!T rhs) {
+        this(ref vector!T rhs) {
             if (rhs.memory) {
                 this.resize_(rhs.size_);
                 foreach(i; 0..rhs.size_) {
@@ -125,7 +125,7 @@ public:
         /**
             Makes a copy of a vector
         */
-        this(ref return scope vector!T rhs) {
+        this(ref vector!T rhs) {
             if (rhs.memory) {
                 this.resize_(rhs.size_);
                 this.memory[0..size_] = rhs.memory[0..rhs.size_];

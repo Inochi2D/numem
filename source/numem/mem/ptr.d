@@ -153,8 +153,27 @@ public:
         // atomically moves the reference from this unique_ptr to the other unique_ptr reference
         // after this is done, rc is set to null to make this unique_ptr invalid.
         atomicStore(this.rc, other.rc);
-        this.rc = other.rc;
         other.clear();
+    }
+
+    /**
+        Moves unique_ptr to this instance.
+
+        This is a reuse of copy-constructors, and is unique to unique_ptr.
+
+        This exists for DMD support.
+    */
+    this(ref const(unique_ptr!T) other) {
+
+        // Free our own refcount if need be
+        if (this.rc) {
+            this.reset();
+        }
+
+        // atomically moves the reference from this unique_ptr to the other unique_ptr reference
+        // after this is done, rc is set to null to make this unique_ptr invalid.
+        atomicStore(this.rc, cast(refcountmg_t!(T)*)other.rc);
+        atomicStore(other.rc, null);
     }
 
     // Destructor
