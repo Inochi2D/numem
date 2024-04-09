@@ -123,8 +123,24 @@ package(numem):
     
 public:
 
-    /// Can't be created as a copy.
-    @disable this(this);
+    /**
+        Moves unique_ptr to this instance.
+
+        This is a reuse of copy-constructors, and is unique to unique_ptr.
+    */
+    this(ref unique_ptr!T other) {
+
+        // Free our own refcount if need be
+        if (this.rc) {
+            this.reset();
+        }
+
+        // atomically moves the reference from this unique_ptr to the other unique_ptr reference
+        // after this is done, rc is set to null to make this unique_ptr invalid.
+        atomicStore(this.rc, other.rc);
+        this.rc = other.rc;
+        other.clear();
+    }
 
     // Destructor
     ~this() {
