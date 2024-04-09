@@ -105,6 +105,20 @@ unique_ptr!T unique_new(T, Args...)(Args args) nothrow @nogc {
 */
 struct unique_ptr(T) {
 nothrow @nogc:
+
+// Special interop public section
+public:
+
+    /// Actual value type of the pointer.
+    static if (is(T == class)) {
+        alias VT = T;
+    } else {
+        alias VT = T*;
+    }
+
+    // Allows accessing members of the unique_ptr
+    alias _iGetValue this;
+
 private:
     refcountmg_t!(T)* rc;
 
@@ -115,12 +129,13 @@ private:
         rc.strongRefs = 1;
         rc.weakRefs = 0;
     }
-
-package(numem):
-    void nullify() {
-        rc = null;
-    }
     
+    pragma(inline, true)
+    @property
+    VT _iGetValue() {
+        return getAtomic();
+    }
+
 public:
 
     /**
@@ -152,90 +167,45 @@ public:
         }
     }
 
-    static if (is(T == struct)) {
 
-        /**
-            - This function is incredibly unsafe, but is there as a backdoor if need be.
+    /**
+        - This function is incredibly unsafe, but is there as a backdoor if need be.
 
-            Creates a unique_ptr reference from a existing reference
-        */
-        @system
-        static unique_ptr!T fromPtr(T* ptr) {
-            return unique_ptr!T(ptr);
-        }
-    } else static if (is(T == class)) {
-
-        /**
-            - This function is incredibly unsafe, but is there as a backdoor if need be.
-
-            Creates a unique_ptr reference from a existing reference
-        */
-        @system
-        static unique_ptr!T fromPtr(T ptr) {
-            return unique_ptr!T(cast(T*)ptr);
-        }
+        Creates a unique_ptr reference from a existing reference
+    */
+    @system
+    static unique_ptr!T fromPtr(VT ptr) {
+        return unique_ptr!T(cast(T*)ptr);
     }
 
-    static if (is(T == class)) {
-        /**
-            Gets the value of the unique pointer
+    /**
+        Gets the value of the unique pointer
 
-            Returns null if the item is no longer valid.
-        */
-        @trusted
-        T getAtomic() {
-            return rc ? cast(T)atomicLoad(rc.ref_) : null;
-        }
+        Returns null if the item is no longer valid.
+    */
+    @trusted
+    VT getAtomic() {
+        return rc ? cast(VT)atomicLoad(rc.ref_) : null;
+    }
 
-        /**
-            Gets the value of the unique pointer
+    /**
+        Gets the value of the unique pointer
 
-            Returns null if the item is no longer valid.
-        */
-        @trusted
-        T get() {
-            return rc ? cast(T)rc.ref_ : null;
-        }
+        Returns null if the item is no longer valid.
+    */
+    @trusted
+    VT get() {
+        return rc ? cast(VT)rc.ref_ : null;
+    }
 
-        /**
-            Gets the value of the unique pointer
+    /**
+        Gets the value of the unique pointer
 
-            Returns null if the item is no longer valid.
-        */
-        @trusted
-        T opCast() {
-            return rc ? cast(T)rc.ref_ : null;
-        }
-    } else {
-        /**
-            Gets the value of the unique pointer
-
-            Returns null if the item is no longer valid.
-        */
-        @trusted
-        T* getAtomic() {
-            return rc ? atomicLoad(rc.ref_) : null;
-        }
-
-        /**
-            Gets the value of the unique pointer
-
-            Returns null if the item is no longer valid.
-        */
-        @trusted
-        T* get() {
-            return rc ? rc.ref_ : null;
-        }
-
-        /**
-            Gets the value of the unique pointer
-
-            Returns null if the item is no longer valid.
-        */
-        @trusted
-        T* opCast() {
-            return rc ? rc.ref_ : null;
-        }
+        Returns null if the item is no longer valid.
+    */
+    @trusted
+    VT opCast() {
+        return rc ? cast(VT)rc.ref_ : null;
     }
 
     /**
@@ -315,6 +285,20 @@ public:
 */
 struct shared_ptr(T) {
 nothrow @nogc:
+
+// Special interop public section
+public:
+
+    /// Actual value type of the pointer.
+    static if (is(T == class)) {
+        alias VT = T;
+    } else {
+        alias VT = T*;
+    }
+
+    // Allows accessing members of the unique_ptr
+    alias _iGetValue this;
+
 private:
     refcountmg_t!(T)* rc;
 
@@ -331,8 +315,15 @@ private:
         this.rc = other.rc;
         this.rc.addRef!false;
     }
+    
+    pragma(inline, true)
+    @property
+    T _iGetValue() {
+        return getAtomic();
+    }
 
 public:
+
     ~this() {
 
         // This *should not* be needed, but just in case to prevent finalized stale pointers from doing shenanigans.
@@ -342,90 +333,45 @@ public:
         }
     }
 
-    static if (is(T == struct)) {
-        
-        /**
-            - This function is incredibly unsafe, but is there as a backdoor if need be.
 
-            Creates a shared_ptr reference from a existing reference
-        */
-        @system
-        static shared_ptr!T fromPtr(T* ptr) {
-            return shared_ptr!T(ptr);
-        }
-    } else static if (is(T == class)) {
+    /**
+        - This function is incredibly unsafe, but is there as a backdoor if need be.
 
-        /**
-            - This function is incredibly unsafe, but is there as a backdoor if need be.
-
-            Creates a shared_ptr reference from a existing reference
-        */
-        @system
-        static shared_ptr!T fromPtr(T ptr) {
-            return shared_ptr!T(cast(T*)ptr);
-        }
+        Creates a shared_ptr reference from a existing reference
+    */
+    @system
+    static shared_ptr!T fromPtr(VT ptr) {
+        return shared_ptr!T(cast(T*)ptr);
     }
 
-    static if (is(T == class)) {
-        /**
-            Gets the value of the shared pointer
+    /**
+        Gets the value of the shared pointer
 
-            Returns null if the item is no longer valid.
-        */
-        @trusted
-        T getAtomic() {
-            return rc ? cast(T)atomicLoad(rc.ref_) : null;
-        }
+        Returns null if the item is no longer valid.
+    */
+    @trusted
+    VT getAtomic() {
+        return rc ? cast(VT)atomicLoad(rc.ref_) : null;
+    }
 
-        /**
-            Gets the value of the shared pointer
+    /**
+        Gets the value of the shared pointer
 
-            Returns null if the item is no longer valid.
-        */
-        @trusted
-        T get() {
-            return rc ? cast(T)rc.ref_ : null;
-        }
+        Returns null if the item is no longer valid.
+    */
+    @trusted
+    VT get() {
+        return rc ? cast(VT)rc.ref_ : null;
+    }
 
-        /**
-            Gets the value of the shared pointer
+    /**
+        Gets the value of the shared pointer
 
-            Returns null if the item is no longer valid.
-        */
-        @trusted
-        T opCast() {
-            return rc ? cast(T)rc.ref_ : null;
-        }
-    } else {
-        /**
-            Gets the value of the shared pointer
-
-            Returns null if the item is no longer valid.
-        */
-        @trusted
-        T* getAtomic() {
-            return rc ? atomicLoad(rc.ref_) : null;
-        }
-
-        /**
-            Gets the value of the shared pointer
-
-            Returns null if the item is no longer valid.
-        */
-        @trusted
-        T* get() {
-            return rc ? rc.ref_ : null;
-        }
-
-        /**
-            Gets the value of the shared pointer
-
-            Returns null if the item is no longer valid.
-        */
-        @trusted
-        T* opCast() {
-            return rc ? rc.ref_ : null;
-        }
+        Returns null if the item is no longer valid.
+    */
+    @trusted
+    VT opCast() {
+        return rc ? cast(VT)rc.ref_ : null;
     }
 
     /**
@@ -518,6 +464,20 @@ public:
 */
 struct weak_ptr(T) {
 nothrow @nogc:
+
+// Special interop public section
+public:
+
+    /// Actual value type of the pointer.
+    static if (is(T == class)) {
+        alias VT = T;
+    } else {
+        alias VT = T*;
+    }
+
+    // Allows accessing members of the unique_ptr
+    alias _iGetValue this;
+
 private:
     refcountmg_t!(T)* rc;
 
@@ -526,8 +486,15 @@ private:
         this.rc = rc;
         this.rc.addRef!true;
     }
+    
+    pragma(inline, true)
+    @property
+    VT _iGetValue() {
+        return getAtomic();
+    }
 
 public:
+
     ~this() {
         if (rc) {
             this.rc.subRef!true;
@@ -535,66 +502,34 @@ public:
         }
     }
 
-    static if (is(T == class)) {
-        /**
-            Gets the value of the weak pointer
+    /**
+        Gets the value of the weak pointer
 
-            Returns null if the item is no longer valid.
-        */
-        @trusted
-        T getAtomic() {
-            return rc ? cast(T)atomicLoad(rc.ref_) : null;
-        }
+        Returns null if the item is no longer valid.
+    */
+    @trusted
+    VT getAtomic() {
+        return rc ? cast(VT)atomicLoad(rc.ref_) : null;
+    }
 
-        /**
-            Gets the value of the weak pointer
+    /**
+        Gets the value of the weak pointer
 
-            Returns null if the item is no longer valid.
-        */
-        @trusted
-        T get() {
-            return rc ? cast(T)rc.ref_ : null;
-        }
+        Returns null if the item is no longer valid.
+    */
+    @trusted
+    VT get() {
+        return rc ? cast(VT)rc.ref_ : null;
+    }
 
-        /**
-            Gets the value of the weak pointer
+    /**
+        Gets the value of the weak pointer
 
-            Returns null if the item is no longer valid.
-        */
-        @trusted
-        T opCast() {
-            return rc ? cast(T)rc.ref_ : null;
-        }
-    } else {
-        /**
-            Gets the value of the weak pointer
-
-            Returns null if the item is no longer valid.
-        */
-        @trusted
-        T* getAtomic() {
-            return rc ? atomicLoad(rc.ref_) : null;
-        }
-
-        /**
-            Gets the value of the weak pointer
-
-            Returns null if the item is no longer valid.
-        */
-        @trusted
-        T* get() {
-            return rc ? rc.ref_ : null;
-        }
-
-        /**
-            Gets the value of the weak pointer
-
-            Returns null if the item is no longer valid.
-        */
-        @trusted
-        T* opCast() {
-            return rc ? rc.ref_ : null;
-        }
+        Returns null if the item is no longer valid.
+    */
+    @trusted
+    VT opCast() {
+        return rc ? cast(VT)rc.ref_ : null;
     }
     
 
@@ -638,6 +573,7 @@ unittest {
     import numem.mem.ptr;
     class A { }
     shared_ptr!A p = shared_new!A();
+    assert(p.get);
 }
 
 @("Unique pointer")
@@ -645,4 +581,15 @@ unittest {
     import numem.mem.ptr;
     class A { }
     unique_ptr!A p = unique_new!A();
+
+    assert(p.get);
+}
+
+@("Unique pointer (alias)")
+unittest {
+    struct A {
+        bool b() { return true; }
+    }
+    unique_ptr!A vp = unique_new!A();
+    assert(vp.b() == true, "Expected vp.b() to return true!");
 }
