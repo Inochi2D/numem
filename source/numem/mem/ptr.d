@@ -260,6 +260,18 @@ public:
     }
 
     /**
+        Clears the contents of the unique_ptr
+
+        This is an unsafe operation and can lead to memory leaks if used improperly.
+    */
+    @system
+    void clear() {
+        if (rc) {
+            atomicStore(this.rc, null);
+        }
+    }
+
+    /**
         Gets the amount of strong references to the object
     */
     @trusted
@@ -431,6 +443,18 @@ public:
     }
 
     /**
+        Clears the contents of the shared_ptr
+
+        This is an unsafe operation and can lead to memory leaks if used improperly.
+    */
+    @system
+    void clear() {
+        if (rc) {
+            atomicStore(this.rc, null);
+        }
+    }
+
+    /**
         Releases a reference
     */
     @system
@@ -554,6 +578,18 @@ public:
         @trusted
         T* opCast() {
             return rc ? rc.ref_ : null;
+        }
+    }
+    
+
+    /**
+        Clears the contents of the weak_ptr
+    */
+    @trusted
+    void clear() {
+        if (rc) {
+            this.rc.subRef!true;
+            rc = null;
         }
     }
 
