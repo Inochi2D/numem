@@ -2,7 +2,7 @@
 # They are provided by a third-party and are governed by
 # separate terms of service, privacy policy, and support
 # documentation.
-name: D
+name: D Unittest
 
 on:
   push:
@@ -14,19 +14,31 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  test:
+    name: 'Build & Test'
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+        dc: [dmd-latest, ldc-latest]
+        exclude:
+          - { os: macOS-latest, dc: dmd-latest }
 
-    runs-on: ubuntu-latest
-
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v3
-    - uses: dlang-community/setup-dlang@4c99aa991ce7d19dd3064de0a4f2f6b2f152e2d7
 
-    - name: 'Build & Test'
+    - name: Install compiler
+      uses: dlang-community/setup-dlang@v1.4.0
+      with:
+        compiler: ${{ matrix.dc }}
+
+    - name: 'Build and test with ${{ matrix.os }} ${{ matrix.dc }}' 
       run: |
-        # Build the project, with its main file included, without unittests
-        dub build --compiler=$DC
         # Build and run tests, as defined by `unittest` configuration
         # In this mode, `mainSourceFile` is excluded and `version (unittest)` are included
         # See https://dub.pm/package-format-json.html#configurations
         dub test --compiler=$DC
+        
+        # Ditto, in release mode.
+        # Sometimes D packages break in release mode, so this is important to test.
+        dub test --compiler=$DC --build=release
