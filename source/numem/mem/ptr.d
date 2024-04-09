@@ -567,29 +567,51 @@ public:
     }
 }
 
-
+// Tests whether a shared pointer can be created.
 @("Shared pointer")
 unittest {
-    import numem.mem.ptr;
     class A { }
     shared_ptr!A p = shared_new!A();
     assert(p.get);
 }
 
+// Tests whether a unique pointer can be created.
 @("Unique pointer")
 unittest {
-    import numem.mem.ptr;
     class A { }
     unique_ptr!A p = unique_new!A();
 
     assert(p.get);
 }
 
+// Tests whether the subtype of a unique pointer can properly be aliased
+// and the contents be accessed without .get()
 @("Unique pointer (alias)")
 unittest {
     struct A {
         bool b() { return true; }
     }
+
     unique_ptr!A vp = unique_new!A();
     assert(vp.b() == true, "Expected vp.b() to return true!");
+}
+
+// Tests whether unqiue_ptr can be moved via assignment.
+@("Unique pointer move")
+unittest {
+    struct A { int b; }
+
+    // Assignment via creation
+    unique_ptr!A first = unique_new!A();
+    assert(first.get(), "Expected first to return non-null value!");
+
+    // Move via creation
+    unique_ptr!A second = first;
+    assert(!first.get(), "Expected first to return null value!");
+    assert(second.get(), "Expected second to return non-null value!");
+
+    // Move via assignment.
+    first = second;
+    assert(first.get(), "Expected first to return non-null value!");
+    assert(!second.get(), "Expected second to return null value!");
 }
