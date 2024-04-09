@@ -615,3 +615,18 @@ unittest {
     assert(first.get(), "Expected first to return non-null value!");
     assert(!second.get(), "Expected second to return null value!");
 }
+
+@("Unique pointer move to array")
+unittest {
+    import numem.mem.vector;
+    struct A { int b; }
+
+    vector!(unique_ptr!A) uniques;
+    uniques ~= unique_new!A();
+    uniques ~= unique_new!A();
+    uniques ~= unique_new!A();
+    uniques ~= unique_new!A();
+
+    auto yoink = uniques[0];
+    assert((yoink.get()) && (!uniques[0].get()), "Move failed!");
+}

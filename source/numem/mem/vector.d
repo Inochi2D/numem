@@ -372,7 +372,7 @@ public:
             // Very hacky move operation
             this.resize_(size_+1);
             memcpy(&memory[cSize], &value, T.sizeof);
-            value.nullify();
+            value.clear();
 
             return this;
         }
@@ -386,7 +386,7 @@ public:
             // Very hacky move operation
             this.resize_(size_ + other.size_);
             memcpy(&memory[cSize], other.memory, other.size_*T.sizeof);
-            foreach(i; 0..other.size) other[i].nullify();
+            foreach(i; 0..other.size) other[i].clear();
             
             return this;
         }
@@ -400,7 +400,7 @@ public:
             // Very hacky move operation
             this.resize_(size_ + other.length);
             memcpy(&memory[cSize], other.ptr, other.length*T.sizeof);
-            foreach(i; 0..other.length) other[i].nullify();
+            foreach(i; 0..other.length) other[i].clear();
 
             return this;
         }
