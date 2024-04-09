@@ -4,9 +4,14 @@
     
     Authors: Luna Nielsen
 */
-module numem.stream;
+module numem.io.stream;
 import numem.mem.vector;
 import core.stdc.stdio : SEEK_CUR, SEEK_END, SEEK_SET;
+
+public import numem.io.stream.filestream;
+public import numem.io.stream.memstream;
+public import numem.io.stream.writer;
+public import numem.io.stream.reader;
 
 /**
     The origin of a seek operation
@@ -127,6 +132,7 @@ class Stream {
             * The amount of bytes read
             * 0 if stream has reached EOF
             * -1 if the stream can't be read.
+            * -2 if the read is out of range for the destination
     */
     abstract ptrdiff_t read(ref vector!ubyte buffer, int offset, int count);
 
@@ -149,6 +155,7 @@ class Stream {
         Returns
             * The amount of bytes written
             * -1 if the stream can't be written to.
+            * -2 if the write is out of range for the source
     */
     abstract ptrdiff_t write(ref vector!ubyte buffer, int offset, int count);
 }

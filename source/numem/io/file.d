@@ -8,7 +8,7 @@ module numem.io.file;
 import numem.mem.string;
 import numem.mem;
 import numem.mem.ptr;
-import numem.stream.filestream;
+import numem.io.stream.filestream;
 
 import c = core.stdc.stdio;
 
@@ -62,9 +62,10 @@ bool exists(nstring str) {
         return exists;
     } else {
         auto f = c.fopen(str.toCString, "r");
-        if (f) {
+        bool doesExist = f !is null;
+        if (doesExist) {
             c.fclose(f);
         }
-        return f !is null;
+        return doesExist;
     }
 }

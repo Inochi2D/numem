@@ -9,6 +9,10 @@ import numem.mem.vector;
 import numem.mem.internal;
 import numem.mem;
 
+/// Gets whether the provided type is some type of nstring.
+enum isSomeNString(T) = 
+    is(T == nstring) || is (T == nwstring) || is(T == ndstring);
+
 /**
     Basic string type.
 
@@ -41,6 +45,10 @@ private:
 
 public:
 
+    /// Gets the type of character stored in the string.
+    alias valueType = T;
+
+    /// Destructor
     ~this() {
         if (this.vec_.data()) {
             nogc_delete(this.vec_);

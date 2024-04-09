@@ -1,5 +1,11 @@
-module numem.stream.filestream;
-import numem.stream;
+/*
+    Copyright © 2024, Inochi2D Project
+    Distributed under the 2-Clause BSD License, see LICENSE file.
+    
+    Authors: Luna Nielsen
+*/
+module numem.io.stream.filestream;
+import numem.io.stream;
 import numem.mem.vector;
 
 import core.stdc.stdio;
@@ -63,7 +69,7 @@ override:
     }
 
     ptrdiff_t read(ref vector!ubyte buffer, int offset, int count) {
-        if (buffer.capacity-offset < count) return -1;
+        if (offset+count >= buffer.size()) return -2;
 
         fPosition_ += buffer.size;
         return fread(buffer.data+offset, 1, count, file);
@@ -83,6 +89,8 @@ override:
     }
 
     ptrdiff_t write(ref vector!ubyte buffer, int offset, int count) {
+
+        if (offset+count >= buffer.size()) return -2;
 
         // NOTE: Write and calculate the position delta
         // said delta is used to recalculate the length

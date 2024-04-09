@@ -13,6 +13,12 @@ import core.atomic : atomicFetchAdd, atomicFetchSub, atomicStore, atomicLoad;
 import std.math.rounding : quantize, ceil;
 import std.traits : isCopyable;
 
+/// Gets whether the specified type is some variety of the vector type
+enum isSomeVector(T) = is(T : VectorImpl!U, U...);
+
+/// Gets whether the specified type is some weak variety of the vector type
+enum isSomeWeakVector(T) = is(T : VectorImpl!(U, false), U);
+
 /**
     C++ style vector
 */
@@ -62,6 +68,9 @@ private:
     }
 
 public:
+
+    /// Gets the type of character stored in the string.
+    alias valueType = T;
 
     /// Destructor
     ~this() {
