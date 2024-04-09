@@ -27,7 +27,7 @@ public:
 
         // Find length of file
         fseek(file, 0, SEEK_END);
-        fLength_ = ftell(file)+1;
+        fLength_ = cast(ptrdiff_t)ftell(file)+1;
 
         // Seek back to start of file to begin rw operation
         fseek(file, 0, SEEK_SET);
@@ -40,7 +40,7 @@ override:
     bool canSeek() { return true; }
     bool canTimeout() { return false; }
     ptrdiff_t length() { return fLength_; }
-    ptrdiff_t tell() { return ftell(file); }
+    ptrdiff_t tell() { return cast(ptrdiff_t)ftell(file); }
     int readTimeout() { return 0; }
     int writeTimeout() { return 0; }
 
