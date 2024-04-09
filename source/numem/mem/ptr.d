@@ -175,7 +175,9 @@ public:
         // atomically moves the reference from this unique_ptr to the other unique_ptr reference
         // after this is done, rc is set to null to make this unique_ptr invalid.
         atomicStore(this.rc, cast(refcountmg_t!(T)*)other.rc);
-        atomicStore(other.rc, null);
+
+        // For LDC2 we'll need to do some more cursed pointer casts to be able to call clear on a const.
+        (cast(unique_ptr!(T)*)&other).clear();
     }
 
     // Destructor
@@ -216,16 +218,6 @@ public:
     */
     @trusted
     VT get() {
-        return rc ? cast(VT)rc.ref_ : null;
-    }
-
-    /**
-        Gets the value of the unique pointer
-
-        Returns null if the item is no longer valid.
-    */
-    @trusted
-    VT opCast() {
         return rc ? cast(VT)rc.ref_ : null;
     }
 
