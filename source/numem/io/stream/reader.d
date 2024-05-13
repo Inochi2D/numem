@@ -12,9 +12,9 @@ import numem.mem.vector;
 import std.traits;
 
 /**
-    A stream writer.
+    A stream reader.
 
-    Allows easy writing to a stream.
+    Allows easy reading from a stream.
 */
 class StreamReader(Endianess endian) {
 @nogc nothrow:

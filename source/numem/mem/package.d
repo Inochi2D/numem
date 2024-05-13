@@ -7,6 +7,7 @@
 module numem.mem;
 import core.stdc.stdlib : free, exit, malloc;
 import std.traits;
+import numem.mem.utils;
 
 version(Have_tinyd_rt) {
     private __gshared
@@ -21,28 +22,6 @@ nothrow @nogc:
 //          MANUAL MEMORY MANAGMENT
 //
 private {
-    // Based on code from dplug:core
-    // which is released under the Boost license.
-
-    auto assumeNoGC(T) (T t) {
-        static if (isFunctionPointer!T || isDelegate!T)
-        {
-            enum attrs = functionAttributes!T | FunctionAttribute.nogc;
-            return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs)) t;
-        }
-        else
-            static assert(false);
-    }
-
-    auto assumeNothrowNoGC(T) (T t) {
-        static if (isFunctionPointer!T || isDelegate!T)
-        {
-            enum attrs = functionAttributes!T | FunctionAttribute.nogc | FunctionAttribute.nothrow_;
-            return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs)) t;
-        }
-        else
-            static assert(false);
-    }
 
     version(minimal_rt) {
 
@@ -128,9 +107,9 @@ T* nogc_new(T, Args...)(Args args) if (is(T == struct)) {
 
         T* obj = cast(T*)rawMemory;
         static if (hasUDA!(T, AllowInitEmpty) && args.length == 0) {
-            emplace!T(obj);
+            nogc_emplace!T(obj);
         } else {
-            emplace!T(obj, args);
+            nogc_emplace!T(obj, args);
         }
 
         return obj;
@@ -142,6 +121,8 @@ T* nogc_new(T, Args...)(Args args) if (is(T == struct)) {
     Immediately exits the application if out of memory.
 */
 T nogc_new(T, Args...)(Args args) if (is(T == class)) {
+    alias emplaceFunc = typeof(&emplace!T);
+
     version(Have_tinyd_rt) {
         return (assumeNothrowNoGC(&__gc_new!(T, Args)))(args);
     } else version(minimal_rt) {
@@ -155,10 +136,10 @@ T nogc_new(T, Args...)(Args args) if (is(T == class)) {
         }
 
         // Allocate class destructor list
-        emplace!_impl_destructorStruct(rawMemory[0..destructorObjSize], &_impl_destructorCall!T);
+        nogc_emplace!classDestructorList(rawMemory[0..destructorObjSize], &_impl_destructorCall!T);
 
         // Allocate class
-        T obj = emplace!T(rawMemory[destructorObjSize .. allocSize], args);
+        T obj = nogc_emplace!T(rawMemory[destructorObjSize .. allocSize], args);
         return obj;
 
     } else {
@@ -168,7 +149,7 @@ T nogc_new(T, Args...)(Args args) if (is(T == class)) {
             exit(-1);
         }
 
-        return emplace!T(rawMemory[0 .. allocSize], args);
+        return nogc_emplace!T(rawMemory[0 .. allocSize], args);
     }
 }
 
@@ -269,4 +250,24 @@ void nogc_delete(T)(ref T obj_)  {
             }
         }
     }
+}
+
+/**
+    nogc emplace function
+*/
+auto nogc_emplace(T, Args...)(T* chunk, Args args) {
+    alias t = typeof(&emplace!(T, Args));
+    return assumeNothrowNoGC!t(&emplace!(T, Args))(chunk, args);
+}
+
+/**
+    nogc emplace function
+*/
+auto nogc_emplace(T, Args...)(void[] chunk, Args args) {
+    alias t = T function(void[], Args);
+    auto ifunc = (void[] chunk, Args args) {
+        return emplace!(T, Args)(chunk, args);
+    };
+
+    return assumeNothrowNoGC!t(ifunc)(chunk, args);
 }
