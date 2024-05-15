@@ -117,7 +117,7 @@ public:
     }
 
     // Allows accessing members of the unique_ptr
-    alias _iGetValue this;
+    alias getAtomic this;
 
 private:
     refcountmg_t!(T)* rc;
@@ -128,12 +128,6 @@ private:
         rc.ref_ = ref_;
         rc.strongRefs = 1;
         rc.weakRefs = 0;
-    }
-    
-    pragma(inline, true)
-    @property
-    VT _iGetValue() {
-        return getAtomic();
     }
 
 public:
@@ -297,7 +291,7 @@ public:
     }
 
     // Allows accessing members of the unique_ptr
-    alias _iGetValue this;
+    alias getAtomic this;
 
 private:
     refcountmg_t!(T)* rc;
@@ -314,12 +308,6 @@ private:
     this(shared_ptr!T other) {
         this.rc = other.rc;
         this.rc.addRef!false;
-    }
-    
-    pragma(inline, true)
-    @property
-    T _iGetValue() {
-        return getAtomic();
     }
 
 public:
@@ -476,7 +464,7 @@ public:
     }
 
     // Allows accessing members of the unique_ptr
-    alias _iGetValue this;
+    alias getAtomic this;
 
 private:
     refcountmg_t!(T)* rc;
@@ -485,12 +473,6 @@ private:
     this(refcountmg_t!(T)* rc) {
         this.rc = rc;
         this.rc.addRef!true;
-    }
-    
-    pragma(inline, true)
-    @property
-    VT _iGetValue() {
-        return getAtomic();
     }
 
 public:
