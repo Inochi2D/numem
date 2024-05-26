@@ -26,6 +26,7 @@ This is a incomplete and unordered roadmap of features I want to add and have ad
  - [x] C++ style string struct
  - [x] C++ style map
  - [x] C++ style set
+ - [x] nogc compatible exceptions (must derive from NuException)
  - [ ] Safe nogc streams\*\*
    - [x] FileStream\*
    - [x] MemoryStream\*
