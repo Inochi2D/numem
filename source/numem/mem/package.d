@@ -8,6 +8,7 @@ module numem.mem;
 import core.stdc.stdlib : free, exit, malloc;
 import std.traits;
 import numem.mem.utils;
+import numem.mem.internal.trace;
 
 version(Have_tinyd_rt) {
     private __gshared
@@ -97,6 +98,7 @@ T nogc_construct(T, Args...)(Args args) if (is(T == struct) || is(T == class) ||
     Immediately exits the application if out of memory.
 */
 T* nogc_new(T, Args...)(Args args) if (is(T == struct)) {
+
     version(Have_tinyd_rt) {
         return (assumeNothrowNoGC(&__gc_new!(T, Args)))(args);
     } else {
@@ -112,6 +114,9 @@ T* nogc_new(T, Args...)(Args args) if (is(T == struct)) {
             nogc_emplace!T(obj, args);
         }
 
+        // Tracing
+        debug(trace) dbg_alloc(obj);
+
         return obj;
     }
 }
@@ -121,6 +126,7 @@ T* nogc_new(T, Args...)(Args args) if (is(T == struct)) {
     Immediately exits the application if out of memory.
 */
 T nogc_new(T, Args...)(Args args) if (is(T == class)) {
+
     alias emplaceFunc = typeof(&emplace!T);
 
     version(Have_tinyd_rt) {
@@ -140,8 +146,11 @@ T nogc_new(T, Args...)(Args args) if (is(T == class)) {
 
         // Allocate class
         T obj = nogc_emplace!T(rawMemory[destructorObjSize .. allocSize], args);
-        return obj;
 
+        // Tracing
+        debug(trace) dbg_alloc(obj);
+        
+        return obj;
     } else {
         immutable size_t allocSize = __traits(classInstanceSize, T);
         void* rawMemory = malloc(allocSize);
@@ -163,6 +172,9 @@ T* nogc_new(T)(T value = T.init) if (isBasicType!T) {
         exit(-1);
     }
 
+    // Tracing
+    debug(trace) dbg_alloc(rawMemory);
+
     *rawMemory = value;
     return rawMemory;
 }
@@ -173,6 +185,9 @@ T* nogc_new(T)(T value = T.init) if (isBasicType!T) {
     For structs this will call the struct's destructor if it has any.
 */
 void nogc_delete(T)(ref T obj_)  {
+
+    // Tracing
+    debug(trace) dbg_dealloc(obj_);
     
     version(minimal_rt) {
         static if (isPointer!T || is(T == class)) {

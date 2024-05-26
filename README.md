@@ -49,5 +49,8 @@ This is a incomplete and unordered roadmap of features I want to add and have ad
 \*: Implemented but untested.  
 \*\*: Partially implemented.
 
+# Tracing leaks
+You can build numem with the `--debug=trace` flag to trace destruction of types via stdout.
+
 # Note
 Some parts of the library will pretend GC'ed types are no-gc, as such you should be careful about mixing GCed code in.

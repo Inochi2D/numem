@@ -9,4 +9,5 @@ public import numem.mem.string;
 public import numem.mem.vector;
 public import numem.mem.map;
 public import numem.mem.set;
+public import numem.mem.exception;
 public import numem.io;

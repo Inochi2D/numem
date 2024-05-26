@@ -5,6 +5,7 @@ module numem.mem.exception;
 import numem.mem.string;
 import numem.mem;
 import core.stdc.stdio;
+import numem.mem.internal.trace;
 
 @nogc:
 
@@ -19,9 +20,6 @@ private:
 public:
 
     ~this() {
-        // Debug build printing
-        debug printf("Exception freed! (msg=%s)\n", _msg.toCString());
-
         nogc_delete(_msg);
 
         // Free next-in-chain
