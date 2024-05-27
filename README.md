@@ -77,7 +77,7 @@ All features of classes are available without the GC, such as subclassing and in
 
 # Smart Pointers
 Numem features smart pointers, which allows you to reference instantiated types.  
-If a smart pointer is placed on the heap then it will be freed automatically on the exit of the scope.
+If a smart pointer is placed on the stack then it will be freed automatically on the exit of the scope.
 
 ```d
 import numem.all;
@@ -113,14 +113,14 @@ Smart pointers are split in to 3 categories:
    Once all owners are freed, the content of the `shared_ptr` will also be freed.  
 
  * `weak_ptr` - This smart pointer is created via the `borrow()` function of `unique_ptr` and `shared_ptr`.  
-   Weak pointers do not own the memory they reference, but nontheless keep track of the state of the state of the parent pointer.  
+   Weak pointers do not own the memory they reference, but nontheless keep track of the state of the parent pointer.  
    Weak pointers `get()` function will return `null` if the owners of the memory have freed it.
 
 # C++-style Vectors and Maps
 Numem includes `vector`, `map` and `set` types, which are alternatives to D dynamic arrays, associative arrays and sets.  
 Each of these types are split in to their base type and a `weak` counterpart. The "strong" containers will free elements on removal, and the weak counterparts will not.
 
-The `nstring` type is a UTF-8 container for text, which uses `vector` as a backing store. `nstring` will automatically create null terminators when the string is modified. The functions `toCString()` and `toDString()` does not make copies of the string, but just returns a pointer to its start, or a slice of it (excluding the null terminator).  
+The `nstring` type is a UTF-8 container for text, which uses `vector` as a backing store. `nstring` will automatically create null terminators when the string is modified. The functions `toCString()` and `toDString()` do not make copies of the string, but just return a pointer to its start, or a slice of it (excluding the null terminator).  
 This allows `nstring` to have excellent C interop at minimal performance cost.
 
 # Tracing leaks
