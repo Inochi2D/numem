@@ -73,7 +73,7 @@ public:
                 Creates a string with specified text
             */
             @system
-            this(const(char)* text) {
+            this(ref const(char)* text) {
                 import core.stdc.string : strlen;
                 size_t len = strlen(text);
                 this.set_(text[0..len]);
