@@ -73,6 +73,7 @@ public:
     alias valueType = T;
 
     /// Destructor
+    @trusted
     ~this() {
         if (this.memory) {
             static if (ownsMemory) {
@@ -93,11 +94,13 @@ public:
     }
 
     /// Constructor
+    @trusted
     this(size_t size) {
         this.resize_(size);
     }
 
     /// Constructor
+    @trusted
     this(T[] data) {
         this.resize_(data.length);
         this.memory[0..data.length] = data[0..$];
@@ -108,6 +111,7 @@ public:
         /**
             Moves non-copyable members of one vector to another
         */
+        @trusted
         this(ref vector!T rhs) {
             if (rhs.memory) {
                 this.resize_(rhs.size_);
@@ -125,6 +129,7 @@ public:
         /**
             Makes a copy of a vector
         */
+        @trusted
         this(ref vector!T rhs) {
             if (rhs.memory) {
                 this.resize_(rhs.size_);
@@ -135,6 +140,7 @@ public:
         /**
             Makes a copy of a vector
         */
+        @trusted
         this(ref return scope inout(vector!T) rhs) inout {
             if (rhs.memory) {
                 (cast(vector!T)this).resize_(rhs.size_);
@@ -146,6 +152,7 @@ public:
     /**
         Gets the C data pointer
     */
+    @trusted
     T* data() {
         return memory;
     }
@@ -153,6 +160,7 @@ public:
     /**
         Gets the C data pointer atomically
     */
+    @trusted
     T* adata() {
         return atomicLoad(memory);
     }
@@ -160,6 +168,7 @@ public:
     /**
         Gets a slice in to the vector
     */
+    @trusted
     T[] toSlice() {
         return memory[0..size_];
     }
@@ -167,6 +176,7 @@ public:
     /**
         Gets a slice in to the vector
     */
+    @trusted
     T[] toSliceAtomic() {
         return atomicLoad(memory)[0..size_];
     }
@@ -174,6 +184,7 @@ public:
     /**
         Shrink vector to fit
     */
+    @trusted
     void shrinkToFit() {
         if (capacity_ > size_) {
             capacity_ = size_;
@@ -185,6 +196,7 @@ public:
     /**
         Resize the vector
     */
+    @trusted
     void resize(size_t newSize) {
         this.resize_(newSize);
     }
@@ -192,6 +204,7 @@ public:
     /**
         Reserves space for the vector
     */
+    @trusted
     void reserve(size_t newCapacity) {
         this.reserve_(newCapacity);
     }
@@ -199,6 +212,7 @@ public:
     /**
         Gets whether the vector is empty.
     */
+    @trusted
     bool empty() {
         return size_ == 0;
     }
@@ -206,6 +220,7 @@ public:
     /**
         Gets the amount of elements in the vector
     */
+    @trusted
     size_t size() {
         return size_;
     }
@@ -213,6 +228,7 @@ public:
     /**
         Gets the capacity of the vector
     */
+    @trusted
     size_t capacity() {
         return capacity_;
     }
@@ -220,6 +236,7 @@ public:
     /**
         Returns the memory usage of the vector in bytes.
     */
+    @trusted
     size_t usage() {
         return capacity_*T.sizeof;
     }
@@ -227,6 +244,7 @@ public:
     /**
         Clears all elements in the vector
     */
+    @trusted
     void clear() {
         
         // Delete elements in the array.
@@ -240,6 +258,7 @@ public:
     /**
         Erases element at position
     */
+    @trusted
     void remove(size_t position) {
         if (position < size_) {
             nogc_delete(memory[position]);
@@ -254,6 +273,7 @@ public:
     /**
         Erases element at position
     */
+    @trusted
     void remove(size_t start, size_t end) {
 
         // Flip inputs if they are reversed, just in case.
@@ -281,6 +301,7 @@ public:
     /**
         Pops the backmost element of the vector
     */
+    @trusted
     void popBack() {
         this.remove(size_-1);
     }
@@ -288,6 +309,7 @@ public:
     /**
         Pops the backmost element of the vector
     */
+    @trusted
     void popFront() {
         this.remove(0);
     }
@@ -295,6 +317,7 @@ public:
     /**
         Pushes an element to the back of the vector
     */
+    @trusted
     auto pushBack(T)(T item) {
         this ~= item;
         return this;
@@ -303,6 +326,7 @@ public:
     /**
         Pushes an element to the back of the vector
     */
+    @trusted
     auto pushBack(T)(vector!T item) {
         this ~= item;
         return this;
@@ -311,6 +335,7 @@ public:
     /**
         Pushes an element to the back of the vector
     */
+    @trusted
     auto pushBack(T)(T[] item) {
         this ~= item;
         return this;
@@ -319,6 +344,7 @@ public:
     /**
         Pushes an element to the front of the vector
     */
+    @trusted
     ref auto pushFront(T)(T value) {
         size_t cSize = size_;
 
@@ -334,6 +360,7 @@ public:
     /**
         Pushes an element to the front of the vector
     */
+    @trusted
     ref auto pushFront(T)(vector!T value) {
         size_t cSize = size_;
 
@@ -349,6 +376,7 @@ public:
     /**
         Pushes an element to the front of the vector
     */
+    @trusted
     ref auto pushFront(T)(T[] value) {
         size_t cSize = size_;
 
@@ -366,6 +394,7 @@ public:
         /**
             Add value to vector
         */
+        @trusted
         ref auto opOpAssign(string op = "~")(T value) {
             size_t cSize = size_;
 
@@ -380,6 +409,7 @@ public:
         /**
             Add vector items to vector
         */
+        @trusted
         ref auto opOpAssign(string op = "~")(vector!T other) {
             size_t cSize = size_;
 
@@ -394,6 +424,7 @@ public:
         /**
             Add slice to vector
         */
+        @trusted
         ref auto opOpAssign(string op = "~")(T[] other) {
             size_t cSize = size_;
             
@@ -410,6 +441,7 @@ public:
         /**
             Add value to vector
         */
+        @trusted
         ref auto opOpAssign(string op = "~")(T value) {
             size_t cSize = size_;
 
@@ -422,6 +454,7 @@ public:
         /**
             Add vector items to vector
         */
+        @trusted
         ref auto opOpAssign(string op = "~")(vector!T other) {
             size_t cSize = size_;
             
@@ -434,6 +467,7 @@ public:
         /**
             Add slice to vector
         */
+        @trusted
         ref auto opOpAssign(string op = "~")(T[] other) {
             size_t cSize = size_;
 
@@ -447,6 +481,7 @@ public:
     /**
         Override for $ operator
     */
+    @trusted
     size_t opDollar() {
         return size_;
     }
@@ -456,13 +491,15 @@ public:
 
         D slices are short lived and may end up pointing to invalid memory if their string is modified.
     */
-    T[] opSlice(size_t start, size_t end) @system {
+    @trusted
+    T[] opSlice(size_t start, size_t end) {
         return memory[start..end];
     }
 
     /**
         Allows slicing the string to the full vector
     */
+    @trusted
     T[] opIndex() {
         return memory[0..size_];
     }
@@ -470,6 +507,7 @@ public:
     /**
         Allows slicing the vector to get a sub vector.
     */
+    @trusted
     T[] opIndex(size_t[2] slice) {
         return memory[slice[0]..slice[1]];
     }
@@ -477,6 +515,7 @@ public:
     /**
         Allows getting an item from the vector.
     */
+    @trusted
     ref T opIndex(size_t index) {
         return memory[index];
     }

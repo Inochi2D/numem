@@ -34,18 +34,21 @@ nothrow:
 
     @disable this(this);
 
+    @trusted
     ~this() {
     }
 
     /// Insert an element in the container, if the container doesn't already contain 
     /// an element with equivalent key. 
     /// Returns: `true` if the insertion took place.
+    @trusted
     bool insert(K key, V value) {
         return _tree.insert(key, value);
     }
 
     /// Removes an element from the container.
     /// Returns: `true` if the removal took place.
+    @trusted
     bool remove(K key) {
 
         // Delete memory if this map owns it.
@@ -59,6 +62,7 @@ nothrow:
     }
 
     /// Removes all elements from the map.
+    @trusted
     void clearContents() {
         nogc_delete(_tree);
         // _tree reset to .init, still valid
@@ -66,12 +70,14 @@ nothrow:
 
     /// Returns: A pointer to the value corresponding to this key, or null if not available.
     ///          Live builtin associative arrays.
+    @trusted
     inout(V)* opBinaryRight(string op)(K key) inout if (op == "in") {
         return key in _tree;
     }
 
     /// Returns: A reference to the value corresponding to this key.
     ///          Null pointer crash if key doesn't exist. 
+    @trusted
     ref inout(V) opIndex(K key) inout {
         inout(V)* p = key in _tree;
         assert(p !is null);
@@ -79,6 +85,7 @@ nothrow:
     }
 
     /// Updates a value associated with a key, creates it if necessary.
+    @trusted
     void opIndexAssign(V value, K key) {
         V* p = key in _tree;
         if (p is null) {
@@ -88,16 +95,19 @@ nothrow:
     }
 
     /// Returns: `true` if this key is contained.
+    @trusted
     bool contains(K key) const {
         return _tree.contains(key);
     }
 
     /// Returns: Number of elements in the map.
+    @trusted
     size_t length() const {
         return _tree.length;
     }
 
     /// Returns: `ttue` is the map has no element.
+    @trusted
     bool empty() const {
         return _tree.empty;
     }
@@ -105,11 +115,13 @@ nothrow:
     // Iterate by value only
 
     /// Fetch a forward range on all values.
+    @trusted
     auto byValue() {
         return _tree.byValue();
     }
 
     /// ditto
+    @trusted
     auto byValue() const {
         return _tree.byValue();
     }
@@ -120,21 +132,25 @@ nothrow:
     // Iterate by key only
 
     /// Fetch a forward range on all keys.
+    @trusted
     auto byKey() {
         return _tree.byKey();
     }
 
     /// ditto
+    @trusted
     auto byKey() const {
         return _tree.byKey();
     }
 
     // Iterate by key-value
+    @trusted
     auto byKeyValue() {
         return _tree.byKeyValue();
     }
 
     /// ditto
+    @trusted
     auto byKeyValue() const {
         return _tree.byKeyValue();
     }

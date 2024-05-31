@@ -31,11 +31,13 @@ public:
 nothrow:
 @nogc:
 
+    @trusted
     this(int dummy) {
     }
 
     @disable this(this);
 
+    @trusted
     ~this() {
     }
 
@@ -43,6 +45,7 @@ nothrow:
     /// If allowDuplicates is false, this can fail and return `false` 
     /// if the already contains an element with equivalent key. 
     /// Returns: `true` if the insertion took place.
+    @trusted
     bool insert(K key) {
         ubyte whatever = 0;
         return _tree.insert(key, whatever);
@@ -50,6 +53,7 @@ nothrow:
 
     /// Removes an element from the container.
     /// Returns: `true` if the removal took place.
+    @trusted
     bool remove(K key) {
 
         // Delete memory if this map owns it.
@@ -63,32 +67,38 @@ nothrow:
     }
 
     /// Removes all elements from the set.
+    @trusted
     void clearContents() {
         nogc_delete(_tree);
         // _tree reset to .init, still valid
     }
 
     /// Returns: `true` if the element is present.
+    @trusted
     bool opBinaryRight(string op)(K key) inout if (op == "in") {
         return (key in _tree) !is null;
     }
 
     /// Returns: `true` if the element is present.
+    @trusted
     bool opIndex(K key) const {
         return (key in _tree) !is null;
     }
 
     /// Returns: `true` if the element is present.
+    @trusted
     bool contains(K key) const {
         return (key in _tree) !is null;
     }
 
     /// Returns: Number of elements in the set.
+    @trusted
     size_t length() const {
         return _tree.length();
     }
 
     /// Returns: `ttue` is the set has no element.
+    @trusted
     bool empty() const {
         return _tree.empty();
     }
@@ -96,11 +106,13 @@ nothrow:
     // Iterate by value only
 
     /// Fetch a forward range on all keys.
+    @trusted
     auto byKey() {
         return _tree.byKey();
     }
 
     /// ditto
+    @trusted
     auto byKey() const {
         return _tree.byKey();
     }

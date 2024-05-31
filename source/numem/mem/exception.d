@@ -53,6 +53,7 @@ public:
     /**
         Helper function to free this exception
     */
+    @trusted
     void free() {
         NuException ex = this;
         nogc_delete(ex);

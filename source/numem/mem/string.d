@@ -49,6 +49,7 @@ public:
     alias valueType = T;
 
     /// Destructor
+    @trusted
     ~this() {
         if (this.vec_.data()) {
             nogc_delete(this.vec_);
@@ -58,13 +59,32 @@ public:
     /**
         Creates a string with specified text
     */
+    @trusted
     this(const(T)[] text) {
         this.set_(text);
+    }
+
+    // Handle creation from C string
+    version(NoC) { }
+    else {
+        static if (is(T == char)) {
+
+            /**
+                Creates a string with specified text
+            */
+            @system
+            this(const(char)* text) {
+                import core.stdc.string : strlen;
+                size_t len = strlen(text);
+                this.set_(text[0..len]);
+            }
+        }
     }
 
     /**
         Makes a copy of a string
     */
+    @trusted
     this(ref return scope basic_string!T rhs) {
         this.vec_ = rhs.vec_;
     }
@@ -72,6 +92,7 @@ public:
     /**
         Makes a copy of a string
     */
+    @trusted
     this(ref return scope inout(basic_string!T) rhs) inout {
         this.vec_ = rhs.vec_;
     }
@@ -80,6 +101,7 @@ public:
     /**
         Gets the length of the string
     */
+    @trusted
     pragma(inline, true)
     size_t size() {
         size_t sz = this.vec_.size();
@@ -89,6 +111,7 @@ public:
     /**
         Gets the length of the string
     */
+    @trusted
     size_t length() {
         return size();
     }
@@ -96,6 +119,7 @@ public:
     /**
         Gets the capacity of the string
     */
+    @trusted
     size_t capacity() {
         return this.vec_.capacity();
     }
@@ -103,6 +127,7 @@ public:
     /**
         Resizes string
     */
+    @trusted
     void resize(size_t length) {
         vec_.resize(length+1);
         (cast(T*)vec_.data)[length] = '\0';
@@ -111,6 +136,7 @@ public:
     /**
         Reserves space in the string for more characters.
     */
+    @trusted
     void reserve(size_t capacity) {
         vec_.reserve(capacity);
     }
@@ -118,6 +144,7 @@ public:
     /**
         Clears string
     */
+    @trusted
     void clear() {
         this.resize(0);
     }
@@ -125,6 +152,7 @@ public:
     /**
         Whether the string is empty.
     */
+    @trusted
     bool empty() {
         return size > 0;
     }
@@ -132,6 +160,7 @@ public:
     /**
         Shrinks string storage to fit contents
     */
+    @trusted
     void shrinkToFit() {
         vec_.shrinkToFit();
     }
@@ -139,6 +168,7 @@ public:
     /**
         Returns C string
     */
+    @trusted
     const(T)* toCString() {
         return cast(const(T)*)this.vec_.data();
     }
@@ -151,6 +181,7 @@ public:
     /**
         Returns a D string from the numemstring
     */
+    @trusted
     immutable(T)[] toDString() {
         return cast(immutable(T)[])(this.vec_.data()[0..this.size()]);
     }
@@ -158,6 +189,7 @@ public:
     /**
         Casts nstring to C string
     */
+    @trusted
     const(T)* opCast()() {
         return toCString();
     }
@@ -165,6 +197,7 @@ public:
     /**
         Casts nstring to D string
     */
+    @trusted
     immutable(T)[] opCast()() {
         return toDString();
     }
@@ -172,6 +205,7 @@ public:
     /**
         Set content of string
     */
+    @trusted
     ref auto opAssign(T)(const(T)[] value) {
         this.set_(value);
         return this;
@@ -180,6 +214,7 @@ public:
     /**
         Appends value to string
     */
+    @trusted
     ref auto opOpAssign(string op = "~", T)(const(T)[] value) {
         this.append_(value);
         return this;
@@ -188,6 +223,7 @@ public:
     /**
         Appends single character to string
     */
+    @trusted
     ref auto opOpAssign(string op = "~")(T ch) {
         const(T)[] asSlice = (&ch)[0..1];
         this.append_(asSlice);
@@ -197,6 +233,7 @@ public:
     /**
         Appends another nstring to string
     */
+    @trusted
     ref auto opOpAssign(string op = "~")(basic_string!T s) {
         this.append_(s[]);
         return this;
@@ -205,7 +242,16 @@ public:
     /**
         Appends a zero-terminated C string to string
     */
-    ref auto appendCString(const(T)* cString) @system {
+    @system
+    ref auto opOpAssign(string op = "~")(const(T)* cString) {
+        return this.appendCString(cString);
+    }
+
+    /**
+        Appends a zero-terminated C string to string
+    */
+    @system
+    ref auto appendCString(const(T)* cString) {
         const(T)[] s = numem.mem.internal.fromStringz(cString);
         if (s != null)
             this.append_(s);
@@ -215,6 +261,7 @@ public:
     /**
         Override for $ operator
     */
+    @trusted
     size_t opDollar() {
         return vec_.size();
     }
@@ -224,13 +271,15 @@ public:
 
         D slices are short lived and may end up pointing to invalid memory if their string is modified.
     */
-    const(T)[] opSlice(size_t start, size_t end) @system {
+    @trusted
+    const(T)[] opSlice(size_t start, size_t end) {
         return cast(const(T)[])this.vec_[start..end];
     }
 
     /**
         Allows slicing the string to the full vector
     */
+    @trusted
     const(T)[] opIndex() {
         return cast(const(T)[])this.vec_[];
     }
@@ -238,6 +287,7 @@ public:
     /**
         Allows slicing the string to get a substring.
     */
+    @trusted
     const(T)[] opIndex(size_t[2] slice) {
         return cast(const(T)[])this.vec_[slice[0]..slice[1]];
     }
@@ -245,6 +295,7 @@ public:
     /**
         Allows getting a character from the string.
     */
+    @trusted
     ref const(T) opIndex(size_t index) {
         return cast(const(T))(this.vec_.data()[index]);
     }
@@ -252,6 +303,7 @@ public:
     /**
         Tests equality between nstrings
     */
+    @trusted
     bool opEquals(R)(R other) if(is(R == basic_string!T)) {
         return this.length == other.length && this[0..$] == other[0..$];
     }
@@ -259,6 +311,7 @@ public:
     /**
         Tests equality between nstrings
     */
+    @trusted
     bool opEquals(R)(R other) if(is(R == immutable(T)[])) {
         return this.size == other.length && this[0..$-1] == other[0..$];
     }
