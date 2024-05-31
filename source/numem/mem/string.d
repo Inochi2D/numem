@@ -249,11 +249,24 @@ public:
         return cast(const(T))(this.vec_.data()[index]);
     }
 
-    static if (is(T == char)) {
-        string toString() {
-            return toDString();
-        }
+    /**
+        Tests equality between nstrings
+    */
+    bool opEquals(R)(R other) if(is(R == basic_string!T)) {
+        return this.length == other.length && this[0..$] == other[0..$];
     }
+
+    /**
+        Tests equality between nstrings
+    */
+    bool opEquals(R)(R other) if(is(R == immutable(T)[])) {
+        return this.size == other.length && this[0..$-1] == other[0..$];
+    }
+
+    /**
+        To D string
+    */
+    alias toString = toDString;
 }
 
 alias nstring = basic_string!char;
