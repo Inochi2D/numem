@@ -126,5 +126,9 @@ This allows `nstring` to have excellent C interop at minimal performance cost.
 # Tracing leaks
 You can build numem with the `--debug=trace` flag to trace creation and destruction of types via stdout.
 
+# Using with no C runtime available
+This library is still a work in progress and some edge cases are not handled yet.  
+You can pass `NoC` as a version parameter to let numem know to not rely on the C stdlib.
+
 # Note
 Some parts of the library will pretend GC'ed types are no-gc, as such you should be careful about mixing GCed code in.
