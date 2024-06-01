@@ -158,6 +158,14 @@ public:
     }
 
     /**
+        Gets the C data pointer as an inout pointer
+    */
+    @trusted
+    inout(T)* idata() inout {
+        return cast(inout(T)*)memory;
+    }
+
+    /**
         Gets the C data pointer atomically
     */
     @trusted
@@ -213,7 +221,7 @@ public:
         Gets whether the vector is empty.
     */
     @trusted
-    bool empty() {
+    bool empty() inout {
         return size_ == 0;
     }
 
@@ -221,7 +229,7 @@ public:
         Gets the amount of elements in the vector
     */
     @trusted
-    size_t size() {
+    size_t size() inout {
         return size_;
     }
 
@@ -229,7 +237,7 @@ public:
         Gets the capacity of the vector
     */
     @trusted
-    size_t capacity() {
+    size_t capacity() inout {
         return capacity_;
     }
 
@@ -237,7 +245,7 @@ public:
         Returns the memory usage of the vector in bytes.
     */
     @trusted
-    size_t usage() {
+    size_t usage() inout {
         return capacity_*T.sizeof;
     }
 

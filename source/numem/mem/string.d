@@ -103,7 +103,7 @@ public:
     */
     @trusted
     pragma(inline, true)
-    size_t size() {
+    size_t size() inout {
         size_t sz = this.vec_.size();
         return sz > 0 ? sz-1 : sz;
     }
@@ -112,7 +112,7 @@ public:
         Gets the length of the string
     */
     @trusted
-    size_t length() {
+    size_t length() inout {
         return size();
     }
 
@@ -120,7 +120,7 @@ public:
         Gets the capacity of the string
     */
     @trusted
-    size_t capacity() {
+    size_t capacity() inout {
         return this.vec_.capacity();
     }
 
@@ -153,7 +153,7 @@ public:
         Whether the string is empty.
     */
     @trusted
-    bool empty() {
+    bool empty() inout {
         return size > 0;
     }
 
@@ -163,6 +163,13 @@ public:
     @trusted
     void shrinkToFit() {
         vec_.shrinkToFit();
+    }
+
+    /**
+        Returns C string
+    */
+    inout(T)* toCStringi() inout {
+        return cast(inout(T)*)this.vec_.idata();
     }
 
     /**
@@ -317,6 +324,17 @@ public:
     }
 
     /**
+        Allows comparing strings
+    */
+    @trusted
+    int opCmp(S)(ref inout S s) inout if (is(S : basic_string!T)) {
+        import core.stdc.string : strncmp;
+        if (s.size() < this.size()) return -1;
+        if (s.size() > this.size()) return 1;
+        return strncmp(this.toCStringIO(), s.toCStringIO(), this.size());
+    }
+
+    /**
         To D string
     */
     alias toString = toDString;
@@ -359,4 +377,13 @@ unittest {
     ndstring wd;
     wd.appendCString("ho"d.ptr);
     assert(wd.toDString() == "ho"d);
+}
+
+@("string in map")
+unittest {
+    import numem.mem.map : map;
+    map!(nstring, int) kv;
+    kv[nstring("uwu")] = 42;
+
+    assert(kv[nstring("uwu")] == 42);
 }
