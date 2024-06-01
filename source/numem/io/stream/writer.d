@@ -40,14 +40,13 @@ public:
     /// Ditto
     @trusted
     void write(T)(T val) if (isSomeNString!T) {
+        stream.write(cast(ubyte[])val.toDString());
+    }
 
-        // Size of a single unit
-        enum S_CHAR_SIZE = T.valueType.sizeof;
-
-        // Some char array ptr
-        auto t = val.adata();
-        ubyte[] dataToWrite = (cast(ubyte*)t)[0..val.size()*S_CHAR_SIZE];
-        stream.write(dataToWrite);
+    /// Ditto
+    @trusted
+    void write(T)(T val) if (is(T : string)) {
+        stream.write(cast(ubyte[])val);
     }
 
     /// Ditto
