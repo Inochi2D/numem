@@ -331,7 +331,7 @@ public:
         import core.stdc.string : strncmp;
         if (s.size() < this.size()) return -1;
         if (s.size() > this.size()) return 1;
-        return strncmp(this.toCStringIO(), s.toCStringIO(), this.size());
+        return strncmp(this.toCStringi(), s.toCStringi(), this.size());
     }
 
     /**
