@@ -329,8 +329,8 @@ public:
     @trusted
     int opCmp(S)(ref inout S s) inout if (is(S : basic_string!T)) {
         import core.stdc.string : strncmp;
-        if (s.size() < this.size()) return -1;
-        if (s.size() > this.size()) return 1;
+        if (this.size() < s.size()) return -1;
+        if (this.size() > s.size()) return 1;
         return strncmp(this.toCStringi(), s.toCStringi(), this.size());
     }
 
