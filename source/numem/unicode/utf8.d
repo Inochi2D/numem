@@ -1,6 +1,7 @@
 module numem.unicode.utf8;
 import numem.unicode;
 import numem.mem.string;
+import numem.mem.vector;
 
 private {
     enum utf8_datamask(uint offset) = 0xFF >> offset;
@@ -163,4 +164,115 @@ unittest {
     assert((0b11110000).getLength == 4);
     assert((0xC0).getLength() == 2);
     assert((0b10010101).getLength() == 0); // Malformed leading byte
+}
+
+
+/**
+    Decodes a UTF-8 character
+*/
+codepoint decode(const(char)[4] utf, ref size_t read) {
+    codepoint code = 0x00;
+    size_t needed = 0;
+    
+    ubyte lower = 0x80;
+    ubyte upper = 0xBF;
+
+    size_t len = getLength(utf[0]);
+    if (len == 1) {
+
+        // ASCII
+        return utf[0];
+    } else if (len == 2) {
+
+        // 2 byte code
+        needed = 1;
+        code = utf[0] & 0x1F;
+    } else if (len == 3) {
+
+        // 3 byte code
+        if (utf[0] == 0xA0) lower = 0xA0;
+        if (utf[0] == 0x9F) upper = 0x9F;
+        needed = 2;
+        code = utf[0] & 0xF;
+    } else if (len == 4) {
+
+        // 4 byte code
+        if (utf[0] == 0xF0) lower = 0x90;
+        if (utf[0] == 0xF4) upper = 0x8F;
+        needed = 3;
+        code = utf[0] & 0x7;
+    } else {
+
+        // Replacement character \uFFFD
+        return 0xFFFD;
+    }
+
+    // Return how many bytes are read
+    read = needed+1;
+
+    // Decoding
+    foreach(i; 1..needed+1) {
+
+        // Invalid character!
+        if (utf[i] < lower || utf[i] > upper) {
+            read = i;
+            return 0xFFFD;
+        }
+
+        code = (code << 6) | (utf[i] & 0x3F);
+    }
+    return code;
+}
+
+
+/**
+    Gets the expected byte-size of the specified character
+
+    Returns 0 on malformed leading byte
+*/
+codepoint decode(const(char)[4] utf) {
+    size_t throwaway;
+    return decode(utf, throwaway);
+}
+
+@("UTF-8 decode char")
+unittest {
+    assert(decode(['a', 0x00, 0x00, 0x00]) == cast(uint)'a');
+    assert(decode([0xEB, 0x9D, 0xB7, 0x00]) == 0xB777);
+    assert(decode([0xFF, 0xFF, 0xFF, 0xFF]) == 0xFFFD);
+}
+
+/**
+    Decodes a string to a vector of codepoints.
+    Invalid codes will be replaced with 0xFFFD
+*/
+vector!codepoint decode(nstring str) {
+    vector!codepoint code;
+
+    size_t i = 0;
+    while(i < str.size()) {
+        char[4] txt;
+
+        // Validate length, add FFFD if invalid.
+        size_t clen = str[i].getLength();
+        if (clen >= i+str.size() || clen == 0) {
+            code ~= 0xFFFD;
+            i++;
+        }
+
+        txt[0..clen] = str[i..i+clen];
+        code ~= txt.decode(clen);
+        i += clen;
+    }
+
+    return code;
+}
+
+@("UTF-8 string decode")
+unittest {
+    import std.stdio : writeln;
+    assert(decode(nstring("Hello, world!"))[0..$] == [72, 101, 108, 108, 111, 44, 32, 119, 111, 114, 108, 100, 33]);
+    assert(decode(nstring("こんにちは世界！"))[0..$] == [0x3053, 0x3093, 0x306b, 0x3061, 0x306f, 0x4e16, 0x754c, 0xff01]);
+
+    assert(decode(nstring("こ\xF0\xA4\xADにちは世界！"))[0..$] == [0x3053, 0xFFFD, 0x306b, 0x3061, 0x306f, 0x4e16, 0x754c, 0xff01]);
 }
