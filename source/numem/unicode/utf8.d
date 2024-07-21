@@ -11,20 +11,16 @@ private {
     enum utf8_ascii = 0x7F;
 
     struct utf8_t {
-        ubyte mask;
         ubyte lead;
-        int bits;
     }
 
     // Lookup table containing the correct byte patterns and codepoints for each
     // utf8 codepoint size.
-    const utf8_t[5] utf8_lookup = [
-        utf8_t(0b00111111, 0b10000000, 6),  // Continuation byte
-        utf8_t(0b01111111, 0b00000000, 7),  // Lead byte (1 byte)
-        utf8_t(0b00011111, 0b11000000, 5),  // Lead byte (2 bytes)
-        utf8_t(0b00001111, 0b11100000, 4),  // Lead byte (3 bytes)
-        utf8_t(0b00000111, 0b11110000, 3),  // Lead byte (4 bytes)
-
+    const ubyte[4] utf8_leadmasks = [
+        0b00000000,  // Lead byte (1 byte)
+        0b11000000,  // Lead byte (2 bytes)
+        0b11100000,  // Lead byte (3 bytes)
+        0b11110000,  // Lead byte (4 bytes)
     ];
 
     // UTF-8 Well-Formed Byte Sequence Table
@@ -151,9 +147,9 @@ unittest {
     Returns 0 on malformed leading byte
 */
 size_t getLength(char c) {
-    static foreach_reverse(i; 1..utf8_lookup.length) {
-        if ((c & utf8_leadmask!i) == utf8_lookup[i].lead) {
-            return i;
+    static foreach_reverse(i; 0..utf8_leadmasks.length) {
+        if ((c & utf8_leadmask!(i+1)) == utf8_leadmasks[i]) {
+            return i+1;
         }
     }
 
