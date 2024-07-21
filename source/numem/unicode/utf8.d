@@ -4,23 +4,23 @@ import numem.mem.string;
 import numem.mem.vector;
 
 private {
-    enum utf8_datamask(uint offset) = 0xFF >> offset;
-    enum utf8_leadmask(uint offset) = ~utf8_datamask!offset;
 
     // Highest ascii value in UTF8
     enum utf8_ascii = 0x7F;
 
-    struct utf8_t {
-        ubyte lead;
-    }
+    // Data mask
+    enum ubyte utf8_datamask(uint offset) = 0xFF >> offset;
+
+    // Lead mask
+    enum ubyte utf8_leadmask(uint offset) = cast(ubyte)(~utf8_datamask!offset);
 
     // Lookup table containing the correct byte patterns and codepoints for each
     // utf8 codepoint size.
     const ubyte[4] utf8_leadmasks = [
-        0b00000000,  // Lead byte (1 byte)
-        0b11000000,  // Lead byte (2 bytes)
-        0b11100000,  // Lead byte (3 bytes)
-        0b11110000,  // Lead byte (4 bytes)
+        utf8_leadmask!0,  // Lead byte (1 byte)
+        utf8_leadmask!2,  // Lead byte (2 bytes)
+        utf8_leadmask!3,  // Lead byte (3 bytes)
+        utf8_leadmask!4,  // Lead byte (4 bytes)
     ];
 
     // UTF-8 Well-Formed Byte Sequence Table
