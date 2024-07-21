@@ -7,6 +7,9 @@ private {
     enum utf8_datamask(uint offset) = 0xFF >> offset;
     enum utf8_leadmask(uint offset) = ~utf8_datamask!offset;
 
+    // Highest ascii value in UTF8
+    enum utf8_ascii = 0x7F;
+
     struct utf8_t {
         ubyte mask;
         ubyte lead;
@@ -246,8 +249,8 @@ unittest {
     Decodes a string to a vector of codepoints.
     Invalid codes will be replaced with 0xFFFD
 */
-vector!codepoint decode(nstring str) {
-    vector!codepoint code;
+UnicodeSequence decode(nstring str) {
+    UnicodeSequence code;
 
     size_t i = 0;
     while(i < str.size()) {
@@ -275,4 +278,66 @@ unittest {
     assert(decode(nstring("こんにちは世界！"))[0..$] == [0x3053, 0x3093, 0x306b, 0x3061, 0x306f, 0x4e16, 0x754c, 0xff01]);
 
     assert(decode(nstring("こ\xF0\xA4\xADにちは世界！"))[0..$] == [0x3053, 0xFFFD, 0x306b, 0x3061, 0x306f, 0x4e16, 0x754c, 0xff01]);
+}
+
+/**
+    Encodes a series of unicode sequences to UTF-8
+*/
+nstring encode(UnicodeSlice sequence) {
+    nstring out_;
+    
+    size_t i = 0;
+    while(i < sequence.length) {
+        ptrdiff_t count = 0;
+        ptrdiff_t offset = 0;
+        if (sequence[i] <= utf8_ascii) {
+
+            // Single-byte ascii
+            out_ ~= cast(char)sequence[i++];
+            continue;
+        } else if (sequence[i] >= 0x0080 && sequence[i] <= 0x07FF) { 
+
+            // 2 byte
+            count = 1;
+            offset = 0xC0;
+        } else if (sequence[i] >= 0x0800 && sequence[i] <= 0xFFFF) { 
+
+            // 2 byte
+            count = 2;
+            offset = 0xE0;
+        } else if (sequence[i] >= 0x10000 && sequence[i] <= 0x10FFFF) { 
+
+            // 2 byte
+            count = 3;
+            offset = 0xF0;
+        }
+
+
+        char[4] bytes;
+        bytes[0] = cast(ubyte)((sequence[i] >> (6 * count)) + offset);
+        size_t ix = 1;
+        while (count > 0) {
+            size_t temp = sequence[i] >> (6 * (count - 1));
+            bytes[ix++] = 0x80 | (temp & 0x3F);
+            count--;
+        }
+
+        out_ ~= bytes[0..ix];
+        i++;
+    }
+
+    return out_;
+}
+
+/**
+    Encodes a series of unicode sequences to UTF-8
+*/
+nstring encode(UnicodeSequence sequence) {
+    return encode(sequence[0..$]);
+}
+
+@("UTF-8 encode")
+unittest {
+    assert(encode([0x3053, 0x3093, 0x306b, 0x3061, 0x306f, 0x4e16, 0x754c, 0xff01]) == "こんにちは世界！");
+    assert(encode([0x3053, 0xFFFD, 0x306b, 0x3061, 0x306f, 0x4e16, 0x754c, 0xff01]) == "こ\uFFFDにちは世界！");
 }
