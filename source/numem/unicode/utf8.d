@@ -229,9 +229,9 @@ codepoint decode(const(char)[4] utf, ref size_t read) {
 
 
 /**
-    Gets the expected byte-size of the specified character
+    Decodes the specified UTF-8 character
 
-    Returns 0 on malformed leading byte
+    Returns 0xFFFD if character is a malformed UTF-8 sequence
 */
 codepoint decode(const(char)[4] utf) {
     size_t throwaway;
