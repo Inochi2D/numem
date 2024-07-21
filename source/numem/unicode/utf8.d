@@ -3,6 +3,8 @@ import numem.unicode;
 import numem.mem.string;
 import numem.mem.vector;
 
+@nogc nothrow:
+
 private {
 
     // Highest ascii value in UTF8
@@ -136,9 +138,12 @@ unittest {
     assert( validate(nstring("こんにちは世界！")));
 
     // Invalid sequence test
-    assert(!validate(nstring([0xC1, 0xBF, 0xCC])));
-    assert(!validate(nstring([0xF4, 0x9F, 0xBF, 0xBF])));
-    assert(!validate(nstring([0xF4, 0x80]))); // Sequence is cut off
+    const char[3] seq1 = [0xC1, 0xBF, 0xCC];
+    const char[4] seq2 = [0xF4, 0x9F, 0xBF, 0xBF];
+    const char[2] seq3 = [0xF4, 0x80];
+    assert(!validate(nstring(seq1[0..$])));
+    assert(!validate(nstring(seq2[0..$])));
+    assert(!validate(nstring(seq3[0..$]))); // Sequence is cut off
 }
 
 /**
@@ -203,7 +208,7 @@ codepoint decode(const(char)[4] utf, ref size_t read) {
     } else {
 
         // Replacement character \uFFFD
-        return 0xFFFD;
+        return unicodeReplacementCharacter;
     }
 
     // Return how many bytes are read
@@ -215,7 +220,7 @@ codepoint decode(const(char)[4] utf, ref size_t read) {
         // Invalid character!
         if (utf[i] < lower || utf[i] > upper) {
             read = i;
-            return 0xFFFD;
+            return unicodeReplacementCharacter;
         }
 
         code = (code << 6) | (utf[i] & 0x3F);
@@ -227,7 +232,7 @@ codepoint decode(const(char)[4] utf, ref size_t read) {
 /**
     Decodes the specified UTF-8 character
 
-    Returns 0xFFFD if character is a malformed UTF-8 sequence
+    Returns unicodeReplacementCharacter if character is a malformed UTF-8 sequence
 */
 codepoint decode(const(char)[4] utf) {
     size_t throwaway;
@@ -238,12 +243,12 @@ codepoint decode(const(char)[4] utf) {
 unittest {
     assert(decode(['a', 0x00, 0x00, 0x00]) == cast(uint)'a');
     assert(decode([0xEB, 0x9D, 0xB7, 0x00]) == 0xB777);
-    assert(decode([0xFF, 0xFF, 0xFF, 0xFF]) == 0xFFFD);
+    assert(decode([0xFF, 0xFF, 0xFF, 0xFF]) == unicodeReplacementCharacter);
 }
 
 /**
     Decodes a string to a vector of codepoints.
-    Invalid codes will be replaced with 0xFFFD
+    Invalid codes will be replaced with unicodeReplacementCharacter
 */
 UnicodeSequence decode(nstring str) {
     UnicodeSequence code;
@@ -255,7 +260,7 @@ UnicodeSequence decode(nstring str) {
         // Validate length, add FFFD if invalid.
         size_t clen = str[i].getLength();
         if (clen >= i+str.size() || clen == 0) {
-            code ~= 0xFFFD;
+            code ~= unicodeReplacementCharacter;
             i++;
         }
 
@@ -273,7 +278,7 @@ unittest {
     assert(decode(nstring("Hello, world!"))[0..$] == [72, 101, 108, 108, 111, 44, 32, 119, 111, 114, 108, 100, 33]);
     assert(decode(nstring("こんにちは世界！"))[0..$] == [0x3053, 0x3093, 0x306b, 0x3061, 0x306f, 0x4e16, 0x754c, 0xff01]);
 
-    assert(decode(nstring("こ\xF0\xA4\xADにちは世界！"))[0..$] == [0x3053, 0xFFFD, 0x306b, 0x3061, 0x306f, 0x4e16, 0x754c, 0xff01]);
+    assert(decode(nstring("こ\xF0\xA4\xADにちは世界！"))[0..$] == [0x3053, unicodeReplacementCharacter, 0x306b, 0x3061, 0x306f, 0x4e16, 0x754c, 0xff01]);
 }
 
 /**
@@ -334,6 +339,8 @@ nstring encode(UnicodeSequence sequence) {
 
 @("UTF-8 encode")
 unittest {
-    assert(encode([0x3053, 0x3093, 0x306b, 0x3061, 0x306f, 0x4e16, 0x754c, 0xff01]) == "こんにちは世界！");
-    assert(encode([0x3053, 0xFFFD, 0x306b, 0x3061, 0x306f, 0x4e16, 0x754c, 0xff01]) == "こ\uFFFDにちは世界！");
+    codepoint[8] seq1 = [0x3053, 0x3093, 0x306b, 0x3061, 0x306f, 0x4e16, 0x754c, 0xff01];
+    codepoint[8] seq2 = [0x3053, unicodeReplacementCharacter, 0x306b, 0x3061, 0x306f, 0x4e16, 0x754c, 0xff01];
+    assert(encode(seq1) == "こんにちは世界！");
+    assert(encode(seq2) == "こ\uFFFDにちは世界！");
 }

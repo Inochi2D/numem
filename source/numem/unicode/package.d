@@ -1,10 +1,23 @@
 module numem.unicode;
 import numem.mem.vector;
 
+@nogc nothrow:
+
 /**
     A unicode codepoint
 */
 alias codepoint = uint;
+
+/**
+    Validates whether the codepoint is within spec
+*/
+bool validate(codepoint code) {
+    return code <= 0x10FFFF;
+}
+/**
+    Validates whether the codepoint is within spec
+*/
+__gshared codepoint unicodeReplacementCharacter = 0xFFFD;
 
 /**
     A unicode codepoint sequence
