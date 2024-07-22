@@ -13,24 +13,26 @@ version(NoC) {
     import std.traits;
     import numem.mem.exception;
 
+    @nogc:
+
     /**
         Convert nstring to signed integer
     */
-    T toInt(T)(nstring str) if (isSigned!T && isIntegral!T) {
+    T toInt(T)(nstring str) nothrow if (isSigned!T && isIntegral!T) {
         return cast(T)atol(str.toCString());
     }
 
     /**
         Convert string slice to signed integer
     */
-    T toInt(T)(string str) if (isSigned!T && isIntegral!T) {
+    T toInt(T)(string str) nothrow if (isSigned!T && isIntegral!T) {
         return cast(T)strtol(str.ptr, str.ptr+str.length);
     }
 
     /**
         Convert nstring to unsigned integer
     */
-    T toInt(T)(nstring str, int base) if (isUnsigned!T && isIntegral!T) {
+    T toInt(T)(nstring str, int base) nothrow if (isUnsigned!T && isIntegral!T) {
         const(char)* ptr = str.toCString();
         return cast(T)strtoull(ptr, ptr+str.size(), base);
     }
@@ -38,21 +40,21 @@ version(NoC) {
     /**
         Convert string slice to unsigned integer
     */
-    T toInt(T)(string str, int base) if (isUnsigned!T && isIntegral!T) {
+    T toInt(T)(string str, int base) nothrow if (isUnsigned!T && isIntegral!T) {
         return cast(T)strtoull(str.ptr, str.ptr+str.length, base);
     }
 
     /**
         Convert nstring to float
     */
-    T toFloat(T)(nstring str) if (isFloatingPoint!T) {
+    T toFloat(T)(nstring str) nothrow if (isFloatingPoint!T) {
         return cast(T)atof(str.toCString());
     }
 
     /**
         Convert string slice to float
     */
-    T toFloat(T)(string str) if (isFloatingPoint!T)  {
+    T toFloat(T)(string str) nothrow if (isFloatingPoint!T)  {
         return cast(T)strtof(str.ptr, str.ptr+str.length);
     }
 
