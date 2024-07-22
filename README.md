@@ -43,7 +43,7 @@ This is a incomplete and unordered roadmap of features I want to add and have ad
    - [ ] IP utilities
  - [ ] Character encoding handling
    - [x] UTF-8
-   - [ ] UTF-16
+   - [x] UTF-16
    - [ ] UTF-32
    - [ ] Unicode
      - [x] Codepoints
