@@ -53,48 +53,42 @@ bool validate(const(char)[4] seq) {
     if (!len) return false;
 
     switch(len) {
-        default: return false;
+        default:
+            return false;
 
-        // 
         case 1:
-            bool condition = 
-                (seq[0] >= utf8_wfbseqtable[0][0][0] && seq[0] <= utf8_wfbseqtable[0][0][1]);
-            if (condition) return true;
+            if (seq[0] >= utf8_wfbseqtable[0][0][0] && seq[0] <= utf8_wfbseqtable[0][0][1])
+                return true;
+
             return false;
 
         case 2:
-            bool condition = 
-                (seq[0] >= utf8_wfbseqtable[1][0][0] && seq[0] <= utf8_wfbseqtable[1][0][1]) && 
-                (seq[1] >= utf8_wfbseqtable[1][1][0] && seq[1] <= utf8_wfbseqtable[1][1][1]);
-            if (condition) return true;
+            if ((seq[0] >= utf8_wfbseqtable[1][0][0] && seq[0] <= utf8_wfbseqtable[1][0][1]) && 
+                (seq[1] >= utf8_wfbseqtable[1][1][0] && seq[1] <= utf8_wfbseqtable[1][1][1]))
+                    return true;
+
             return false;
 
         case 3:
             static foreach(tableIdx; 2..6) {
                 
-                // Codegen scope shenanigans
-                {
-                    bool condition = 
-                        (seq[0] >= utf8_wfbseqtable[tableIdx][0][0] && seq[0] <= utf8_wfbseqtable[tableIdx][0][1]) && 
-                        (seq[1] >= utf8_wfbseqtable[tableIdx][1][0] && seq[1] <= utf8_wfbseqtable[tableIdx][1][1]) && 
-                        (seq[2] >= utf8_wfbseqtable[tableIdx][2][0] && seq[2] <= utf8_wfbseqtable[tableIdx][2][1]);
-                    if (condition) return true;
-                }
+                if ((seq[0] >= utf8_wfbseqtable[tableIdx][0][0] && seq[0] <= utf8_wfbseqtable[tableIdx][0][1]) && 
+                    (seq[1] >= utf8_wfbseqtable[tableIdx][1][0] && seq[1] <= utf8_wfbseqtable[tableIdx][1][1]) && 
+                    (seq[2] >= utf8_wfbseqtable[tableIdx][2][0] && seq[2] <= utf8_wfbseqtable[tableIdx][2][1])) 
+                        return true;
+                
             }
             return false;
 
         case 4:
             static foreach(tableIdx; 6..9) {
+
+                if ((seq[0] >= utf8_wfbseqtable[tableIdx][0][0] && seq[0] <= utf8_wfbseqtable[tableIdx][0][1]) && 
+                    (seq[1] >= utf8_wfbseqtable[tableIdx][1][0] && seq[1] <= utf8_wfbseqtable[tableIdx][1][1]) && 
+                    (seq[2] >= utf8_wfbseqtable[tableIdx][2][0] && seq[2] <= utf8_wfbseqtable[tableIdx][2][1]) && 
+                    (seq[3] >= utf8_wfbseqtable[tableIdx][3][0] && seq[3] <= utf8_wfbseqtable[tableIdx][3][1])) 
+                        return true;
                 
-                // Codegen scope shenanigans
-                {
-                    bool condition = 
-                        (seq[0] >= utf8_wfbseqtable[tableIdx][0][0] && seq[0] <= utf8_wfbseqtable[tableIdx][0][1]) && 
-                        (seq[1] >= utf8_wfbseqtable[tableIdx][1][0] && seq[1] <= utf8_wfbseqtable[tableIdx][1][1]) && 
-                        (seq[2] >= utf8_wfbseqtable[tableIdx][2][0] && seq[2] <= utf8_wfbseqtable[tableIdx][2][1]) && 
-                        (seq[3] >= utf8_wfbseqtable[tableIdx][3][0] && seq[3] <= utf8_wfbseqtable[tableIdx][3][1]);
-                    if (condition) return true;
-                }
             }
             return false;
     }
