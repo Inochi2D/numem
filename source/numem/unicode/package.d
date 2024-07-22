@@ -12,8 +12,16 @@ alias codepoint = uint;
     Validates whether the codepoint is within spec
 */
 bool validate(codepoint code) {
-    return code <= 0x10FFFF;
+    return code <= 0x10FFFF && !hasSurrogatePairs(code);
 }
+
+/**
+    Gets whether the codepoint mistakenly has surrogate pairs encoded within it.
+*/
+bool hasSurrogatePairs(codepoint code) {
+    return (code >= 0x0000D800 && code <= 0x0000DFFF);
+}
+
 /**
     Validates whether the codepoint is within spec
 */

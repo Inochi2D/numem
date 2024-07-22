@@ -3,6 +3,9 @@ import numem.unicode;
 import numem.mem.string;
 import numem.mem.vector;
 
+// For some reason D really wants this import.
+import numem.unicode : validate;
+
 @nogc nothrow:
 
 private {
@@ -170,6 +173,28 @@ unittest {
     assert((0b10010101).getLength() == 0); // Malformed leading byte
 }
 
+/**
+    Gets how many utf-16 units are in the specified codepoint
+
+    Returns 0 if the codepoint can't be represented.
+*/
+size_t getUTF8Length(codepoint code) {
+    if (code <= 0x7F)                               return 1;
+    else if (code >= 0x0080   && code <= 0x07FF)    return 2;
+    else if (code >= 0x0800   && code <= 0xFFFF)    return 3;
+    else if (code >= 0x010000 && code <= 0x10FFFF)  return 4;
+    return 0;
+}
+
+@("UTF-8 codepoint len")
+unittest {
+    assert(0x1.getUTF8Length        == 1);
+    assert(0xF4.getUTF8Length       == 2);
+    assert(0x0801.getUTF8Length     == 3);
+    assert(0x010001.getUTF8Length   == 4);
+    assert(0x11FFFF.getUTF8Length   == 0);
+}
+
 
 /**
     Decodes a UTF-8 character
@@ -282,43 +307,50 @@ unittest {
 }
 
 /**
-    Encodes a series of unicode sequences to UTF-8
+    Encodes a series of unicode codepoints to UTF-8
 */
-nstring encode(UnicodeSlice sequence) {
+nstring encode(UnicodeSlice slice) {
     nstring out_;
     
     size_t i = 0;
-    while(i < sequence.length) {
+    while(i < slice.length) {
         ptrdiff_t count = 0;
         ptrdiff_t offset = 0;
-        if (sequence[i] <= utf8_ascii) {
+        
+        // Skip invalid codepoints.
+        if (!slice[i].validate()) {
+            i++;
+            continue;
+        }
+
+        if (slice[i] <= utf8_ascii) {
 
             // Single-byte ascii
-            out_ ~= cast(char)sequence[i++];
+            out_ ~= cast(char)slice[i++];
             continue;
-        } else if (sequence[i] >= 0x0080 && sequence[i] <= 0x07FF) { 
+        } else if (slice[i] >= 0x0080 && slice[i] <= 0x07FF) { 
 
             // 2 byte
             count = 1;
             offset = 0xC0;
-        } else if (sequence[i] >= 0x0800 && sequence[i] <= 0xFFFF) { 
+        } else if (slice[i] >= 0x0800 && slice[i] <= 0xFFFF) { 
 
             // 2 byte
             count = 2;
             offset = 0xE0;
-        } else if (sequence[i] >= 0x10000 && sequence[i] <= 0x10FFFF) { 
+        } else if (slice[i] >= 0x10000 && slice[i] <= 0x10FFFF) { 
 
             // 2 byte
             count = 3;
             offset = 0xF0;
         }
 
-
+        // The magic where things get stitched back together.
         char[4] bytes;
-        bytes[0] = cast(ubyte)((sequence[i] >> (6 * count)) + offset);
+        bytes[0] = cast(ubyte)((slice[i] >> (6 * count)) + offset);
         size_t ix = 1;
         while (count > 0) {
-            size_t temp = sequence[i] >> (6 * (count - 1));
+            size_t temp = slice[i] >> (6 * (count - 1));
             bytes[ix++] = 0x80 | (temp & 0x3F);
             count--;
         }
@@ -331,7 +363,7 @@ nstring encode(UnicodeSlice sequence) {
 }
 
 /**
-    Encodes a series of unicode sequences to UTF-8
+    Encodes a series of unicode codepoints to UTF-8
 */
 nstring encode(UnicodeSequence sequence) {
     return encode(sequence[0..$]);
