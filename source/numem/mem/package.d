@@ -126,7 +126,7 @@ T* nogc_new(T, Args...)(Args args) if (is(T == struct)) {
     }
 }
 
-@("Alloc struct")
+@("Struct copy-construct")
 unittest {
     struct A {
         int x;
