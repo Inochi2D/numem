@@ -15,7 +15,10 @@ version(Have_tinyd_rt) {
     auto __gc_new(T, Args...)(Args args) {
         return new T(args);
     }
-} else import std.conv : emplace;
+} else {
+    import std.conv : emplace;
+    import core.lifetime : copyEmplace;
+}
 
 nothrow @nogc:
 
@@ -110,6 +113,8 @@ T* nogc_new(T, Args...)(Args args) if (is(T == struct)) {
         T* obj = cast(T*)rawMemory;
         static if (hasUDA!(T, AllowInitEmpty) && args.length == 0) {
             nogc_emplace!T(obj);
+        } static if (args.length == 1 && is(typeof(args[0]) == T)) {
+            nogc_copyemplace(obj, args[0]);
         } else {
             nogc_emplace!T(obj, args);
         }
@@ -119,6 +124,20 @@ T* nogc_new(T, Args...)(Args args) if (is(T == struct)) {
 
         return obj;
     }
+}
+
+@("Alloc struct")
+unittest {
+    struct A {
+        int x;
+    }
+
+    A a = A(128);
+    auto b = nogc_new!A(a);
+    b.x = 42;
+    
+    assert(a.x == 128);
+    assert(b.x == 42);
 }
 
 /**
@@ -265,6 +284,11 @@ void nogc_delete(T)(ref T obj_)  {
             }
         }
     }
+}
+
+auto nogc_copyemplace(T)(T* target, ref T source) {
+    alias t = typeof(&copyEmplace!(T, T));
+    return assumeNothrowNoGC!t(&copyEmplace!(T, T))(source, *target);
 }
 
 /**
