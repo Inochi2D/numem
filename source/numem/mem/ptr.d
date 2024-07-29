@@ -550,7 +550,7 @@ public:
 }
 
 // Tests whether a shared pointer can be created.
-@("Shared pointer")
+@("shared_ptr: instantiation")
 unittest {
     class A { }
     shared_ptr!A p = shared_new!A();
@@ -558,7 +558,7 @@ unittest {
 }
 
 // Tests whether a unique pointer can be created.
-@("Unique pointer")
+@("unique_ptr: instantiation")
 unittest {
     class A { }
     unique_ptr!A p = unique_new!A();
@@ -568,7 +568,7 @@ unittest {
 
 // Tests whether the subtype of a unique pointer can properly be aliased
 // and the contents be accessed without .get()
-@("Unique pointer (alias)")
+@("unique_ptr: aliasing")
 unittest {
     struct A {
         bool b() { return true; }
@@ -579,7 +579,7 @@ unittest {
 }
 
 // Tests whether unqiue_ptr can be moved via assignment.
-@("Unique pointer move")
+@("unique_ptr:move")
 unittest {
     struct A { int b; }
 
@@ -598,7 +598,7 @@ unittest {
     assert(!second.get(), "Expected second to return null value!");
 }
 
-@("Unique pointer move to array")
+@("unique_ptr: move to array")
 unittest {
     import numem.mem.vector;
     struct A { int b; }
@@ -611,4 +611,76 @@ unittest {
 
     auto yoink = uniques[0];
     assert((yoink.get()) && (!uniques[0].get()), "Move failed!");
+}
+
+
+
+@("nogc_new: struct copy-construct")
+unittest {
+    struct A {
+        int x;
+    }
+
+    A a = A(128);
+    auto b = nogc_new!A(a);
+    b.x = 42;
+    
+    assert(a.x == 128);
+    assert(b.x == 42);
+}
+
+@("nogc_new: struct construct")
+unittest {
+    struct A { int a; }
+
+    auto aa = nogc_new!A(128);
+    auto ab = nogc_new!A;
+
+    assert(aa && aa.a == 128);
+    assert(ab);
+}
+
+@("nogc_new: class construct")
+unittest {
+    class A { int a; @nogc this(int a) { this.a = a; }}
+    class B { int a; @nogc this(int a) { this.a = a; } @nogc this() { this.a = 512; }}
+
+    auto a = nogc_new!A(42);
+    assert(a && a.a == 42);
+
+
+    // This should fail to compile because A has no empty constructor
+    assert(!__traits(compiles, { return nogc_new!A; }));
+
+    // However, type B *does* have a default constructor.
+    assert(__traits(compiles, { return nogc_new!B; }));
+}
+
+@("nogc_delete: free & null")
+unittest {
+    struct A { int a; }
+    class B { int b; @nogc this(int b) { this.b = b; } }
+
+    // Struct
+    auto taa = nogc_new!A(42);
+    auto tab = A(42);
+
+    // Class
+    auto tba = nogc_new!B(42);
+
+    // Basic type
+    auto tca = nogc_new!int(42);
+
+    assert(tab.a == 42); // If this fails the D compiler is broken.
+    assert(taa && taa.a == 42);
+    assert(tba && tba.b == 42);
+    assert(tca && *tca == 42);
+
+    nogc_delete(taa);
+    nogc_delete(tba);
+    nogc_delete(tca);
+
+    assert(!taa);
+    assert(!tba);
+    assert(!tca);
 }

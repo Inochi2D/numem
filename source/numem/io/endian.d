@@ -83,7 +83,7 @@ T fromEndian(T)(ubyte[T.sizeof] value, Endianess endianness) if (isNumeric!T) {
     return *(cast(T*)toSwap.ptr);
 }
 
-@("Flip endianness for numeric type")
+@("fromEndian: flip endianness for numeric type")
 unittest {
 
     // Finangle things around
@@ -105,7 +105,7 @@ void swapEndianInPlace(ref vector!ubyte arr, Endianess endianness) {
     if (endianness != NATIVE_ENDIAN) arr.swapEndian();
 }
 
-@("Swap endian (non-evenly divisible size)")
+@("swapEndianInPlace: swap w/ non-evenly divisible size")
 unittest {
     // Swap 3 elements
     vector!ubyte vec = vector!ubyte(cast(ubyte[])[1, 2, 3]);
@@ -115,7 +115,7 @@ unittest {
     nogc_delete(vec);
 }
 
-@("Swap endian (evenly divisible size)")
+@("swapEndianInPlace: swap endian w/ evenly divisible size")
 unittest {
     // Swap 4 elements.
     vector!ubyte vec = vector!ubyte(cast(ubyte[])[1, 2, 3, 4]);

@@ -539,7 +539,7 @@ alias vector(T) = VectorImpl!(T, true);
 */
 alias weak_vector(T) = VectorImpl!(T, false);
 
-@("Issue #2")
+@("vector: Issue #2")
 unittest {
     class A {
     }

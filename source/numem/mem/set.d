@@ -140,7 +140,7 @@ alias weak_set(K) = SetImpl!(K, "a < b", false, false);
 */
 alias set(K) = SetImpl!(K, "a < b", false, true);
 
-@("Creation")
+@("set: instantiation")
 unittest {
     // It should be possible to use most function of an uninitialized Set
     // All except functions returning a range will work.
@@ -161,7 +161,7 @@ unittest {
     assert(set.contains("titi"));
 }
 
-@("Insertion, deletion and testing")
+@("set: insertion, deletion and testing")
 unittest {
     set!(string) keywords = nogc_construct!(set!string)();
 

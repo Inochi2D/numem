@@ -861,7 +861,7 @@ public:
 //
 // </digression>
 
-@(".init testing, basics")
+@("btree: .init testing, basics")
 unittest {
     // It should be possible to use most function of an uninitialized Map
     // All except functions returning a range will work.
@@ -880,7 +880,7 @@ unittest {
     // assert(m._root == null);
 }
 
-@("add and delete in reverse order")
+@("btree: add and delete in reverse order")
 unittest {
     enum int N = 10;
     for (int G = 0; G < 1; ++G) {
@@ -898,7 +898,7 @@ unittest {
     }
 }
 
-@("dupe keys")
+@("btree: dupe keys")
 unittest {
     BTree!(int, int, "a < b", true) m;
     enum KEY = 4;
@@ -920,14 +920,14 @@ unittest {
     assert(r == -1); // all were popped
 }
 
-@("\"in\" without initialization")
+@("btree: \"in\" without initialization")
 unittest {
     BTree!(int, int) m;
     void* p = 1 in m;
     assert(p is null);
 }
 
-@("Basic test")
+@("btree: basic insertion test")
 unittest {
     BTree!(int, int) m;
     m.insert(4, 5);

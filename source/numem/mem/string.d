@@ -117,6 +117,14 @@ public:
     }
 
     /**
+        Gets the length of the string including null-terminator
+    */
+    @trusted
+    size_t realLength() inout {
+        return this.vec_.size();
+    }
+
+    /**
         Gets the capacity of the string
     */
     @trusted
@@ -154,7 +162,7 @@ public:
     */
     @trusted
     bool empty() inout {
-        return size > 0;
+        return size == 0;
     }
 
     /**
@@ -344,7 +352,7 @@ alias nstring = basic_string!char;
 alias nwstring = basic_string!wchar;
 alias ndstring = basic_string!dchar;
 
-@("Char append")
+@("nstring: char append")
 unittest {
     // appending a char
     nstring s;
@@ -362,7 +370,7 @@ unittest {
     //assert(s.toDString() == "cc");
 }
 
-@("String append")
+@("nstring: append")
 unittest {
     nstring s;
     s ~= cast(string)null;
@@ -379,11 +387,31 @@ unittest {
     assert(wd.toDString() == "ho"d);
 }
 
-@("string in map")
+@("nstring: string in map")
 unittest {
     import numem.mem.map : map;
     map!(nstring, int) kv;
     kv[nstring("uwu")] = 42;
 
     assert(kv[nstring("uwu")] == 42);
+}
+
+@("nstring: length")
+unittest {
+    nstring str = "Test string";
+    assert(str.size() == 11);
+    assert(str.length() == 11);
+    assert(str.realLength() == 12);
+}
+
+@("nstring: emptiness")
+unittest {
+    nstring str;
+
+    assert(str.empty());
+
+    // Should add null terminator.
+    str.clear();
+    assert(str.empty);
+    assert(str.realLength == 1 && str[0] == '\0');
 }

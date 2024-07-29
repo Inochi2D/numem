@@ -94,7 +94,7 @@ bool validate(const(char)[4] seq) {
     }
 }
 
-@("UTF-8 byte seq validation")
+@("validate: UTF-8 byte sequence")
 unittest {
     
     assert( validate([0x24, 0x00, 0x00, 0x00]));
@@ -128,7 +128,7 @@ bool validate(nstring str) {
     return true;
 }
 
-@("UTF-8 string validation")
+@("validate: UTF-8 string")
 unittest {
     
     assert( validate(nstring("Hello, world!")));
@@ -159,7 +159,7 @@ size_t getLength(char c) {
     return 0;
 }
 
-@("UTF-8 char len")
+@("getLength: get UTF-8 character length")
 unittest {
     assert('a'.getLength == 1);
     assert((0b11110000).getLength == 4);
@@ -180,7 +180,7 @@ size_t getUTF8Length(codepoint code) {
     return 0;
 }
 
-@("UTF-8 codepoint len")
+@("getUTF8Length: calculate codepoint length")
 unittest {
     assert(0x1.getUTF8Length        == 1);
     assert(0xF4.getUTF8Length       == 2);
@@ -258,7 +258,7 @@ codepoint decode(const(char)[4] utf) {
     return decode(utf, throwaway);
 }
 
-@("UTF-8 decode char")
+@("decode: UTF-8 char")
 unittest {
     assert(decode(['a', 0x00, 0x00, 0x00]) == cast(uint)'a');
     assert(decode([0xEB, 0x9D, 0xB7, 0x00]) == 0xB777);
@@ -291,7 +291,7 @@ UnicodeSequence decode(nstring str) {
     return code;
 }
 
-@("UTF-8 string decode")
+@("decode: UTF-8 string")
 unittest {
     import std.stdio : writeln;
     assert(decode(nstring("Hello, world!"))[0..$] == [72, 101, 108, 108, 111, 44, 32, 119, 111, 114, 108, 100, 33]);
@@ -363,7 +363,7 @@ nstring encode(UnicodeSequence sequence) {
     return encode(sequence[0..$]);
 }
 
-@("UTF-8 encode")
+@("encode: UTF-8")
 unittest {
     codepoint[8] seq1 = [0x3053, 0x3093, 0x306b, 0x3061, 0x306f, 0x4e16, 0x754c, 0xff01];
     codepoint[8] seq2 = [0x3053, unicodeReplacementCharacter, 0x306b, 0x3061, 0x306f, 0x4e16, 0x754c, 0xff01];

@@ -78,7 +78,7 @@ void enforce(T)(T in_, lazy NuException t) {
     }
 }
 
-@("Test catching exceptions")
+@("NuException: catching")
 unittest {
     auto str = nstring("Ooops!");
     try {

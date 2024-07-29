@@ -205,7 +205,7 @@ alias weak_map(K, V) = MapImpl!(K, V, "a < b", false, false);
 */
 alias map(K, V) = MapImpl!(K, V, "a < b", false, true);
 
-@("Map initialization")
+@("map: initialization")
 unittest {
     // It should be possible to use most function of an uninitialized Map
     // All except functions returning a range will work.
@@ -223,7 +223,7 @@ unittest {
     m[1] = "fun";
 }
 
-@("Map key collission")
+@("map: key collission")
 unittest {
     void test(bool removeKeys) nothrow @nogc {
         {
@@ -255,7 +255,7 @@ unittest {
     test(false);
 }
 
-@("Map lookup")
+@("map: lookup")
 unittest {
     // Associative array of ints that are
     // indexed by string keys.

@@ -16,8 +16,22 @@ version(Have_tinyd_rt) {
         return new T(args);
     }
 } else {
-    import std.conv : emplace;
-    import core.lifetime : copyEmplace;
+    import core.lifetime : copyEmplace, emplace;
+}
+
+private {
+    // NOTE: D's implementation of emplace makes it ambiguous what emplace to call in certain instances
+    // These functions forward to the correct D core functions for emplacing.
+
+    // Case: Is a class
+    T __impl_nogc_emplace(T, Args...)(void[] chunk, Args args) if(is(T == class)) {
+        return emplace!(T, Args)(chunk, args);
+    }
+
+    // Case: Is struct or basic pointer.
+    T* __impl_nogc_emplace(T, Args...)(T* chunk, Args args) if(!is(T == class)) {
+        return emplace!(T, Args)(chunk, args);
+    }
 }
 
 nothrow @nogc:
@@ -124,20 +138,6 @@ T* nogc_new(T, Args...)(Args args) if (is(T == struct)) {
 
         return obj;
     }
-}
-
-@("Struct copy-construct")
-unittest {
-    struct A {
-        int x;
-    }
-
-    A a = A(128);
-    auto b = nogc_new!A(a);
-    b.x = 42;
-    
-    assert(a.x == 128);
-    assert(b.x == 42);
 }
 
 /**
@@ -260,7 +260,10 @@ void nogc_delete(T)(ref T obj_)  {
                 assumeNothrowNoGC!destroyFuncRef(dfunc)(objptr_);
 
                 // Free memory
-                static if(isPointer!T) free(cast(void*)obj_);
+                static if(isPointer!T) {
+                    free(cast(void*)obj_);
+                    obj_ = null;
+                }
             }
         } else static if (is(T == class)) {
             if (obj_) {
@@ -274,13 +277,17 @@ void nogc_delete(T)(ref T obj_)  {
 
                 // NOTE: We already know it's heap allocated.
                 free(cast(void*)obj_);
+                obj_ = null;
             }
 
         } else {
 
             // Free memory
             static if(isPointer!T) {
-                if (cast(void*)obj_) free(cast(void*)obj_);
+                if (cast(void*)obj_) {
+                    free(cast(void*)obj_);
+                    obj_ = null;
+                }
             }
         }
     }
@@ -295,18 +302,14 @@ auto nogc_copyemplace(T)(T* target, ref T source) {
     nogc emplace function
 */
 auto nogc_emplace(T, Args...)(T* chunk, Args args) {
-    alias t = typeof(&emplace!(T, Args));
-    return assumeNothrowNoGC!t(&emplace!(T, Args))(chunk, args);
+    alias t = typeof(&__impl_nogc_emplace!(T, Args));
+    return assumeNothrowNoGC!t(&__impl_nogc_emplace!(T, Args))(chunk, args);
 }
 
 /**
     nogc emplace function
 */
-auto nogc_emplace(T, Args...)(void[] chunk, Args args) {
-    alias t = T function(void[], Args);
-    auto ifunc = (void[] chunk, Args args) {
-        return emplace!(T, Args)(chunk, args);
-    };
-
-    return assumeNothrowNoGC!t(ifunc)(chunk, args);
+auto nogc_emplace(T, Args...)(void[] chunk, Args args) if (is(T == class)) {
+    alias t = typeof(&__impl_nogc_emplace!(T, Args));
+    return assumeNothrowNoGC!t(&__impl_nogc_emplace!(T, Args))(chunk, args);
 }
