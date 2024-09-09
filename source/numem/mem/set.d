@@ -28,7 +28,6 @@ import std.functional : binaryFun;
 @AllowInitEmpty
 struct SetImpl(K, alias less = "a < b", bool allowDuplicates = false, bool ownsMemory = false) {
 public:
-nothrow:
 @nogc:
 
     @trusted

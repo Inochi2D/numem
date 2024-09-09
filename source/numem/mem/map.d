@@ -18,7 +18,6 @@ import numem.mem.internal.btree;
 import numem.mem;
 import std.functional : binaryFun;
 
-nothrow:
 @nogc:
 
 /**
@@ -29,7 +28,6 @@ nothrow:
 @AllowInitEmpty
 struct MapImpl(K, V, alias less = "a < b", bool allowDuplicates = false, bool ownsMemory = false) {
 public:
-nothrow:
 @nogc:
 
     @disable this(this);
@@ -225,7 +223,7 @@ unittest {
 
 @("map: key collission")
 unittest {
-    void test(bool removeKeys) nothrow @nogc {
+    void test(bool removeKeys) @nogc {
         {
             auto test = nogc_new!(map!(int, string))();
             int N = 100;

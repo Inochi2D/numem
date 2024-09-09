@@ -49,7 +49,6 @@ struct BTree(
     bool allowDuplicates = false, // dupe keys allowed or not
     bool duplicateKeyIsUB = false) { // user guarantees no duplicates for faster inserts (works when !allowDuplicates)
 public:
-nothrow:
 @nogc:
 
     /// Called "t" or "minimum degree" in litterature, can never be < 2.
@@ -637,7 +636,7 @@ private:
     }
 
     static struct Node {
-    nothrow @nogc:
+    @nogc:
         // Is this a leaf node?
         bool isLeaf;
 
@@ -716,7 +715,7 @@ public:
 
     /// Btree Range 
     static struct BTreeRange(RangeType type) {
-    nothrow @nogc:
+    @nogc:
         this(ref BTree tree) {
             _current = tree._root;
             if (_current is null)
