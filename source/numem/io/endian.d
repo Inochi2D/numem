@@ -9,6 +9,8 @@ import numem.mem;
 import numem.mem.vector;
 import std.traits : isNumeric;
 
+@nogc nothrow:
+
 /**
     Endianness
 */
@@ -108,7 +110,9 @@ void swapEndianInPlace(ref vector!ubyte arr, Endianess endianness) {
 @("swapEndianInPlace: swap w/ non-evenly divisible size")
 unittest {
     // Swap 3 elements
-    vector!ubyte vec = vector!ubyte(cast(ubyte[])[1, 2, 3]);
+    ubyte[3] arr = cast(ubyte[])[1, 2, 3];
+    vector!ubyte vec = vector!ubyte(arr[0..$]);
+
     vec.swapEndianInPlace(ALT_ENDIAN);
     assert(vec[0..3] == cast(ubyte[])[3, 2, 1], "Endianness swap failed!");
 
@@ -118,7 +122,9 @@ unittest {
 @("swapEndianInPlace: swap endian w/ evenly divisible size")
 unittest {
     // Swap 4 elements.
-    vector!ubyte vec = vector!ubyte(cast(ubyte[])[1, 2, 3, 4]);
+    ubyte[4] arr = cast(ubyte[])[1, 2, 3, 4];
+    vector!ubyte vec = vector!ubyte(arr[0..$]);
+
     vec.swapEndianInPlace(ALT_ENDIAN);
     assert(vec[0..4] == cast(ubyte[])[4, 3, 2, 1], "Endianness swap failed!");
 
