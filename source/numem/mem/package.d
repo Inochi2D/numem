@@ -114,7 +114,7 @@ T nogc_construct(T, Args...)(Args args) if (is(T == struct) || is(T == class) ||
     Allocates a new struct on the heap.
     Immediately exits the application if out of memory.
 */
-T* nogc_new(T, Args...)(Args args) if (is(T == struct)) {
+T* nogc_new(T, Args...)(Args args) if (is(T == struct) || is(T == union)) {
 
     version(Have_tinyd_rt) {
         return (assumeNothrowNoGC(&__gc_new!(T, Args)))(args);
