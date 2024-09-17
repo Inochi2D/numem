@@ -410,6 +410,7 @@ private:
                     oldRoot.numKeys = -1;
                     oldRoot.children[0] = null; // so that it is not destroyed
                     nogc_delete(oldRoot); // <- here
+                    oldRoot = null;
                 }
             }
             return;
@@ -536,6 +537,7 @@ private:
         rebalanceAfterDeletion(parent);
 
         nogc_delete(right);
+        right = null;
     }
 
     // internal use, delete a kv and shift remaining kv
@@ -633,6 +635,7 @@ private:
 
     void deallocateNode(Node* node) {
         nogc_delete(node);
+        node = null;
     }
 
     static struct Node {

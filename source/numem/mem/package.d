@@ -247,7 +247,7 @@ void nogc_delete(T)(ref T obj_)  {
 
 
         // With a normal runtime we can use destroy
-        static if (is(T == struct) || is(T == union)) {
+        static if (is(PointerTarget!T == struct) || is(PointerTarget!T == union)) {
             auto objptr_ = &obj_;
 
             if (objptr_) {

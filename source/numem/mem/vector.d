@@ -62,9 +62,14 @@ private:
             for (size_t n = before; n < capacity_; ++n)
             {
                 T tmp = T.init;
-                memcpy(memory + n, &tmp, T.sizeof);
+                _memcpy(memory + n, &tmp, 1);
             }
         }
+    }
+
+    pragma(inline, true)
+    void _memcpy(T* dst, T* src, size_t length) {
+        memcpy(dst, src, T.sizeof*length);
     }
 
 public:
@@ -103,7 +108,7 @@ public:
     @trusted
     this(T[] data) {
         this.resize_(data.length);
-        this.memory[0..data.length] = data[0..$];
+        this._memcpy(this.memory, data.ptr, data.length);
     }
 
     static if (!isCopyable!T && __traits(hasMember, T, "moveTo")) {
@@ -133,7 +138,7 @@ public:
         this(ref vector!T rhs) {
             if (rhs.memory) {
                 this.resize_(rhs.size_);
-                this.memory[0..size_] = rhs.memory[0..rhs.size_];
+                this._memcpy(this.memory, rhs.memory, rhs.size_);
             }
         }
 
@@ -143,8 +148,11 @@ public:
         @trusted
         this(ref return scope inout(vector!T) rhs) inout {
             if (rhs.memory) {
-                (cast(vector!T)this).resize_(rhs.size_);
-                (cast(vector!T)this).memory[0..size_] = (cast(vector!T)rhs).memory[0..rhs.size_];
+                auto self = (cast(vector!T)this);
+                auto other = (cast(vector!T)rhs);
+
+                self.resize_(rhs.size_);
+                other._memcpy(self.memory, other.memory, other.size_);
             }
         }
     }
