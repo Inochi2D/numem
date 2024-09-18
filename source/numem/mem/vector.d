@@ -23,7 +23,7 @@ enum isSomeWeakVector(T) = is(T : VectorImpl!(U, false), U);
     C++ style vector
 */
 struct VectorImpl(T, bool ownsMemory=false) {
-nothrow @nogc:
+@nogc:
 private:
     enum VECTOR_ALIGN = 32;
 
