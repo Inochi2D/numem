@@ -296,7 +296,7 @@ public:
     */
     @trusted
     const(T)[] opIndex() {
-        return cast(const(T)[])this.vec_[];
+        return cast(const(T)[])this.vec_[0..$-1];
     }
 
     /**
