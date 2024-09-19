@@ -37,6 +37,7 @@ private:
     vector!(T) vec_;
 
     void append_(const(T)[] span) {
+        if (span.length == 0) return;
 
         // If size of string is > 0, then it should have the null terminator.
         size_t baseSize = size();
@@ -66,6 +67,16 @@ public:
         if (this.vec_.data()) {
             nogc_delete(this.vec_);
         }
+    }
+
+    /**
+        Creates a string with a predefined length.
+
+        The contents are undefined.
+    */
+    @trusted
+    this(size_t length) {
+        this.resize(length);
     }
 
     /**
@@ -276,6 +287,22 @@ public:
     }
 
     /**
+        Reverses the string, this function is NOT unicode aware.
+    */
+    @trusted
+    void reverse() {
+        foreach(i; 0..this.size()/2) {
+            size_t j = this.size()-i-1;
+        
+            T c = vec_.data[i];
+
+            // Swap
+            vec_.data[i] = vec_.data[j];
+            vec_.data[j] = c;
+        }
+    }
+
+    /**
         Slicing operator
 
         D slices are short lived and may end up pointing to invalid memory if their string is modified.
@@ -290,7 +317,7 @@ public:
     */
     @trusted
     const(T)[] opIndex() {
-        return cast(const(T)[])this.vec_[0..$-1];
+        return cast(const(T)[])this.vec_[0..this.size()];
     }
 
     /**

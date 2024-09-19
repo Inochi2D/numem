@@ -94,6 +94,14 @@ private:
 public:
 
     /**
+        Constructs a random number generator with the current system clock as a seed
+    */
+    this() {
+        import core.stdc.time : time;
+        this(cast(size_t)time(null));
+    }
+
+    /**
         Constructs a random number generator with a set seed.
     */
     this(size_t seed) {
