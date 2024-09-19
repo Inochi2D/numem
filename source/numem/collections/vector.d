@@ -1,12 +1,13 @@
 /*
-    Copyright © 2023, Inochi2D Project
+    Copyright © 2024, Inochi2D Project
     Distributed under the 2-Clause BSD License, see LICENSE file.
-    
-    Authors: Luna Nielsen
+
+    Authors: Luna the Foxgirl
 */
-module numem.mem.vector;
-import numem.mem.ptr;
-import numem.mem;
+
+module numem.collections.vector;
+import numem.core.memory.smartptr;
+import numem.core;
 import core.stdc.stdlib : malloc, realloc, free;
 import core.stdc.string : memcpy, memmove;
 import core.atomic : atomicFetchAdd, atomicFetchSub, atomicStore, atomicLoad;

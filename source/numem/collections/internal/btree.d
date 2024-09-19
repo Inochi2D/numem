@@ -6,8 +6,8 @@
 * License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 * Authors:   Guillaume Piolat
 */
-module numem.mem.internal.btree;
-import numem.mem;
+module numem.collections.internal.btree;
+import numem.core;
 
 import std.functional : binaryFun;
 

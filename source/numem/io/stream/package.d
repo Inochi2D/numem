@@ -1,11 +1,12 @@
 /*
-    Copyright © 2023, Inochi2D Project
+    Copyright © 2024, Inochi2D Project
     Distributed under the 2-Clause BSD License, see LICENSE file.
-    
-    Authors: Luna Nielsen
+
+    Authors: Luna the Foxgirl
 */
+
 module numem.io.stream;
-import numem.mem.vector;
+import numem.collections.vector;
 import core.stdc.stdio : SEEK_CUR, SEEK_END, SEEK_SET;
 
 public import numem.io.stream.filestream;

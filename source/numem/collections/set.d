@@ -13,9 +13,9 @@
     License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
     Authors:   Authors: Steven Schveighoffer, $(HTTP erdani.com, Andrei Alexandrescu), Guillaume Piolat
 */
-module numem.mem.set;
-import numem.mem.internal.btree;
-import numem.mem;
+module numem.collections.set;
+import numem.collections.internal.btree;
+import numem.core;
 import std.functional : binaryFun;
 
 

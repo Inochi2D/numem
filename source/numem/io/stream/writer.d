@@ -1,14 +1,15 @@
 /*
     Copyright © 2024, Inochi2D Project
     Distributed under the 2-Clause BSD License, see LICENSE file.
-    
-    Authors: Luna Nielsen
+
+    Authors: Luna the Foxgirl
 */
+
 module numem.io.stream.writer;
 import numem.io.stream;
 import numem.io.endian;
-import numem.mem.string;
-import numem.mem.vector;
+import numem.string;
+import numem.collections.vector;
 import std.traits;
 
 /**

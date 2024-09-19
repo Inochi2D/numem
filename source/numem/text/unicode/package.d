@@ -1,5 +1,12 @@
+/*
+    Copyright © 2024, Inochi2D Project
+    Distributed under the 2-Clause BSD License, see LICENSE file.
+
+    Authors: Luna the Foxgirl
+*/
+
 module numem.unicode;
-import numem.mem.vector;
+import numem.collections.vector;
 
 @nogc nothrow:
 

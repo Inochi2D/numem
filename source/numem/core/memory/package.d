@@ -4,11 +4,14 @@
     
     Authors: Luna Nielsen
 */
-module numem.mem;
+
+module numem.core.memory;
 import core.stdc.stdlib : free, exit, malloc;
 import std.traits;
-import numem.mem.utils;
-import numem.mem.internal.trace;
+import numem.core.utils;
+import numem.core.trace;
+
+public import numem.core.memory.smartptr;
 
 version(Have_tinyd_rt) {
     private __gshared

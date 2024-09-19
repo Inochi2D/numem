@@ -4,10 +4,11 @@
     
     Authors: Luna Nielsen
 */
-module numem.mem.ptr;
+
+module numem.core.memory.smartptr;
 import core.atomic : atomicFetchAdd, atomicFetchSub, atomicStore, atomicLoad;
 import std.traits;
-import numem.mem;
+import numem.core;
 
 //
 //          SMART POINTERS
@@ -600,7 +601,7 @@ unittest {
 
 @("unique_ptr: move to array")
 unittest {
-    import numem.mem.vector;
+    import numem.collections.vector;
     struct A { int b; }
 
     vector!(unique_ptr!A) uniques;

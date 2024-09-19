@@ -5,9 +5,9 @@
     Authors: Luna Nielsen
 */
 module numem.io.file;
-import numem.mem.string;
-import numem.mem;
-import numem.mem.ptr;
+import numem.string;
+import numem.core;
+import numem.core.memory;
 import numem.io.stream.filestream;
 
 import c = core.stdc.stdio;

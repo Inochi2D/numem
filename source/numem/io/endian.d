@@ -5,9 +5,9 @@
     Authors: Luna Nielsen
 */
 module numem.io.endian;
-import numem.mem;
-import numem.mem.vector;
-import std.traits : isNumeric;
+import numem.core;
+import numem.collections.vector;
+import std.traits : isNumeric, isIntegral;
 
 @nogc nothrow:
 
@@ -129,4 +129,23 @@ unittest {
     assert(vec[0..4] == cast(ubyte[])[4, 3, 2, 1], "Endianness swap failed!");
 
     nogc_delete(vec);
+}
+
+/**
+    Converts values from network order to host order
+
+    Calling this on a converted value flips the operation.
+*/
+T ntoh(T)(T in_) if (isIntegral!T && T.sizeof > 1) {
+    static if (NATIVE_ENDIAN == Endianess.bigEndian) return in_;
+    else {
+        union tmp {
+            T value;
+            ubyte[T.sizeof] bytes;
+        }
+
+        tmp toConvert;
+        toConvert.value = in_;
+        return fromEndian!(T)(toConvert.bytes, Endianess.bigEndian);
+    }
 }

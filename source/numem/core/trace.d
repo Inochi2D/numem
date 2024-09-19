@@ -8,7 +8,7 @@
 /**
     Debug tracing module
 */
-module numem.mem.internal.trace;
+module numem.core.trace;
 import core.stdc.stdio;
 
 pragma(inline, true)

@@ -4,14 +4,26 @@
     
     Authors: Luna Nielsen
 */
-module numem.mem.string;
-import numem.mem.vector;
-import numem.mem.internal;
-import numem.mem;
+module numem.string;
+import numem.collections.vector;
+import numem.core;
+import std.string;
 
 /// Gets whether the provided type is some type of nstring.
 enum isSomeNString(T) = 
     is(T == nstring) || is (T == nwstring) || is(T == ndstring);
+
+/// Gets whether the provided type is some type of null terminated C string.
+enum isSomeCString(T) =
+    is(T : inout(char)*) || is(T : inout(wchar)*)|| is(T : inout(dchar)*);
+
+/// Gets whether the provided type is some type of D string slice.
+enum isSomeDString(T) =
+    is(T : inout(char)[]) || is(T : inout(wchar)[])|| is(T : inout(dchar)[]);
+
+/// Gets whether the provided type is a character
+enum isSomeChar(T) =
+    is(T == char) || is(T == wchar) || is(T == dchar);
 
 /**
     Basic string type.
@@ -57,28 +69,21 @@ public:
     }
 
     /**
+        Creates a string from a C string
+
+        This is considered unsafe.
+    */
+    @system
+    this(inout(T)* text) {
+        this.set_(text.fromStringz());
+    }
+
+    /**
         Creates a string with specified text
     */
     @trusted
     this(const(T)[] text) {
         this.set_(text);
-    }
-
-    // Handle creation from C string
-    version(NoC) { }
-    else {
-        static if (is(T == char)) {
-
-            /**
-                Creates a string with specified text
-            */
-            @system
-            this(ref const(char)* text) {
-                import core.stdc.string : strlen;
-                size_t len = strlen(text);
-                this.set_(text[0..len]);
-            }
-        }
     }
 
     /**
@@ -259,18 +264,7 @@ public:
     */
     @system
     ref auto opOpAssign(string op = "~")(const(T)* cString) {
-        return this.appendCString(cString);
-    }
-
-    /**
-        Appends a zero-terminated C string to string
-    */
-    @system
-    ref auto appendCString(const(T)* cString) {
-        const(T)[] s = numem.mem.internal.fromStringz(cString);
-        if (s != null)
-            this.append_(s);
-        return this;
+        return this.opOpAssign(cString.fromStringz());
     }
 
     /**
@@ -372,24 +366,28 @@ unittest {
 
 @("nstring: append")
 unittest {
+    const(char)* cstr1 = "a zero-terminated string";
+    const(wchar)* cstr2 = "hey";
+    const(dchar)* cstr3 = "ho";
+
     nstring s;
     s ~= cast(string)null;
     s ~= "";
-    s.appendCString("a zero-terminated string".ptr);
+    s ~= cstr1;
     assert(s.toDString() == "a zero-terminated string");
 
     nwstring ws;
-    ws.appendCString("hey"w.ptr);
+    ws ~= cstr2;
     assert(ws.length == 3);
 
     ndstring wd;
-    wd.appendCString("ho"d.ptr);
+    wd ~= cstr3;
     assert(wd.toDString() == "ho"d);
 }
 
 @("nstring: string in map")
 unittest {
-    import numem.mem.map : map;
+    import numem.collections.map : map;
     map!(nstring, int) kv;
     kv[nstring("uwu")] = 42;
 
@@ -414,4 +412,37 @@ unittest {
     str.clear();
     assert(str.empty);
     assert(str.realLength == 1 && str[0] == '\0');
+}
+
+//
+//      C and D string handling utilities
+//
+
+@nogc pure nothrow {
+
+    /**
+        Gets a slice from a C string
+    */
+    inout(T)[] fromStringz(T)(inout(T)* cString) if (isSomeChar!T)  {
+        return cString ? cString[0 .. cstrlen!T(cString)] : null;
+    }
+
+    /**
+        Gets the length of a C-style string
+    */
+    size_t cstrlen(T)(inout(T)* s) if (isSomeChar!T)  {
+        const(T)* p = s;
+        while (*p)
+            ++p;
+        
+        return p - s;
+    }
+}
+
+@("string: cstrlen")
+unittest {
+    const(char)* cstr1 = "A";
+    const(char)* cstr2 = "ABCD";
+    assert(cstrlen(cstr1) == 1);
+    assert(cstrlen(cstr2) == 4);
 }

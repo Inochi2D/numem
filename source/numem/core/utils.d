@@ -1,8 +1,12 @@
-module numem.mem.utils;
-import std.traits;
+/*
+    Copyright © 2024, Inochi2D Project
+    Distributed under the 2-Clause BSD License, see LICENSE file.
 
-// Based on code from dplug:core
-// which is released under the Boost license.
+    Authors: Luna the Foxgirl
+*/
+
+module numem.core.utils;
+import std.traits;
 
 /**
     Forces a function to assume that it's nogc compatible.

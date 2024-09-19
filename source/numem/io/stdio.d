@@ -7,7 +7,7 @@ version(NoC) {
     // If there's no C this should be disabled.
 } else {
 
-    import numem.mem.string;
+    import numem.string;
     import numem.conv;
     import core.stdc.stdio : printf, puts;
 

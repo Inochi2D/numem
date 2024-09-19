@@ -1,11 +1,19 @@
+/*
+    Copyright © 2024, Inochi2D Project
+    Distributed under the 2-Clause BSD License, see LICENSE file.
+
+    Authors: Luna the Foxgirl
+*/
+
 /**
     Numem Exception support
 */
-module numem.mem.exception;
-import numem.mem.string;
-import numem.mem;
+module numem.core.exception;
+import numem.string;
+import numem.core;
+
 import core.stdc.stdio;
-import numem.mem.internal.trace;
+import numem.core.trace;
 
 @nogc:
 
