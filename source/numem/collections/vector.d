@@ -26,6 +26,8 @@ enum isSomeWeakVector(T) = is(T : VectorImpl!(U, false), U);
 struct VectorImpl(T, bool ownsMemory=false) {
 @nogc:
 private:
+    alias selfType = VectorImpl!(T, ownsMemory);
+
     enum VECTOR_ALIGN = 32;
 
     T* memory = null;
@@ -112,49 +114,41 @@ public:
         this._memcpy(this.memory, data.ptr, data.length);
     }
 
-    static if (!isCopyable!T && __traits(hasMember, T, "moveTo")) {
+    /**
+        Makes a copy of a vector
 
-        /**
-            Moves non-copyable members of one vector to another
-        */
-        @trusted
-        this(ref vector!T rhs) {
-            if (rhs.memory) {
-                this.resize_(rhs.size_);
-                foreach(i; 0..rhs.size_) {
-                    rhs.memory[i].moveTo(this.memory[i]);
-                }
-
-                // Clear memory.
-                rhs.resize(0);
-                rhs.shrinkToFit();
-            }
+        Allows weak_vector <-> vector copies.
+    */
+    @trusted
+    this(T)(ref T rhs) if(!is(T == selfType) && isSomeVector!T)  {
+        if (rhs.memory) {
+            this.resize_(rhs.size_);
+            this._memcpy(this.memory, rhs.memory, rhs.size_);
         }
-    } else {
+    }
 
-        /**
-            Makes a copy of a vector
-        */
-        @trusted
-        this(ref vector!T rhs) {
-            if (rhs.memory) {
-                this.resize_(rhs.size_);
-                this._memcpy(this.memory, rhs.memory, rhs.size_);
-            }
+    /**
+        Makes a copy of a vector
+    */
+    @trusted
+    this(ref selfType rhs) {
+        if (rhs.memory) {
+            this.resize_(rhs.size_);
+            this._memcpy(this.memory, rhs.memory, rhs.size_);
         }
+    }
 
-        /**
-            Makes a copy of a vector
-        */
-        @trusted
-        this(ref return scope inout(vector!T) rhs) inout {
-            if (rhs.memory) {
-                auto self = (cast(vector!T)this);
-                auto other = (cast(vector!T)rhs);
+    /**
+        Makes a copy of a vector
+    */
+    @trusted
+    this(ref return scope inout(selfType) rhs) inout {
+        if (rhs.memory) {
+            auto self = (cast(selfType)this);
+            auto other = (cast(selfType)rhs);
 
-                self.resize_(rhs.size_);
-                other._memcpy(self.memory, other.memory, other.size_);
-            }
+            self.resize_(rhs.size_);
+            other._memcpy(self.memory, other.memory, other.size_);
         }
     }
 

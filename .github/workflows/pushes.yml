@@ -35,8 +35,8 @@ jobs:
         # Build and run tests, as defined by `unittest` configuration
         # In this mode, `mainSourceFile` is excluded and `version (unittest)` are included
         # See https://dub.pm/package-format-json.html#configurations
-        dub test
+        dub test --config=unittest
 
         # Ditto, in release mode.
         # Sometimes D packages break in release mode, so this is important to test.
-        dub test --build=release
+        dub test --config=unittest --build=release
