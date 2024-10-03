@@ -165,8 +165,15 @@ public:
     @trusted
     this(ref selfType rhs) {
         if (rhs.memory) {
+
+            // NOTE: We need to turn these into pointers because
+            // The D compiler otherwise thinks its supposed
+            // to free the operands.
+            auto self = (cast(selfType*)&this);
+            auto other = (cast(selfType*)&rhs);
+
             this.resize_(rhs.size_);
-            this._memcpy(this.memory, rhs.memory, rhs.size_);
+            this._memcpy(self.memory, other.memory, rhs.size_);
         }
     }
 
@@ -176,8 +183,12 @@ public:
     @trusted
     this(ref return scope inout(selfType) rhs) inout {
         if (rhs.memory) {
-            auto self = (cast(selfType)this);
-            auto other = (cast(selfType)rhs);
+
+            // NOTE: We need to turn these into pointers because
+            // The D compiler otherwise thinks its supposed
+            // to free the operands.
+            auto self = (cast(selfType*)&this);
+            auto other = (cast(selfType*)&rhs);
 
             self.resize_(rhs.size_);
             other._memcpy(self.memory, other.memory, other.size_);

@@ -103,6 +103,10 @@ public:
     */
     @trusted
     this(ref return scope selfType rhs) {
+
+        // NOTE: We need to turn these into pointers because
+        // The D compiler otherwise thinks its supposed
+        // to free the operands.
         selfType* self = &this;
         selfType* other = &rhs;
         (*self).set_((*other)[]);
@@ -114,6 +118,10 @@ public:
     @trusted
     this(ref return scope inout(selfType) rhs) inout {
         if (rhs.size > 0) {
+
+            // NOTE: We need to turn these into pointers because
+            // The D compiler otherwise thinks its supposed
+            // to free the operands.
             selfType* self = (cast(selfType*)&this);
             selfType* other = (cast(selfType*)&rhs);
             (*self).set_((*other)[]);
@@ -494,11 +502,6 @@ unittest {
 version(unittest) {
     struct MyStruct {
     @nogc:
-        this(ref return scope inout(MyStruct) src) inout
-        {
-            foreach (i, ref inout field; src.tupleof)
-                this.tupleof[i] = field;
-        }
         nstring str;
     }
 }
@@ -510,9 +513,6 @@ unittest {
     vector!MyStruct struct_;
     struct_ ~= MyStruct(nstring("a"));
     struct_ ~= MyStruct(nstring("b"));
-
-    writeln(struct_[0..$]);
-    writeln(struct_[0].str);
 
     vector!MyStruct copy = struct_;
     nogc_delete(copy);
