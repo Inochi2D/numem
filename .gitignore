@@ -17,3 +17,5 @@ numem-test-*
 dub.selections.json
 out/
 source/app.d
+
+.vscode
