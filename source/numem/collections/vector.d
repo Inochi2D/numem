@@ -12,7 +12,7 @@ import core.stdc.stdlib : malloc, realloc, free;
 import core.stdc.string : memcpy, memmove;
 import core.atomic : atomicFetchAdd, atomicFetchSub, atomicStore, atomicLoad;
 import std.math.rounding : quantize, ceil;
-import std.traits : isCopyable;
+import std.traits;
 
 /// Gets whether the specified type is some variety of the vector type
 enum isSomeVector(T) = is(T : VectorImpl!U, U...);
@@ -62,17 +62,40 @@ private:
             // a opOpAssign operation.
             // But, we need to do this without triggering the postblit or move-constructor here,
             // or the same problem happen!
-            for (size_t n = before; n < capacity_; ++n)
-            {
+            for (size_t n = before; n < capacity_; ++n) {
+
                 T tmp = T.init;
-                _memcpy(memory + n, &tmp, 1);
+                memcpy(memory + n, &tmp, T.sizeof);
             }
         }
     }
 
     pragma(inline, true)
     void _memcpy(T* dst, T* src, size_t length) {
-        memcpy(dst, src, T.sizeof*length);
+
+        static if(__traits(hasPostblit, T)) {   
+            
+            memcpy(dst, src, T.sizeof*length); 
+            foreach(i; 0..length) {
+                dst[i].__xpostblit();
+            }
+        } else static if (__traits(hasCopyConstructor, T)) {
+
+            // Initializer
+            T tmp = T.init;
+            foreach(i; 0..length) {
+
+                // Copy over initializer
+                memcpy(dst + i, &tmp, T.sizeof);
+
+                // Call copy constructor
+                dst[i].__ctor(src[i]);
+            }
+
+        } else {
+
+            memcpy(dst, src, T.sizeof*length);
+        }
     }
 
 public:
@@ -87,13 +110,15 @@ public:
             static if (ownsMemory) {
                 
                 // Delete elements in the array.
-                foreach_reverse(item; 0..size_) {
-                    nogc_delete(this.memory[item]);
+                static if (!isBasicType!T) {
+                    foreach_reverse(item; 0..size_) {
+                        nogc_delete(this.memory[item]);
+                    }
                 }
-            }
 
-            // Free the pointer
-            free(cast(void*)this.memory);
+                // Free the pointer
+                free(cast(void*)this.memory);
+            }
         }
 
         this.memory = null;
@@ -110,6 +135,13 @@ public:
     /// Constructor
     @trusted
     this(T[] data) {
+        this.resize_(data.length);
+        this._memcpy(this.memory, data.ptr, data.length);
+    }
+
+    /// Constructor
+    @trusted
+    this(ref T[] data) {
         this.resize_(data.length);
         this._memcpy(this.memory, data.ptr, data.length);
     }
@@ -400,93 +432,42 @@ public:
         return this;
     }
 
-    static if (is(T : unique_ptr!U, U)) {
+    /**
+        Add value to vector
+    */
+    @trusted
+    ref auto opOpAssign(string op = "~")(T value) {
+        size_t cSize = size_;
 
-        /**
-            Add value to vector
-        */
-        @trusted
-        ref auto opOpAssign(string op = "~")(T value) {
-            size_t cSize = size_;
+        this.resize_(size_+1);
+        this._memcpy(this.memory+cSize, &value, 1);
 
-            // Very hacky move operation
-            this.resize_(size_+1);
-            memcpy(&memory[cSize], &value, T.sizeof);
-            value.clear();
+        return this;
+    }
 
-            return this;
-        }
+    /**
+        Add vector items to vector
+    */
+    @trusted
+    ref auto opOpAssign(string op = "~")(vector!T other) {
+        size_t cSize = size_;
+        
+        this.resize_(size_ + other.size_);
+        this._memcpy(this.memory+cSize, other.ptr, other.size_);
 
-        /**
-            Add vector items to vector
-        */
-        @trusted
-        ref auto opOpAssign(string op = "~")(vector!T other) {
-            size_t cSize = size_;
+        return this;
+    }
 
-            // Very hacky move operation
-            this.resize_(size_ + other.size_);
-            memcpy(&memory[cSize], other.memory, other.size_*T.sizeof);
-            foreach(i; 0..other.size) other[i].clear();
-            
-            return this;
-        }
+    /**
+        Add slice to vector
+    */
+    @trusted
+    ref auto opOpAssign(string op = "~")(T[] other) {
+        size_t cSize = size_;
 
-        /**
-            Add slice to vector
-        */
-        @trusted
-        ref auto opOpAssign(string op = "~")(T[] other) {
-            size_t cSize = size_;
-            
-            // Very hacky move operation
-            this.resize_(size_ + other.length);
-            memcpy(&memory[cSize], other.ptr, other.length*T.sizeof);
-            foreach(i; 0..other.length) other[i].clear();
-
-            return this;
-        }
-
-    } else {
-
-        /**
-            Add value to vector
-        */
-        @trusted
-        ref auto opOpAssign(string op = "~")(T value) {
-            size_t cSize = size_;
-
-            this.resize_(size_+1);
-            memory[cSize] = value;
-
-            return this;
-        }
-
-        /**
-            Add vector items to vector
-        */
-        @trusted
-        ref auto opOpAssign(string op = "~")(vector!T other) {
-            size_t cSize = size_;
-            
-            this.resize_(size_ + other.size_);
-            this.memory[cSize..cSize+other.size_] = other.memory[0..other.size_];
-            
-            return this;
-        }
-
-        /**
-            Add slice to vector
-        */
-        @trusted
-        ref auto opOpAssign(string op = "~")(T[] other) {
-            size_t cSize = size_;
-
-            this.resize_(size_ + other.length);
-            this.memory[cSize..cSize+other.length] = other[0..$];
-            
-            return this;
-        }
+        this.resize_(size_ + other.length);
+        this._memcpy(this.memory+cSize, other.ptr, other.length);
+        return this;
     }
 
     /**
@@ -503,7 +484,7 @@ public:
         D slices are short lived and may end up pointing to invalid memory if their string is modified.
     */
     @trusted
-    T[] opSlice(size_t start, size_t end) {
+    T[] opSlice(size_t dim = 0)(size_t start, size_t end) {
         return memory[start..end];
     }
 
@@ -529,6 +510,36 @@ public:
     @trusted
     ref T opIndex(size_t index) {
         return memory[index];
+    }
+
+    /**
+        Allows assigning a range of values to the vector.
+    */
+    @trusted
+    void opAssign(T)(in inout(T)[] values) {
+        this.resize(values.length);
+        this._memcpy(memory, cast(T*)values.ptr, values.length);
+    }
+
+    /**
+        Allows assigning a range of values to the vector.
+    */
+    @trusted
+    void opIndexAssign(in T value, size_t index) {
+        this._memcpy(cast(T*)&memory[index], cast(T*)&value, 1);
+    }
+
+    /**
+        Allows assigning a range of values to the vector.
+    */
+    @trusted
+    void opIndexAssign(in T[] values, T[] slice) {
+        size_t offset = slice.ptr-this.memory;
+        if (offset+slice.length > size_) {
+            this.resize_(offset+slice.length);
+        }
+
+        this._memcpy(cast(T*)slice.ptr, cast(T*)values.ptr, slice.length);
     }
 }
 

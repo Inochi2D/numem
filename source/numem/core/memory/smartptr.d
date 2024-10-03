@@ -53,15 +53,18 @@ private {
 
         void free() {
 
-            // Free and atomically store null in the pointer.
-            static if (is(T == class)) {
+            if (ref_) {
 
-                // Store reference in variable as casting makes it an rvalue
-                // rvalues can't be sent to ref parameters.
-                T refT = cast(T)ref_;
-                nogc_delete!T(refT);
-            } else {
-                nogc_delete!(T*)(ref_);
+                // Free and atomically store null in the pointer.
+                static if (is(T == class)) {
+
+                    // Store reference in variable as casting makes it an rvalue
+                    // rvalues can't be sent to ref parameters.
+                    T refT = cast(T)ref_;
+                    nogc_delete!T(refT);
+                } else {
+                    nogc_delete!(T*)(ref_);
+                }
             }
 
             // Enforce that strongRefs is set to 0.

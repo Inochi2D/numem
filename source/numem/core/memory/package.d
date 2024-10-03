@@ -6,10 +6,9 @@
 */
 
 module numem.core.memory;
-import core.stdc.stdlib : free, exit, malloc;
-import std.traits;
-import numem.core.utils;
+import numem.core.memory.alloc;
 import numem.core.trace;
+import std.traits;
 
 public import numem.core.memory.smartptr;
 
@@ -35,6 +34,9 @@ private {
     T* __impl_nogc_emplace(T, Args...)(T* chunk, Args args) if(!is(T == class)) {
         return emplace!(T, Args)(chunk, args);
     }
+
+    enum isAggregateStackType(T) = 
+        is(T == struct) || is(T == union);
 }
 
 nothrow @nogc:
@@ -211,89 +213,7 @@ void nogc_delete(T)(ref T obj_)  {
     // Tracing
     debug(trace) dbg_dealloc(obj_);
     
-    version(minimal_rt) {
-        static if (isPointer!T || is(T == class)) {
-            if (obj_) {
-            
-                static if (is(T == class)) {
-
-                    // Do pointer arithmetic to fetch the class destructor list and call it.
-                    void* chunkStart = (cast(void*)obj_)-_impl_destructorStruct.sizeof;
-                    auto store = cast(_impl_destructorStruct*)chunkStart;
-                    store.destruct(cast(void*)obj_);
-                    free(chunkStart);
-
-                } else static if (is(T == struct) || is(T == union)) {
-
-                    // Try to call elaborate destructor first before attempting __dtor
-                    static if (__traits(hasMember, T, "__xdtor")) {
-                        assumeNothrowNoGC(&obj_.__xdtor)();
-                    } else static if (__traits(hasMember, T, "__dtor")) {
-                        assumeNothrowNoGC(&obj_.__dtor)();
-                    }
-                    free(cast(void*)obj_);
-                } else {
-                    free(cast(void*)obj_);
-                }
-            }
-        } else static if (is(T == struct) || is(T == union)) {
-
-            // Try to call elaborate destructor first before attempting __dtor
-            static if (__traits(hasMember, T, "__xdtor")) {
-                assumeNothrowNoGC(&obj_.__xdtor)();
-            } else static if (__traits(hasMember, T, "__dtor")) {
-                assumeNothrowNoGC(&obj_.__dtor)();
-            }
-        }
-
-    } else {
-
-
-        // With a normal runtime we can use destroy
-        static if (is(PointerTarget!T == struct) || is(PointerTarget!T == union)) {
-            auto objptr_ = &obj_;
-
-            if (objptr_) {
-
-                // First create an internal function that calls with the correct parameters
-                alias destroyFuncRef = void function(typeof(objptr_));
-                destroyFuncRef dfunc = (typeof(objptr_) objptr_) { destroy!false(objptr_); };
-                
-                // Then assume it's nothrow nogc
-                assumeNothrowNoGC!destroyFuncRef(dfunc)(objptr_);
-
-                // Free memory
-                static if(isPointer!T) {
-                    free(cast(void*)obj_);
-                    obj_ = null;
-                }
-            }
-        } else static if (is(T == class)) {
-            if (obj_) {
-
-                // First create an internal function that calls with the correct parameters
-                alias destroyFuncRef = void function(typeof(obj_));
-                destroyFuncRef dfunc = (typeof(obj_) objptr_) { destroy!false(objptr_); };
-
-                // Then assume it's nothrow nogc
-                assumeNothrowNoGC!destroyFuncRef(dfunc)(obj_);
-
-                // NOTE: We already know it's heap allocated.
-                free(cast(void*)obj_);
-                obj_ = null;
-            }
-
-        } else {
-
-            // Free memory
-            static if(isPointer!T) {
-                if (cast(void*)obj_) {
-                    free(cast(void*)obj_);
-                    obj_ = null;
-                }
-            }
-        }
-    }
+    destruct(obj_);
 }
 
 auto nogc_copyemplace(T)(T* target, ref T source) {

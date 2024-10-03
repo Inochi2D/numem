@@ -34,7 +34,8 @@ enum isSomeChar(T) =
 struct basic_string(T) if (is(T == char) || is(T == dchar) || is(T == wchar)) {
 nothrow @nogc:
 private:
-    vector!(T) vec_;
+    alias selfType = basic_string!T;
+    vector!T vec_;
 
     void append_(const(T)[] span) {
         if (span.length == 0) return;
@@ -52,8 +53,8 @@ private:
 
     void set_(const(T)[] span) {
         vec_.resize(span.length+1);
-        (cast(T*)vec_.data)[0..span.length] = span[0..$];
-        (cast(T*)vec_.data)[this.size()] = '\0';
+        vec_[0..span.length] = span[0..span.length];
+        vec_[this.size()] = '\0';
     }
 
 public:
@@ -101,16 +102,22 @@ public:
         Makes a copy of a string
     */
     @trusted
-    this(ref return scope basic_string!T rhs) {
-        this.vec_ = rhs.vec_;
+    this(ref return scope selfType rhs) {
+        selfType* self = &this;
+        selfType* other = &rhs;
+        (*self).set_((*other)[]);
     }
 
     /**
         Makes a copy of a string
     */
     @trusted
-    this(ref return scope inout(basic_string!T) rhs) inout {
-        this.vec_ = rhs.vec_;
+    this(ref return scope inout(selfType) rhs) inout {
+        if (rhs.size > 0) {
+            selfType* self = (cast(selfType*)&this);
+            selfType* other = (cast(selfType*)&rhs);
+            (*self).set_((*other)[]);
+        }
     }
 
 
@@ -215,22 +222,6 @@ public:
     @trusted
     immutable(T)[] toDString() {
         return cast(immutable(T)[])(this.vec_.data()[0..this.size()]);
-    }
-
-    /**
-        Casts nstring to C string
-    */
-    @trusted
-    const(T)* opCast()() {
-        return toCString();
-    }
-
-    /**
-        Casts nstring to D string
-    */
-    @trusted
-    immutable(T)[] opCast()() {
-        return toDString();
     }
 
     /**
@@ -472,4 +463,62 @@ unittest {
     const(char)* cstr2 = "ABCD";
     assert(cstrlen(cstr1) == 1);
     assert(cstrlen(cstr2) == 4);
+}
+
+@("string: vector-of-strings")
+unittest {
+    vector!nstring strings;
+    strings ~= nstring("a");
+    strings ~= nstring("b");
+
+    vector!nstring copy = strings;
+    nogc_delete(copy);
+
+    assert(strings[0] == "a");
+    assert(strings[1] == "b");
+
+    assert(copy.size() == 0);
+}
+
+@("string: map-of-strings")
+unittest {
+    import numem.collections.map;
+    map!(uint, nstring) strings;
+    strings[0] = nstring("a");
+    strings[1] = nstring("b");
+
+    assert(strings[0] == "a");
+    assert(strings[1] == "b");
+}
+
+version(unittest) {
+    struct MyStruct {
+    @nogc:
+        this(ref return scope inout(MyStruct) src) inout
+        {
+            foreach (i, ref inout field; src.tupleof)
+                this.tupleof[i] = field;
+        }
+        nstring str;
+    }
+}
+
+@("string: struct-with-strings")
+unittest {
+    import std.stdio : writeln;
+
+    vector!MyStruct struct_;
+    struct_ ~= MyStruct(nstring("a"));
+    struct_ ~= MyStruct(nstring("b"));
+
+    writeln(struct_[0..$]);
+    writeln(struct_[0].str);
+
+    vector!MyStruct copy = struct_;
+    nogc_delete(copy);
+
+    assert(struct_[0].str == "a");
+    assert(struct_[1].str == "b");
+
+    assert(copy.size() == 0);
 }
