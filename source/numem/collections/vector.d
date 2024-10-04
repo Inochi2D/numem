@@ -199,17 +199,10 @@ public:
         Gets the C data pointer
     */
     @trusted
-    T* data() {
+    inout(T)* data() inout {
         return memory;
     }
-
-    /**
-        Gets the C data pointer as an inout pointer
-    */
-    @trusted
-    inout(T)* idata() inout {
-        return cast(inout(T)*)memory;
-    }
+    alias ptr = data; ///ditto
 
     /**
         Gets the C data pointer atomically
@@ -278,6 +271,7 @@ public:
     size_t size() inout {
         return size_;
     }
+    alias length = size; ///ditto
 
     /**
         Gets the capacity of the vector
@@ -302,8 +296,8 @@ public:
     void clear() {
         
         // Delete elements in the array.
-        static if (ownsMemory) {
-            foreach(item; 0..size_) {
+        static if (ownsMemory && !isBasicType!T) {
+            foreach_reverse(item; 0..size_) {
                 nogc_delete(memory[item]);
             }
         }
@@ -318,7 +312,7 @@ public:
     void remove(size_t position) {
         if (position < size_) {
 
-            static if (ownsMemory) 
+            static if (ownsMemory && !isBasicType!T) 
                 nogc_delete(memory[position]);
 
             // Move memory region around so that the deleted element is overwritten.
@@ -329,33 +323,27 @@ public:
     }
 
     /**
-        Erases element at position
+        Erases element at position [start, end)
+        End is NOT included in that range.
     */
     @trusted
     void remove(size_t start, size_t end) {
 
-        // Flip inputs if they are reversed, just in case.
-        if (end > start) {
-            size_t tmp = start;
-            start = end;
-            end = tmp;
+        assert(start <= end && end <= size_);
+
+        // NOTE: the ".." operator is start inclusive, end exclusive.
+        static if (ownsMemory && !isBasicType!T) {
+            foreach_reverse(i; start..end)
+                nogc_delete(memory[i]);
+
         }
 
-        if (start < size_ && end < size_) {
-            
-            // NOTE: the ".." operator is start inclusive, end exclusive.
-            static if (ownsMemory) {
-                foreach(i; start..end+1)
-                    nogc_delete(memory[i]);
-            }
+        // Copy over old elements
+        size_t span = end-start;
+        // memory[start..start+span] = memory[end..end+span];
+        memmove(memory+start, memory+end, span*(T*).sizeof);
 
-            // Copy over old elements
-            size_t span = (end+1)-start;
-            // memory[start..start+span] = memory[end..end+span];
-            memmove(memory+start, memory+end, span*(T*).sizeof);
-
-            size_ -= span;
-        }
+        size_ -= span;
     }
 
     /**
@@ -491,7 +479,7 @@ public:
         Override for $ operator
     */
     @trusted
-    size_t opDollar() {
+    size_t opDollar() const {
         return size_;
     }
 
@@ -525,7 +513,7 @@ public:
         Allows getting an item from the vector.
     */
     @trusted
-    ref T opIndex(size_t index) {
+    ref inout(T) opIndex(size_t index) inout {
         return memory[index];
     }
 
@@ -577,4 +565,13 @@ unittest {
     shared_ptr!A a = shared_new!A();
     vector!(shared_ptr!A) v;
     v ~= a; // Used to crash, see Issue #2
+}
+
+@("vector: delete")
+unittest {
+    vector!int v;
+    v ~= [1, 2, 3];
+    v.remove(0, 0);
+    v.remove(1, 1);
+    v.remove(2, 2);
 }

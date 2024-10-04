@@ -207,16 +207,16 @@ public:
     /**
         Returns C string
     */
-    inout(T)* toCStringi() inout {
-        return cast(inout(T)*)this.vec_.idata();
+    immutable(T)* toCString() immutable {
+        return this.vec_.data();
     }
 
     /**
         Returns C string
     */
     @trusted
-    const(T)* toCString() {
-        return cast(const(T)*)this.vec_.data();
+    const(T)* toCString() const {
+        return this.vec_.data();
     }
 
     /**
@@ -359,7 +359,7 @@ public:
         import core.stdc.string : strncmp;
         if (this.size() < s.size()) return -1;
         if (this.size() > s.size()) return 1;
-        return strncmp(this.toCStringi(), s.toCStringi(), this.size());
+        return strncmp(this.toCString(), s.toCString(), this.size());
     }
 
     /**
