@@ -115,10 +115,10 @@ public:
                         nogc_delete(this.memory[item]);
                     }
                 }
-
-                // Free the pointer
-                free(cast(void*)this.memory);
             }
+
+            // Free the pointer
+            free(cast(void*)this.memory);
         }
 
         this.memory = null;
