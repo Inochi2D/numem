@@ -51,7 +51,7 @@ private:
             size_t before = capacity_;
 
             // Quantize to vector alignment
-            capacity_ = cast(size_t)quantize!(ceil, double)(cast(double)capacity+1, cast(double)VECTOR_ALIGN);
+            capacity_ = capacity + (capacity%VECTOR_ALIGN);
 
             // Reallocate the malloc'd portion if there is anything to realloc.
             if (memory) memory = cast(T*) realloc(cast(void*)memory, capacity_*T.sizeof);
@@ -302,8 +302,10 @@ public:
     void clear() {
         
         // Delete elements in the array.
-        foreach(item; 0..size_) {
-            nogc_delete(memory[item]);
+        static if (ownsMemory) {
+            foreach(item; 0..size_) {
+                nogc_delete(memory[item]);
+            }
         }
 
         this.size_ = 0;
@@ -315,7 +317,9 @@ public:
     @trusted
     void remove(size_t position) {
         if (position < size_) {
-            nogc_delete(memory[position]);
+
+            static if (ownsMemory) 
+                nogc_delete(memory[position]);
 
             // Move memory region around so that the deleted element is overwritten.
             memmove(memory+position, memory+position+1, size_*(T*).sizeof);
@@ -340,8 +344,10 @@ public:
         if (start < size_ && end < size_) {
             
             // NOTE: the ".." operator is start inclusive, end exclusive.
-            foreach(i; start..end+1)
-                nogc_delete(memory[i]);
+            static if (ownsMemory) {
+                foreach(i; start..end+1)
+                    nogc_delete(memory[i]);
+            }
 
             // Copy over old elements
             size_t span = (end+1)-start;
