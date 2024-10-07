@@ -75,7 +75,7 @@ nstring cformat(Args...)(const(char)* fmt, Args args) @nogc nothrow {
     Provides C# style formatting.
 */
 @trusted
-nstring format(Args...)(nstring fmt, Args args) @nogc nothrow {
+nstring format(Args...)(nstring fmt, Args args) @nogc {
     vector!nstring formatted = vector!nstring(args.length);
 
     static foreach(i; 0..args.length) {
