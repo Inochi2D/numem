@@ -11,47 +11,46 @@
 module numem.conv;
 import numem.all;
 import core.stdc.stdlib;
-import core.stdc.stdio : snprintf;
 import std.traits;
 import numem.core.exception;
+import numem.format;
 
 @nogc:
 
 /**
     Convert nstring to signed integer
 */
-T toInt(T)(nstring str) nothrow if (isSigned!T && isIntegral!T) {
-    return cast(T)atol(str.toCString());
+T toInt(T)(nstring str) if (isIntegral!T) {
+    static if (isSigned!T) {
+        return cast(T)strtoll(str.ptr, null, 10);
+    } else {
+        return cast(T)strtoull(str.ptr, null, 10);
+    }
 }
 
 /**
     Convert string slice to signed integer
 */
-T toInt(T)(string str) nothrow if (isSigned!T && isIntegral!T) {
-    return cast(T)strtol(str.ptr, str.ptr+str.length);
+T toInt(T)(string str) if (isIntegral!T) {
+    return toInt!T(nstring(str));
 }
 
 /**
     Convert nstring to unsigned integer
 */
-T toInt(T)(nstring str, int base) nothrow if (isUnsigned!T && isIntegral!T) {
-    const(char)* ptr = str.toCString();
-    return cast(T)strtoull(ptr, null, base);
+T toInt(T)(nstring str, int base) if (isIntegral!T) {
+    static if (isSigned!T) {
+        return cast(T)strtoll(str.ptr, null, base);
+    } else {
+        return cast(T)strtoull(str.ptr, null, base);
+    }
 }
 
 /**
     Convert string slice to unsigned integer
 */
-T toInt(T)(string str, int base) nothrow if (isUnsigned!T && isIntegral!T) {
-    enum tSize = T.sizeof*2;
-    size_t toCopy = 
-        str.length < tSize ?
-        str.length :
-        tSize;
-
-    nstring tmp;
-    tmp ~= str[0..toCopy];
-    return cast(T)strtoull(tmp.toCString(), null, base);
+T toInt(T)(string str, int base) if (isIntegral!T) {
+    return toInt!T(nstring(str), base);
 }
 
 /**
@@ -107,43 +106,20 @@ unittest {
 /**
     Convert signed integers to nstring
 */
-nstring toString(T)(T item) if (isSigned!T && isIntegral!T && !is(T == enum)) {
-    nstring str;
-
-    size_t count = snprintf(null, 0, "%lli", cast(ulong)item);
-    str.resize(count);
-
-    char* istr = cast(char*)str.toCString();
-    snprintf(istr, count+1, "%lli", cast(ulong)item);
-    return str;
+nstring toString(T)(T item) if (isIntegral!T && !is(T == enum)) {
+    static if (isSigned!T) {
+        return "%lli".cformat(item);
+    } else {
+        return "%llu".cformat(item);
+    }
 }
 
-/**
-    Convert unsigned integers to nstring
-*/
-nstring toString(T)(T item) if (isUnsigned!T && isIntegral!T && !is(T == enum)) {
-    nstring str;
-
-    size_t count = snprintf(null, 0, "%llu", cast(ulong)item);
-    str.resize(count);
-
-    char* istr = cast(char*)str.toCString();
-    snprintf(istr, count+1, "%llu", cast(ulong)item);
-    return str;
-}
 
 /**
     Convert floating point numbers to nstring
 */
 nstring toString(T)(T item) if (isFloatingPoint!T) {
-    nstring str;
-
-    size_t count = snprintf(null, 0, "%lf", item);
-    str.resize(count);
-
-    char* istr = cast(char*)str.toCString();
-    snprintf(istr, count+1, "%lf", item);
-    return str;
+    return "%g".cformat(item);
 }
 
 /**
@@ -158,9 +134,11 @@ nstring toString(T)(T item) if (is(T == bool)) {
 */
 nstring toString(T)(T item) if (is(T == enum)) {
     static foreach(member; EnumMembers!T) {
-        if (item == member) return nstring(member.stringof);
+        if (item == member) 
+            return nstring(member.stringof);
     }
-    throw nogc_new!NuException(nstring("Index out of range"));
+
+    return nstring(T.stringof);
 }
 
 /**
@@ -172,12 +150,11 @@ nstring toString(T)(T item) if (__traits(hasMember, T, "toNString")) {
 
 @("toString")
 unittest {
-    import core.stdc.stdio : printf;
-    assert(32u.toString() == "32");
-    assert(12.0f.toString() == "12.000000");
-    assert(true.toString() == "true");
-    assert(false.toString() == "false");
-    assert((-10_000).toString() == "-10000");
+    assert((32u).toString() == "32");
+    assert((12.0f).toString() == "12");
+    assert((42.1).toString() == "42.1");
+    assert((true).toString() == "true");
+    assert((false).toString() == "false");
 }
 
 @("toString w/ enum")

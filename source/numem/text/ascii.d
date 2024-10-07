@@ -10,6 +10,8 @@
 */
 module numem.text.ascii;
 
+@nogc nothrow:
+
 /**
     Gets whether the character is ascii
 */
@@ -25,6 +27,13 @@ bool isHex(char c) {
         (c >= 'a' && c <= 'f') || 
         (c >= 'A' && c <= 'F') || 
         (c >= '0' && c <= '9');
+}
+
+/**
+    Gets whether the character is alphabetic.
+*/
+bool isNumeric(char c) {
+    return (c >= '0' && c <= '9');
 }
 
 /**
