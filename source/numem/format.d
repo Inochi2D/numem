@@ -63,6 +63,7 @@ nstring format(Args...)(string fmt, Args args) @nogc nothrow {
 /**
     Interface to snprintf.
 */
+@system
 nstring cformat(Args...)(const(char)* fmt, Args args) @nogc nothrow {
     import core.stdc.stdio : snprintf;
     nstring out_ = nstring(snprintf(null, 0, fmt, args));
