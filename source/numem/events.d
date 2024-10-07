@@ -23,7 +23,7 @@ public:
     /**
         Calls all of the event handlers
     */
-    auto opCall(ref T caller, EventData data) {
+    auto opCall(Y)(auto ref Y caller, EventData data) if (is(T : Y)) {
         foreach(subscriber; subscribers) {
             subscriber(caller, data);
         }
