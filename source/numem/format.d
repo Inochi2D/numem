@@ -105,8 +105,11 @@ nstring format(Args...)(nstring fmt, Args args) @nogc nothrow {
 
             auto fmtslice = nstring(fmt[ci+1..i-1]);
             if (isNumericStr(fmtslice)) {
-                out_ ~= formatted[toInt!size_t(fmtslice)];
-                continue mainLoop;
+                size_t idx = toInt!size_t(fmtslice);
+                if (idx < formatted.length) {
+                    out_ ~= formatted[idx];
+                    continue mainLoop;
+                }
             }
 
             // Fall-through
