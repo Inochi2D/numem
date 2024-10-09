@@ -86,7 +86,7 @@ public:
         static if (is(T.valueType == ubyte)) {
             r += stream.read(val, 0, length);
         } else {
-            T tmp;
+            T.valueType tmp;
             foreach(i; 0..length) {
                 int ir = this.read!(T.valueType)(tmp);
                 if (ir < 0) 

@@ -39,7 +39,6 @@ public:
             stream.write(toWrite);
         } else {
             ubyte[1] tmp = [cast(ubyte)val];
-
             stream.write(tmp[]);
         }
     }
@@ -53,8 +52,12 @@ public:
     /// Ditto
     @trusted
     void write(T)(T val) if (isSomeVector!T) {
-        foreach(element; val) {
-            this.write!(T.valueType)(element);
+        static if (T.valueType.sizeof == 1) {
+            stream.write(cast(ubyte[])val[0..$]);
+        } else {
+            foreach(element; val) {
+                this.write!(T.valueType)(element);
+            }
         }
     }
 
@@ -81,4 +84,49 @@ unittest {
 
     assert(buffer[0] == 100);
     assert(buffer[99] == 1);
+}
+
+@("RW: Little Endian")
+unittest {
+    import numem.io.stream.memstream : MemoryStream;
+    import numem.io.stream.reader : StreamReader;
+    alias TestReader = StreamReader!(Endianess.littleEndian);
+    alias TestWriter = StreamWriter!(Endianess.littleEndian);
+
+    ubyte[8] buffer;
+    auto stream = new MemoryStream(buffer.ptr, buffer.length);
+    auto writer = new TestWriter(stream);
+    auto reader = new TestReader(stream);
+
+    enum MAGIC = 0xFF00FF0F;
+
+    writer.write!ulong(MAGIC);
+    stream.seek(0);
+
+    ulong val;
+    reader.read!ulong(val);
+    
+    assert(val == MAGIC);
+}
+
+@("RW: Big Endian")
+unittest {
+    import numem.io.stream.memstream : MemoryStream;
+    import numem.io.stream.reader : StreamReader;
+    alias TestReader = StreamReader!(Endianess.bigEndian);
+    alias TestWriter = StreamWriter!(Endianess.bigEndian);
+
+    ubyte[8] buffer;
+    auto stream = new MemoryStream(buffer.ptr, buffer.length);
+    auto writer = new TestWriter(stream);
+    auto reader = new TestReader(stream);
+
+    enum MAGIC = 0xFF00FF0F;
+
+    writer.write!ulong(MAGIC);
+    stream.seek(0);
+
+    ulong val;
+    reader.read!ulong(val);
+    assert(val == MAGIC);
 }

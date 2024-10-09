@@ -8,6 +8,8 @@ module numem.io.endian;
 import numem.core;
 import numem.collections.vector;
 import std.traits : isNumeric, isIntegral, isBasicType;
+import std.traits : Unqual;
+import std.bitmanip;
 
 @nogc nothrow:
 
@@ -58,21 +60,21 @@ private {
 */
 @trusted
 ubyte[T.sizeof] toEndian(T)(T value, Endianess endianness) {
+    union tmp {
+        Unqual!T value;
+        ubyte[T.sizeof] bytes;
+    }
 
-    // Get bytes from value
-    ubyte[T.sizeof] output;
-    output = (cast(ubyte*)&value)[0..T.sizeof];
+    tmp tmp_;
+    tmp_.value = value;
 
     // Swap endianness if neccesary
     if (endianness != NATIVE_ENDIAN) {
-        ubyte[T.sizeof] tmp;
-        static foreach (i; 0..T.sizeof) {
-            tmp[i] = output[(T.sizeof-1)-i];
-        }
-        output = tmp;
+        ubyte[] slice = tmp_.bytes[0..$];
+        swapEndian(slice);
     }
 
-    return output;
+    return tmp_.bytes;
 }
 
 /**
@@ -88,9 +90,9 @@ T toEndianReinterpret(T)(T in_, Endianess endianness) {
             ubyte[T.sizeof] bytes;
         }
 
-        tmp toConvert;
-        toConvert.bytes = toEndian!T(in_, endianness);
-        return toConvert.value;
+        tmp tmp_;
+        tmp_.bytes = toEndian!T(in_, endianness);
+        return tmp_.value;
     }
 
     return in_;
@@ -107,13 +109,14 @@ T fromEndian(T)(ubyte[] value, Endianess endianness) if (isBasicType!T) {
         T value;
         ubyte[T.sizeof] bytes;
     }
-    tmp toConvert;
-    toConvert.bytes = value;
+    tmp tmp_;
+    tmp_.bytes = value;
+    ubyte[] slice = tmp_.bytes[0..$];
 
     if (endianness != NATIVE_ENDIAN) 
-        swapEndian(value);
+        swapEndian(slice);
 
-    return toConvert.value;
+    return tmp_.value;
 }
 
 /**
@@ -130,9 +133,10 @@ T fromEndianReinterpret(T)(ubyte[] value, Endianess endianness) {
     }
     tmp toConvert;
     toConvert.bytes = value;
+    ubyte[] slice = tmp_.bytes[0..$];
 
     if (endianness != NATIVE_ENDIAN) 
-        swapEndian(value);
+        swapEndian(slice);
 
     return toConvert.value;
 }
