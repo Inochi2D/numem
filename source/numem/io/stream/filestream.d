@@ -70,7 +70,7 @@ override:
     }
 
     ptrdiff_t read(ref vector!ubyte buffer, size_t offset, size_t count) {
-        if (offset+count >= buffer.size()) return -2;
+        if (offset+count > buffer.size()) return -2;
 
         fPosition_ += buffer.size;
         return fread(buffer.data+offset, 1, count, file);
@@ -91,7 +91,7 @@ override:
 
     ptrdiff_t write(ref vector!ubyte buffer, int offset, int count) {
 
-        if (offset+count >= buffer.size()) return -2;
+        if (offset+count > buffer.size()) return -2;
 
         // NOTE: Write and calculate the position delta
         // said delta is used to recalculate the length

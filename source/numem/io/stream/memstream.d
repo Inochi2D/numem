@@ -155,7 +155,7 @@ override:
         ptrdiff_t toWrite = count;
 
         // Out of range for source
-        if (offset+count >= buffer.size()) return -2;
+        if (offset+count > buffer.length) return -2;
 
         // Limit read to bounds
         if (fPosition_+count > fLength_) 
