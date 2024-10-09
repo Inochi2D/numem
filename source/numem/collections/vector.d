@@ -546,6 +546,18 @@ public:
 
         this._memcpy(cast(T*)slice.ptr, cast(T*)values.ptr, slice.length);
     }
+
+    /**
+        Handle struct moves.
+    */
+    @trusted
+    void opPostMove(ref typeof(this) old) nothrow {
+        if (old.memory) {
+            this.memory = cast(valueType*)old.memory;
+            this.size_ = old.size_;
+            this.capacity_ = old.capacity_;
+        }
+    }
 }
 
 /**
