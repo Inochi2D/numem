@@ -56,7 +56,7 @@ private {
 
     Is no-op if provided endianness is the same as the system's
 */
-ubyte[T.sizeof] toEndian(T)(T value, Endianess endianness) if (isNumeric!T) {
+ubyte[T.sizeof] toEndian(T)(T value, Endianess endianness) {
 
     // Get bytes from value
     ubyte[T.sizeof] output;
@@ -72,6 +72,26 @@ ubyte[T.sizeof] toEndian(T)(T value, Endianess endianness) if (isNumeric!T) {
     }
 
     return output;
+}
+
+/**
+    Flips the bytes in the provided value to be in the specified endianness.
+
+    Is no-op if provided endianness is the same as the system's
+*/
+T toEndianReinterpret(T)(T in_, Endianess endianness) {
+    if (endianness != NATIVE_ENDIAN) {
+        union tmp {
+            T value;
+            ubyte[T.sizeof] bytes;
+        }
+
+        tmp toConvert;
+        toConvert.bytes = toEndian!T(in_, endianness);
+        return toConvert.value;
+    }
+
+    return in_;
 }
 
 /**

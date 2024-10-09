@@ -4,27 +4,14 @@ import numem.text.ascii;
 import numem.conv;
 import numem.collections;
 
-import std.traits;
+import std.traits : isBasicType;
 
 private {
-    enum CanConvertToNString(T) =
-        __traits(hasMember, T, "toNString") &&
-        is(T.toNString : nstring function()) &&
-        hasUDA(T.toNString, nogc);
-
-    enum CanConvertToDString(T) =
-        __traits(hasMember, T, "toString") &&
-        is(T.toNString : string function()) &&
-        hasUDA(T.toNString, nogc);
-
     nstring _formatSingle(T)(T element) {
-        static if(CanConvertToNString!T) {
-
-            return element.toNString();
-        } else static if(CanConvertToDString!T) {
+        static if(isStringable!T) {
 
             return nstring(element.toString());
-        } else static if (is(T : string)) {
+        } else static if (isSomeString!T) {
 
             return nstring(element);
         } else static if (isBasicType!T) {

@@ -9,11 +9,9 @@
     Utilities for converting between some basic types
 */
 module numem.conv;
-import numem.all;
 import core.stdc.stdlib;
 import std.traits;
-import numem.core.exception;
-import numem.format;
+import numem.all;
 
 @nogc:
 
@@ -146,6 +144,10 @@ nstring toString(T)(T item) if (is(T == enum)) {
 */
 nstring toString(T)(T item) if (__traits(hasMember, T, "toNString")) {
     return item.toNString();
+}
+
+nwstring toUTF16(T)(ref auto T str) if (isSomeString!T) {
+
 }
 
 @("toString")

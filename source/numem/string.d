@@ -8,22 +8,66 @@ module numem.string;
 import numem.collections.vector;
 import numem.core;
 import std.string;
+import std.traits;
+import core.stdcpp.string;
+
+/// Gets whether the provided type is some type of string.
+enum isSomeString(T) =
+    isSomeSafeString!T ||
+    isSomeCString!T;
+
+/**
+    Gets whether the provided type is some type of string
+    which is length denoted and therefore "safe"
+*/
+enum isSomeSafeString(T) =
+    isSomeNString!T ||
+    isSomeDString!T;
+
 
 /// Gets whether the provided type is some type of nstring.
 enum isSomeNString(T) = 
-    is(T == nstring) || is (T == nwstring) || is(T == ndstring);
+    is(inout(T) == inout(basic_string!C), C) && isSomeChar!C;
 
 /// Gets whether the provided type is some type of null terminated C string.
 enum isSomeCString(T) =
-    is(T : inout(char)*) || is(T : inout(wchar)*)|| is(T : inout(dchar)*);
+    is(inout(T) == inout(C)*, C) && isSomeChar!C;
 
 /// Gets whether the provided type is some type of D string slice.
 enum isSomeDString(T) =
-    is(T : inout(char)[]) || is(T : inout(wchar)[])|| is(T : inout(dchar)[]);
+    is(immutable(T) == immutable(C[]), C) && isSomeChar!C;
 
 /// Gets whether the provided type is a character
 enum isSomeChar(T) =
     is(T == char) || is(T == wchar) || is(T == dchar);
+
+/**
+    Gets whether [T] is convertible to any form of [nstring]
+*/
+enum isStringable(T) = 
+    __traits(hasMember, T, "toString") &&
+    isSomeString!(ReturnType!(T.toString)) &&
+    hasUDA(T.toString, nogc);
+
+/**
+    Gets the size of the element in a string-ish type in bytes.
+*/
+enum StringCharSize(T) =
+    StringCharType!T.sizeof;
+
+/**
+    Gets the type of the element in a string-ish type.
+*/
+template StringCharType(T) {
+    static if (isSomeString!T) {
+        static if(isSomeNString!T)
+            alias StringCharType = T.valueType;
+        else
+            alias StringCharType = typeof(T.init[0].init);
+    } else {
+        alias StringCharType = void;
+    }
+}
 
 /**
     Basic string type.
@@ -96,6 +140,15 @@ public:
     @trusted
     this(const(T)[] text) {
         this.set_(text);
+    }
+
+    /**
+        Creates a string from a string with a different
+        encoding.
+    */
+    this(T)(ref auto T rhs) if (isSomeSafeString!T) {
+        import numem.text.unicode : decode, encode;
+        this = encode!selfType(decode!T(rhs));
     }
 
     /**
@@ -521,4 +574,12 @@ unittest {
     assert(struct_[1].str == "b");
 
     assert(copy.size() == 0);
+}
+
+@("string: encoding-conversion")
+unittest {
+    nwstring wstr = "Hello, world!"w;
+    nstring str = wstr;
+
+    assert(str == "Hello, world!");
 }

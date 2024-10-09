@@ -5,13 +5,11 @@
     Authors: Luna the Foxgirl
 */
 
-module numem.unicode.utf8;
-import numem.unicode;
+module numem.text.unicode.utf8;
+import numem.text.unicode;
 import numem.collections.vector;
 import numem.string;
-
-// For some reason D really wants this import.
-import numem.unicode : validate;
+import numem.text.unicode : validate;
 
 @nogc nothrow:
 
@@ -112,16 +110,23 @@ unittest {
 }
 
 /**
-    Returns whether the specified string is a valid UTF-8 string
+    Returns whether the given nstring is a valid UTF-8 string
 */
 bool validate(nstring str) {
+    return validate(str[]);
+}   
+
+/**
+    Returns whether the given nstring is a valid UTF-8 string
+*/
+bool validate(inout(char)[] str) {
     size_t i = 0;
-    while(i < str.size) {
+    while(i < str.length) {
         char[4] txt;
 
         // Validate length
         size_t clen = getLength(str[i]);
-        if (clen >= i+str.size()) return false;
+        if (clen >= i+str.length) return false;
         if (clen == 0) return false;
         
         // Validate sequence
@@ -276,16 +281,16 @@ unittest {
     Decodes a string to a vector of codepoints.
     Invalid codes will be replaced with unicodeReplacementCharacter
 */
-UnicodeSequence decode(nstring str) {
+UnicodeSequence decode(inout(char)[] str) {
     UnicodeSequence code;
 
     size_t i = 0;
-    while(i < str.size()) {
+    while(i < str.length) {
         char[4] txt;
 
         // Validate length, add FFFD if invalid.
         size_t clen = str[i].getLength();
-        if (clen >= i+str.size() || clen == 0) {
+        if (clen >= i+str.length || clen == 0) {
             code ~= unicodeReplacementCharacter;
             i++;
         }
@@ -296,6 +301,14 @@ UnicodeSequence decode(nstring str) {
     }
 
     return code;
+}
+
+/**
+    Decodes a string to a vector of codepoints.
+    Invalid codes will be replaced with unicodeReplacementCharacter
+*/
+UnicodeSequence decode(nstring str) {
+    return decode(str[]);
 }
 
 @("decode: UTF-8 string")

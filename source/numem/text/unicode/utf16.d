@@ -5,10 +5,12 @@
     Authors: Luna the Foxgirl
 */
 
-module numem.unicode.utf16;
-import numem.unicode;
+module numem.text.unicode.utf16;
+import numem.text.unicode.utf32;
+import numem.text.unicode;
 import numem.collections.vector;
 import numem.string;
+import numem.io.endian;
 
 nothrow @nogc:
 
@@ -34,6 +36,82 @@ bool validate(wchar[2] c) {
     return 
         ((c[0] >= 0 && c[0] <= 0xD7FF) || (c[0] >= 0xE000 && c[0] <= 0xFFFF)) ||
         ((c[0] & utf16_smask) == utf16_lead && ((c[1] & utf16_smask) == utf16_trail));
+}
+
+/**
+    Validates whether the given nwstring is a valid UTF-16 string.
+
+    This function assumes that the string is in machine-native
+    endianess.
+*/
+bool validate(nwstring str) {
+    return validate(str[]);
+}
+
+
+/**
+    Validates whether the given nwstring is a valid UTF-16 string.
+
+    This function assumes that the string is in machine-native
+    endianess.
+*/
+bool validate(inout(wchar)[] str) {
+    nwstring tmp = str;
+
+    // Handle endianess.
+    codepoint bom = getBOM(str);
+    if (bom != 0 && getEndianFromBOM(bom) != NATIVE_ENDIAN) {
+        tmp = toMachineOrder(str);
+    }
+
+    size_t i = 0;
+    while(i < tmp.length) {
+        wchar[2] txt;
+
+        // Validate length
+        size_t clen = getLength(tmp[i]);
+        if (clen >= i+tmp.length) return false;
+        if (clen == 0) return false;
+
+        txt[0..clen] = tmp[i..i+clen];
+        if (!validate(txt)) return false;
+
+        i += clen;
+    }
+
+    return true;
+}
+
+/**
+    Gets the BOM of the nwstring if it has one.
+
+    Otherwise returns a NUL character.
+*/
+codepoint getBOM(inout(wchar)[] str) {
+    if (str.length == 0) 
+        return 0;
+
+    union tmp {
+        wchar c;
+        ubyte[2] bytes;
+    }
+    tmp tmp_;
+    tmp_.c = str[0];
+
+    if (isBOM(cast(codepoint)tmp_.c)) {
+        return cast(codepoint)tmp_.c;
+    }
+
+    return 0;
+}
+
+/**
+    Gets the BOM of the nwstring if it has one.
+
+    Otherwise returns a NUL character.
+*/
+codepoint getBOM(nwstring str) {
+    return getBOM(str[]);
 }
 
 /**
@@ -71,10 +149,52 @@ unittest {
 }
 
 /**
-    Decodes a single utf-16 character
+    Returns a string which is [str] converted to machine order.
+
+    If the string has no BOM it is assumed it's already in
+    machine order.
+*/
+nwstring toMachineOrder(inout(wchar)[] str) {
+
+    if (str.length == 0)
+        return nwstring.init;
+
+    codepoint bom = getBOM(str);
+    Endianess endian = getEndianFromBOM(bom);
+    if (bom != 0 && endian != NATIVE_ENDIAN) {
+
+        // Flip all the bytes around.
+        nwstring tmp;
+        foreach(i, ref const(wchar) c; str) {
+            tmp ~= c.toEndianReinterpret(endian);
+        }
+        return tmp;
+    }
+
+    // Already local order.
+    return nwstring(str);
+}
+
+/**
+    Returns a string which is [str] converted to machine order.
+
+    If the string has no BOM it is assumed it's already in
+    machine order.
+*/
+nwstring toMachineOrder(nwstring str) {
+    return toMachineOrder(str[]);
+}
+
+/**
+    Decodes a single utf-16 character,
+
+    Character is assumed to be in the same
+    endianness as the system!
 */
 codepoint decode(wchar[2] chr, ref size_t read) {
+    // Handle endianness
     read = chr[0].getLength();
+    
     switch(read) {
         default:
             read = 1;
@@ -93,18 +213,59 @@ codepoint decode(wchar[2] chr, ref size_t read) {
 }
 
 /**
-    Decodes a utf-16 string
+    Decodes a single utf-16 character from a 
+    nwstring.
 */
-UnicodeSequence decode(nwstring str) {
+codepoint decodeOne(nwstring str, size_t offset = 0) {
+    if (str.length == 0) 
+        return unicodeReplacementCharacter;
+
+    // Gets the string in the current machine order.
+    str = str.toMachineOrder();
+
+    // Get length of first character.
+    size_t read = getLength(str[0]);
+    size_t i;
+    while(i < offset++) {
+
+        // We're out of characters to read.
+        if (read > str.length)
+            return unicodeReplacementCharacter;
+
+        read = getLength(str[read]);
+    }
+    
+    // Decode to UTF-32 to avoid duplication
+    // of effort.
+    wchar[2] tmp;
+    tmp[0..read] = str[0..read];
+    return decode(tmp, read);
+}
+
+/**
+    Decodes a UTF-16 string.
+
+    This function will automatically detect BOMs
+    and handle endianness where applicable.
+*/
+UnicodeSequence decode(nwstring str, bool stripBOM = false) {
     UnicodeSequence code;
 
+    // Gets the string in the current machine order.
+    nwstring tmp = str.toMachineOrder();
     size_t i = 0;
-    while(i < str.size()) {
+
+    // Strip BOM if there is one.
+    if (stripBOM && getBOM(tmp)) {
+        i++;
+    }
+
+    while(i < tmp.size()) {
         wchar[2] txt;
 
         // Validate length, add FFFD if invalid.
-        size_t clen = str[i].getLength();
-        if (clen >= i+str.size() || clen == 0) {
+        size_t clen = tmp[i].getLength();
+        if (clen >= i+tmp.size() || clen == 0) {
             code ~= unicodeReplacementCharacter;
             i++;
         }
@@ -128,8 +289,13 @@ unittest {
 /**
     Encodes a unicode sequence to UTF-16
 */
-nwstring encode(UnicodeSlice slice) {
+nwstring encode(UnicodeSlice slice, bool addBOM = false) {
     nwstring out_;
+
+    // Add BOM if requested.
+    if (addBOM) {
+        out_ ~= cast(wchar)0xFEFF;
+    }
 
     size_t i = 0;
     while(i < slice.length) {
