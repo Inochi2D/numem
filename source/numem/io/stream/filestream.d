@@ -69,7 +69,7 @@ override:
         return fread(buffer.ptr, 1, buffer.length, file);
     }
 
-    ptrdiff_t read(ref vector!ubyte buffer, int offset, int count) {
+    ptrdiff_t read(ref vector!ubyte buffer, size_t offset, size_t count) {
         if (offset+count >= buffer.size()) return -2;
 
         fPosition_ += buffer.size;

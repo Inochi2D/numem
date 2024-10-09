@@ -33,21 +33,21 @@ public:
         Writes value to the stream
     */
     @trusted
-    void write(T)(T val) if (isNumeric!T) {
-        auto toWrite = val.toEndian(endian);
-        stream.write(toWrite);
+    void write(T)(T val) if (isBasicType!T) {
+        static if (T.sizeof > 1) {
+            auto toWrite = val.toEndian(endian);
+            stream.write(toWrite);
+        } else {
+            ubyte[1] tmp = [cast(ubyte)val];
+
+            stream.write(tmp[]);
+        }
     }
 
     /// Ditto
     @trusted
-    void write(T)(T val) if (isSomeNString!T) {
-        stream.write(cast(ubyte[])val.toDString());
-    }
-
-    /// Ditto
-    @trusted
-    void write(T)(T val) if (is(T : string)) {
-        stream.write(cast(ubyte[])val);
+    void write(T)(T val) if (isSomeSafeString!T) {
+        stream.write(cast(ubyte[])val[0..$]);
     }
 
     /// Ditto
@@ -66,4 +66,19 @@ public:
     ref Stream getStream() {
         return stream;
     }
+}
+
+@("Writing test")
+unittest {
+    import numem.io.stream.memstream : MemoryStream;
+    alias TestWriter = StreamWriter!(Endianess.littleEndian);
+
+    ubyte[100] buffer;
+    TestWriter writer = new TestWriter(new MemoryStream(buffer.ptr, buffer.length));
+    foreach_reverse(i; 0..100) {
+        writer.write!ubyte(cast(ubyte)(i+1));
+    }
+
+    assert(buffer[0] == 100);
+    assert(buffer[99] == 1);
 }

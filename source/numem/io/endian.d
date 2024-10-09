@@ -7,7 +7,7 @@
 module numem.io.endian;
 import numem.core;
 import numem.collections.vector;
-import std.traits : isNumeric, isIntegral;
+import std.traits : isNumeric, isIntegral, isBasicType;
 
 @nogc nothrow:
 
@@ -56,6 +56,7 @@ private {
 
     Is no-op if provided endianness is the same as the system's
 */
+@trusted
 ubyte[T.sizeof] toEndian(T)(T value, Endianess endianness) {
 
     // Get bytes from value
@@ -79,6 +80,7 @@ ubyte[T.sizeof] toEndian(T)(T value, Endianess endianness) {
 
     Is no-op if provided endianness is the same as the system's
 */
+@system
 T toEndianReinterpret(T)(T in_, Endianess endianness) {
     if (endianness != NATIVE_ENDIAN) {
         union tmp {
@@ -99,10 +101,40 @@ T toEndianReinterpret(T)(T in_, Endianess endianness) {
 
     Is no-op if provided endianness is the same as the system's
 */
-T fromEndian(T)(ubyte[T.sizeof] value, Endianess endianness) if (isNumeric!T) {
-    ubyte[] toSwap = value;
-    if (endianness != NATIVE_ENDIAN) toSwap.swapEndian();
-    return *(cast(T*)toSwap.ptr);
+@trusted
+T fromEndian(T)(ubyte[] value, Endianess endianness) if (isBasicType!T) {
+    union tmp {
+        T value;
+        ubyte[T.sizeof] bytes;
+    }
+    tmp toConvert;
+    toConvert.bytes = value;
+
+    if (endianness != NATIVE_ENDIAN) 
+        swapEndian(value);
+
+    return toConvert.value;
+}
+
+/**
+    Gets a value from a different endianness.
+
+    Is no-op if provided endianness is the same as the system's.
+
+*/
+@system
+T fromEndianReinterpret(T)(ubyte[] value, Endianess endianness) {
+    union tmp {
+        T value;
+        ubyte[T.sizeof] bytes;
+    }
+    tmp toConvert;
+    toConvert.bytes = value;
+
+    if (endianness != NATIVE_ENDIAN) 
+        swapEndian(value);
+
+    return toConvert.value;
 }
 
 @("fromEndian: flip endianness for numeric type")
@@ -121,6 +153,7 @@ unittest {
 
     Is no-op if provided endianness is the same as the system's.
 */
+@trusted
 void swapEndianInPlace(ref vector!ubyte arr, Endianess endianness) {
     
     // Make sure to only swap if endianness doesn't match
@@ -156,16 +189,7 @@ unittest {
 
     Calling this on a converted value flips the operation.
 */
+@trusted
 T ntoh(T)(T in_) if (isIntegral!T && T.sizeof > 1) {
-    static if (NATIVE_ENDIAN == Endianess.bigEndian) return in_;
-    else {
-        union tmp {
-            T value;
-            ubyte[T.sizeof] bytes;
-        }
-
-        tmp toConvert;
-        toConvert.value = in_;
-        return fromEndian!(T)(toConvert.bytes, Endianess.bigEndian);
-    }
+    return toEndianReinterpret(in_, Endianess.bigEndian);
 }

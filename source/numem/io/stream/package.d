@@ -135,7 +135,7 @@ class Stream {
             * -1 if the stream can't be read.
             * -2 if the read is out of range for the destination
     */
-    abstract ptrdiff_t read(ref vector!ubyte buffer, int offset, int count);
+    abstract ptrdiff_t read(ref vector!ubyte buffer, size_t offset, size_t count);
 
     /**
         Writes bytes from the specified buffer in to the stream

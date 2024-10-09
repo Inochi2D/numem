@@ -38,10 +38,13 @@ public:
         Failed reads may result in partial reads.
     */
     @trusted
-    int read(T)(ref T val) if (isNumeric!T) {
+    int read(T)(ref T val) if (isBasicType!T) {
         ubyte[T.sizeof] buf;
-        if (stream.read(buf) == T.sizeof) {
-            val = buf.fromEndian(endian);
+        
+        // Need to slice it
+        ubyte[] tmp = buf[0..$];
+        if (stream.read(tmp) == T.sizeof) {
+            val = tmp.fromEndian!T(endian);
             return T.sizeof;
         }
 
@@ -50,25 +53,34 @@ public:
 
     /// Ditto
     @trusted
-    int read(T)(ref T val, size_t length) if (isSomeNString!T) {
-        if (length > val.size()) return -1;
+    int read(T)(ref T val, size_t length) if (isSomeSafeString!T && StringCharSize!T == 1) {
+        if (length > val.length)
+            return -1;
+
+        alias type = StringCharType!(T)*;
+
+        // TODO: Handle encoding schemes other than UTF8
 
         // Size of a single unit
-        enum S_CHAR_SIZE = T.valueType.sizeof;
-        vector!ubyte tmp = vector!ubyte(length*S_CHAR_SIZE);
+        vector!ubyte tmp = vector!ubyte(length*StringCharSize!T);
 
         // Attempt reading data
-        int r = stream.read(tmp, 0, length);
-        if (r == -1) return -1;
+        int r = cast(int)stream.read(tmp, 0, length);
+        if (r < 0) 
+            return r;
+
 
         // "Convert" the data via type punning.
-        val.adata[0..length] = (cast(T.valueType*)tmp.adata)[0..length];
+        (cast(type)val.ptr)[0..length] = (cast(type)tmp.ptr)[0..length];
+        return r;
     }
 
     /// Ditto
     @trusted
     int read(T)(ref T val, size_t length) if (isSomeVector!T) {
-        if (length > val.size()) return -1;
+        if (length > val.length) 
+            return -1;
+        
         int r = 0;
 
         static if (is(T.valueType == ubyte)) {
@@ -77,8 +89,10 @@ public:
             T tmp;
             foreach(i; 0..length) {
                 int ir = this.read!(T.valueType)(tmp);
-                if (ir == -1) return -1;
+                if (ir < 0) 
+                    return ir;
 
+                r += ir;
                 val[i] = tmp;
             }
         }
@@ -93,4 +107,23 @@ public:
     ref Stream getStream() {
         return stream;
     }
+}
+
+@("Stream reader (memory buffer)")
+unittest {
+    import numem.io.stream.memstream : MemoryStream;
+    alias TestReader = StreamReader!(Endianess.littleEndian);
+
+    ubyte[128] buffer;
+    Stream stream = new MemoryStream(buffer.ptr, buffer.length);
+    TestReader reader = new TestReader(stream);
+
+    // Dummy read destinations
+    uint dst;
+    nstring testStr = nstring(23);
+    vector!ubyte buff2 = vector!ubyte(5);
+
+    assert(reader.read(dst) == 4);
+    assert(reader.read(testStr, testStr.length) == testStr.length);
+    assert(reader.read(buff2, buff2.length) == buff2.length);
 }

@@ -108,11 +108,11 @@ override:
         return toRead;
     }
 
-    ptrdiff_t read(ref vector!ubyte buffer, int offset, int count) {
+    ptrdiff_t read(ref vector!ubyte buffer, size_t offset, size_t count) {
         ptrdiff_t toRead = count;
 
         // Out of range for destination
-        if (offset+count >= buffer.size()) return -2;
+        if (offset+count > buffer.length) return -2;
 
         // Limit read to bounds
         if (fPosition_+count > fLength_) 
