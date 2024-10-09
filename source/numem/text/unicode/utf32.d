@@ -100,10 +100,17 @@ codepoint decode(dchar c) {
 /**
     Decodes a single UTF-32 string
 */
-nwstring decode(inout(dchar)[] str) {
-    nwstring tmp;
+ndstring decode(inout(dchar)[] str, bool stripBOM) {
+    ndstring tmp;
+    size_t start = 0;
 
-    foreach(ref c; str) {
+    // Handle BOM
+    if (getBOM(str) != 0) {
+        tmp = toMachineOrder(str);
+        start = stripBOM ? 1 : 0;
+    }
+
+    foreach(ref c; str[start..$]) {
         tmp ~= cast(wchar)decode(c);
     }
 
@@ -117,6 +124,6 @@ nwstring decode(inout(dchar)[] str) {
     UTF-32 this doesn't do much other than
     throw the data into a nwstring.
 */
-nwstring encode(UnicodeSequence sequence) {
-    return nwstring(cast(wchar[])sequence[0..$]);
+ndstring encode(UnicodeSequence sequence) {
+    return ndstring(cast(dchar[])sequence[0..$]);
 }
