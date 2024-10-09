@@ -10,6 +10,7 @@ import numem.core;
 import std.string;
 import std.traits;
 import core.stdcpp.string;
+import std.traits : Unqual;
 
 /// Gets whether the provided type is some type of string.
 enum isSomeString(T) =
@@ -31,7 +32,7 @@ enum isSomeNString(T) =
 
 /// Gets whether the provided type is some type of null terminated C string.
 enum isSomeCString(T) =
-    is(inout(T) == inout(C)*, C) && isSomeChar!C;
+    is(T == C*, C) && isSomeChar!C;
 
 /// Gets whether the provided type is some type of D string slice.
 enum isSomeDString(T) =
@@ -39,7 +40,7 @@ enum isSomeDString(T) =
 
 /// Gets whether the provided type is a character
 enum isSomeChar(T) =
-    is(T == char) || is(T == wchar) || is(T == dchar);
+    is(T : char) || is(T : wchar) || is(T : dchar);
 
 /**
     Gets whether [T] is convertible to any form of [nstring]
@@ -61,9 +62,9 @@ enum StringCharSize(T) =
 template StringCharType(T) {
     static if (isSomeString!T) {
         static if(isSomeNString!T)
-            alias StringCharType = T.valueType;
+            alias StringCharType = Unqual!(T.valueType);
         else
-            alias StringCharType = typeof(T.init[0].init);
+            alias StringCharType = Unqual!(typeof(T.init[0].init));
     } else {
         alias StringCharType = void;
     }
@@ -148,7 +149,7 @@ public:
     */
     this(T)(ref auto T rhs) if (isSomeSafeString!T) {
         import numem.text.unicode : decode, encode;
-        this = encode!selfType(decode!T(rhs));
+        this = encode!selfType(decode!T(rhs, true));
     }
 
     /**

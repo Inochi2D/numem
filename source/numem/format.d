@@ -16,18 +16,12 @@ private {
             return nstring(element);
         } else static if (isSomeCString!T) {
 
-            // First convert to a n*string
-            // then, if needed convert it to a nstring.
-            auto tmp = basic_string!(StringCharType!T)(element);
-            static if (StringCharSize!T == 1)
-                return tmp;
-            else
-                return nstring(tmp);
-            
+            return nstring(element[0..cstrlen(element)]);
         } else static if (isBasicType!T) {
 
             return toString!T(element);
         } else {
+
             return nstring(T.stringof);
         }
     }
@@ -126,4 +120,19 @@ unittest {
     assert("Hello, {0}".format("world!") == "Hello, world!");
     assert("{0}".format(42) == "42");
     assert("{0}".format(12.5) == "12.5");
+}
+
+@("Unicode: safe string")
+unittest {
+    assert("{0}".format("Hello, world!"w) == "Hello, world!");
+}
+
+@("Unicode: unsafe string")
+unittest {
+
+    const(dchar)* cdstr = "UTF-32";
+    assert("{0}".format(cdstr) == "UTF-32");
+
+    const(wchar)* cwstr = "UTF-16";
+    assert("{0}".format(cwstr) == "UTF-16");
 }

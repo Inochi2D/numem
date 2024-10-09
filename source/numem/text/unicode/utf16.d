@@ -248,7 +248,7 @@ codepoint decodeOne(nwstring str, size_t offset = 0) {
     This function will automatically detect BOMs
     and handle endianness where applicable.
 */
-UnicodeSequence decode(nwstring str, bool stripBOM = false) {
+UnicodeSequence decode(inout(wchar)[] str, bool stripBOM = false) {
     UnicodeSequence code;
 
     // Gets the string in the current machine order.
@@ -260,22 +260,32 @@ UnicodeSequence decode(nwstring str, bool stripBOM = false) {
         i++;
     }
 
-    while(i < tmp.size()) {
+    while(i < tmp.length) {
         wchar[2] txt;
 
         // Validate length, add FFFD if invalid.
         size_t clen = tmp[i].getLength();
-        if (clen >= i+tmp.size() || clen == 0) {
+        if (clen >= i+tmp.length || clen == 0) {
             code ~= unicodeReplacementCharacter;
             i++;
         }
 
-        txt[0..clen] = str[i..i+clen];
+        txt[0..clen] = tmp[i..i+clen];
         code ~= txt.decode(clen);
         i += clen;
     }
 
     return code;
+}
+
+/**
+    Decodes a UTF-16 string.
+
+    This function will automatically detect BOMs
+    and handle endianness where applicable.
+*/
+UnicodeSequence decode(nwstring str, bool stripBOM = false) {
+    return decode(str[], stripBOM);
 }
 
 @("UTF-16 decode string")
@@ -293,8 +303,8 @@ nwstring encode(UnicodeSlice slice, bool addBOM = false) {
     nwstring out_;
 
     // Add BOM if requested.
-    if (addBOM) {
-        out_ ~= cast(wchar)0xFEFF;
+    if (addBOM && slice.length > 0 && slice[0] != UNICODE_BOM) {
+        out_ ~= cast(wchar)UNICODE_BOM;
     }
 
     size_t i = 0;
@@ -325,8 +335,8 @@ nwstring encode(UnicodeSlice slice, bool addBOM = false) {
 /**
     Encodes a series of unicode codepoints to UTF-16
 */
-nwstring encode(UnicodeSequence sequence) {
-    return encode(sequence[0..$]);
+nwstring encode(UnicodeSequence sequence, bool addBOM = false) {
+    return encode(sequence[0..$], addBOM);
 }
 
 @("UTF-16 encode")

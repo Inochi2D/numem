@@ -16,7 +16,10 @@ import numem.io.endian;
     Validates a UTF32 codepoint
 */
 bool validate(dchar c) {
-    return validate(c);
+
+    // Name conflict, so we just import it locally.
+    import uni = numem.text.unicode;
+    return uni.validate(c);
 }
 
 /**
@@ -100,7 +103,7 @@ codepoint decode(dchar c) {
 /**
     Decodes a single UTF-32 string
 */
-ndstring decode(inout(dchar)[] str, bool stripBOM) {
+UnicodeSequence decode(inout(dchar)[] str, bool stripBOM = false) {
     ndstring tmp;
     size_t start = 0;
 
@@ -114,7 +117,14 @@ ndstring decode(inout(dchar)[] str, bool stripBOM) {
         tmp ~= cast(wchar)decode(c);
     }
 
-    return tmp;
+    return UnicodeSequence(cast(uint[])tmp[]);
+}
+
+/**
+    Decodes a single UTF-32 string
+*/
+UnicodeSequence decode(ndstring str, bool stripBOM = false) {
+    return decode(str[], stripBOM);
 }
 
 /**
@@ -124,6 +134,24 @@ ndstring decode(inout(dchar)[] str, bool stripBOM) {
     UTF-32 this doesn't do much other than
     throw the data into a nwstring.
 */
-ndstring encode(UnicodeSequence sequence) {
-    return ndstring(cast(dchar[])sequence[0..$]);
+ndstring encode(UnicodeSlice slice, bool addBOM = false) {
+    ndstring out_;
+    
+    if (addBOM && slice.length > 0 && slice[0] != UNICODE_BOM) {
+        out_ ~= UNICODE_BOM;
+    }
+
+    out_ ~= ndstring(cast(dchar[])slice[0..$]);
+    return out_;
+}
+
+/**
+    Encodes a UTF-32 string.
+
+    Since UnicodeSequence is already technically
+    UTF-32 this doesn't do much other than
+    throw the data into a nwstring.
+*/
+ndstring encode(UnicodeSequence seq, bool addBOM = false) {
+    return encode(seq[0..$], addBOM);
 }

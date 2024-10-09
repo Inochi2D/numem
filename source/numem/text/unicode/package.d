@@ -27,6 +27,11 @@ import utf32 = numem.text.unicode.utf32;
 alias codepoint = uint;
 
 /**
+    Codepoint for the unicode byte-order-mark
+*/
+enum codepoint UNICODE_BOM = 0xFEFF;
+
+/**
     Validates whether the codepoint is within spec
 */
 bool validate(codepoint code) {
@@ -75,13 +80,13 @@ Endianess getEndianFromBOM(codepoint c) {
 /**
     Decodes a string
 */
-UnicodeSequence decode(T)(ref auto T str) if (isSomeSafeString!T) {
+UnicodeSequence decode(T)(ref auto T str, bool stripBOM = false) if (isSomeSafeString!T) {
     static if (StringCharSize!T == 1)
         return utf8.decode(str);
     static if (StringCharSize!T == 2)
-        return utf16.decode(str);
+        return utf16.decode(str, stripBOM);
     static if (StringCharSize!T == 4)
-        return utf32.decode(str);
+        return utf32.decode(str, stripBOM);
     else
         assert(0, "String type not supported.");
 }
@@ -89,13 +94,13 @@ UnicodeSequence decode(T)(ref auto T str) if (isSomeSafeString!T) {
 /**
     Encodes a string
 */
-T encode(T)(ref auto UnicodeSequence seq) if (isSomeNString!T) {
+T encode(T)(ref auto UnicodeSequence seq, bool addBOM = false) if (isSomeNString!T) {
     static if (StringCharSize!T == 1)
         return utf8.encode(seq);
     static if (StringCharSize!T == 2)
-        return utf16.encode(seq);
+        return utf16.encode(seq, addBOM);
     static if (StringCharSize!T == 4)
-        return utf32.encode(seq);
+        return utf32.encode(seq, addBOM);
     else
         assert(0, "String type not supported.");
 }
