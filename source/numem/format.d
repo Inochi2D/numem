@@ -11,9 +11,19 @@ private {
         static if(isStringable!T) {
 
             return nstring(element.toString());
-        } else static if (isSomeString!T) {
+        } else static if (isSomeSafeString!T) {
 
             return nstring(element);
+        } else static if (isSomeCString!T) {
+
+            // First convert to a n*string
+            // then, if needed convert it to a nstring.
+            auto tmp = basic_string!(StringCharType!T)(element);
+            static if (StringCharSize!T == 1)
+                return tmp;
+            else
+                return nstring(tmp);
+            
         } else static if (isBasicType!T) {
 
             return toString!T(element);
