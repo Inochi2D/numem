@@ -7,9 +7,9 @@
 module numem.io.endian;
 import numem.core;
 import numem.collections.vector;
+import numem.string;
 import std.traits : isNumeric, isIntegral, isBasicType;
 import std.traits : Unqual;
-import std.bitmanip;
 
 @nogc nothrow:
 
@@ -54,12 +54,32 @@ private {
 }
 
 /**
+    Converts endianess of string
+*/
+@trusted
+basic_string!(StringCharType!T) toEndian(T)(T str, Endianess endianess) if (isSomeSafeString!T) {
+    static if (StringCharSize!T > 1) {
+        if (endianess != NATIVE_ENDIAN) {
+
+            // Flip all the bytes around
+            basic_string!(StringCharType!T) tmp;
+            foreach(i, ref c; str) {
+                tmp ~= c.toEndianReinterpret(endianess);
+            }
+
+            return tmp;
+        }
+    }
+    return basic_string!(StringCharType!T)(str);
+}
+
+/**
     Converts a value to an array of the specified endianness.
 
     Is no-op if provided endianness is the same as the system's
 */
 @trusted
-ubyte[T.sizeof] toEndian(T)(T value, Endianess endianness) {
+ubyte[T.sizeof] toEndian(T)(T value, Endianess endianess) if (isBasicType!T) {
     union tmp {
         Unqual!T value;
         ubyte[T.sizeof] bytes;
@@ -69,7 +89,7 @@ ubyte[T.sizeof] toEndian(T)(T value, Endianess endianness) {
     tmp_.value = value;
 
     // Swap endianness if neccesary
-    if (endianness != NATIVE_ENDIAN) {
+    if (endianess != NATIVE_ENDIAN) {
         ubyte[] slice = tmp_.bytes[0..$];
         swapEndian(slice);
     }

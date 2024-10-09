@@ -46,7 +46,12 @@ public:
     /// Ditto
     @trusted
     void write(T)(T val) if (isSomeSafeString!T) {
-        stream.write(cast(ubyte[])val[0..$]);
+        static if (StringCharSize!T > 1) {
+            auto data = val.toEndian(endian);
+            stream.write((cast(ubyte*)data.ptr)[0..data.length*StringCharSize!T]);
+        } else {
+            stream.write(cast(ubyte[])val[0..$]);
+        }
     }
 
     /// Ditto
@@ -128,5 +133,27 @@ unittest {
 
     ulong val;
     reader.read!ulong(val);
+    assert(val == MAGIC);
+}
+
+@("RW: UTF-32")
+unittest {
+    import numem.io.stream.memstream : MemoryStream;
+    import numem.io.stream.reader : StreamReader;
+    alias TestReader = StreamReader!(Endianess.bigEndian);
+    alias TestWriter = StreamWriter!(Endianess.bigEndian);
+
+    ubyte[128] buffer;
+    auto stream = new MemoryStream(buffer.ptr, buffer.length);
+    auto writer = new TestWriter(stream);
+    auto reader = new TestReader(stream);
+
+    enum MAGIC = "Hello, world!"d;
+    ndstring val = ndstring(MAGIC.length);
+
+    writer.write(MAGIC);
+    stream.seek(0);
+
+    reader.read(val);
     assert(val == MAGIC);
 }

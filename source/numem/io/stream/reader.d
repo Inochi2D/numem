@@ -53,31 +53,51 @@ public:
 
     /// Ditto
     @trusted
-    int read(T)(ref T val, size_t length) if (isSomeSafeString!T && StringCharSize!T == 1) {
+    int read(T)(ref T val, size_t length = 0) if (isSomeSafeString!T) {
+        import numem.text.unicode;
+
+        alias CharType = StringCharType!(T);
+        
+        // User wants to read it all
+        if (length == 0)
+            length = val.length;
+
+        // No out of bounds reads allowed.
         if (length > val.length)
             return -1;
 
-        alias type = StringCharType!(T)*;
-
-        // TODO: Handle encoding schemes other than UTF8
-
-        // Size of a single unit
-        vector!ubyte tmp = vector!ubyte(length*StringCharSize!T);
+        // Vector to read bytes into.
+        vector!ubyte tmp = vector!ubyte(CharType.sizeof*length);
 
         // Attempt reading data
-        int r = cast(int)stream.read(tmp, 0, length);
+        int r = cast(int)stream.read(tmp, 0, tmp.length);
         if (r < 0) 
             return r;
 
+        // Reinterpret the data.
+        CharType[] reinterpreted = (cast(CharType*)tmp.ptr)[0..length];
 
-        // "Convert" the data via type punning.
-        (cast(type)val.ptr)[0..length] = (cast(type)tmp.ptr)[0..length];
+        static if (CharType.sizeof > 1) {
+            
+            // If there's a BOM that will take precedence.
+            val = reinterpreted.toEndian(endian);
+        } else {
+
+            (cast(CharType*)val.ptr)[0..length] = reinterpreted[0..length];
+        }
+
         return r;
     }
 
     /// Ditto
     @trusted
-    int read(T)(ref T val, size_t length) if (isSomeVector!T) {
+    int read(T)(ref T val, size_t length = 0) if (isSomeVector!T) {
+        
+        // User wants to read it all
+        if (length == 0)
+            length = val.length;
+        
+        // No out of bounds reads allowed.
         if (length > val.length) 
             return -1;
         

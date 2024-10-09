@@ -66,10 +66,9 @@ codepoint getBOM(inout(dchar)[] str) {
 /**
     Returns a string which is [str] converted to machine order.
 
-    If the string has no BOM it is assumed it's already in
-    machine order.
+    If the string has no BOM the specified fallback endian will be used.
 */
-ndstring toMachineOrder(inout(dchar)[] str) {
+ndstring toMachineOrder(inout(dchar)[] str, Endianess fallbackEndian = NATIVE_ENDIAN) {
     
     // Empty string early escape.
     if (str.length == 0) 
@@ -77,7 +76,10 @@ ndstring toMachineOrder(inout(dchar)[] str) {
 
     codepoint bom = getBOM(str);
     Endianess endian = getEndianFromBOM(bom);
-    if (bom != 0 && endian != NATIVE_ENDIAN) {
+    if (bom == 0)
+        endian = fallbackEndian;
+    
+    if (endian != NATIVE_ENDIAN) {
 
         // Flip all the bytes around
         ndstring tmp;
