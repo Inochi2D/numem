@@ -146,10 +146,6 @@ nstring toString(T)(T item) if (__traits(hasMember, T, "toNString")) {
     return item.toNString();
 }
 
-nwstring toUTF16(T)(ref auto T str) if (isSomeString!T) {
-
-}
-
 @("toString")
 unittest {
     assert((32u).toString() == "32");
