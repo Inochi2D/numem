@@ -10,7 +10,7 @@ import numem.core;
 import std.string;
 import std.traits;
 import core.stdcpp.string;
-import std.traits : Unqual;
+import std.traits : Unqual, hasFunctionAttributes;
 
 /// Gets whether the provided type is some type of string.
 enum isSomeString(T) =
@@ -48,7 +48,7 @@ enum isSomeChar(T) =
 enum isStringable(T) = 
     __traits(hasMember, T, "toString") &&
     isSomeString!(ReturnType!(T.toString)) &&
-    hasUDA(T.toString, nogc);
+    hasFunctionAttributes!(T.toString, "@nogc");
 
 /**
     Gets the size of the element in a string-ish type in bytes.
