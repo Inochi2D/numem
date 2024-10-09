@@ -286,6 +286,11 @@ public:
     }
 
     /**
+        To D string
+    */
+    alias toString = toDString;
+
+    /**
         Set content of string
     */
     @trusted
@@ -414,11 +419,6 @@ public:
         if (this.size() > s.size()) return 1;
         return strncmp(this.toCString(), s.toCString(), this.size());
     }
-
-    /**
-        To D string
-    */
-    alias toString = toDString;
 }
 
 alias nstring = basic_string!char;
