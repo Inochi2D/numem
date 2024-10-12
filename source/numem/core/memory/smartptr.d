@@ -134,15 +134,13 @@ private:
         rc.weakRefs = 0;
     }
 
-public:
-
     /**
         Moves unique_ptr to this instance.
 
         This is a reuse of copy-constructors, and is unique to unique_ptr.
     */
     @trusted
-    this(ref unique_ptr!T other) {
+    void move(ref unique_ptr!T other) {
 
         // Free our own refcount if need be
         if (this.rc) {
@@ -155,15 +153,7 @@ public:
         other.clear();
     }
 
-    /**
-        Moves unique_ptr to this instance.
-
-        This is a reuse of copy-constructors, and is unique to unique_ptr.
-    */
-    @trusted
-    this(ref const(unique_ptr!T) other) {
-        this(*(cast(unique_ptr!(T)*)&other));
-    }
+public:
 
     // Destructor
     ~this() {
@@ -175,6 +165,25 @@ public:
         }
     }
 
+    /**
+        Moves unique_ptr to this instance.
+
+        This is a reuse of copy-constructors, and is unique to unique_ptr.
+    */
+    @trusted
+    this(ref unique_ptr!T other) {
+        this.move(other);
+    }
+
+    /**
+        Moves unique_ptr to this instance.
+
+        This is a reuse of copy-constructors, and is unique to unique_ptr.
+    */
+    @trusted
+    this(ref inout(unique_ptr!T) other) {
+        this.move(*(cast(unique_ptr!(T)*)&other));
+    }
 
     /**
         - This function is incredibly unsafe, but is there as a backdoor if need be.

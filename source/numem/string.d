@@ -98,7 +98,7 @@ private:
 
     void set_(const(T)[] span) {
         vec_.resize(span.length+1);
-        vec_[0..span.length] = span[0..span.length];
+        vec_.tryReplaceRange(span[0..span.length], 0);
         vec_[this.size()] = '\0';
     }
 

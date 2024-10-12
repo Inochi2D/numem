@@ -8,6 +8,7 @@
 module numem.collections.vector;
 import numem.core.memory.smartptr;
 import numem.core;
+import numem.core.exception;
 import core.stdc.stdlib : malloc, realloc, free;
 import core.stdc.string : memcpy, memmove;
 import core.atomic : atomicFetchAdd, atomicFetchSub, atomicStore, atomicLoad;
@@ -19,6 +20,16 @@ enum isSomeVector(T) = is(T : VectorImpl!U, U...);
 
 /// Gets whether the specified type is some weak variety of the vector type
 enum isSomeWeakVector(T) = is(T : VectorImpl!(U, false), U);
+
+/// Gets whether the type can be indexed like a range
+enum isRangeIndexable(T) = isSomeVector!T || is(inout(T) == inout(U)[], U);
+
+/// Gets whether the type can be indexed like a range, and if so whether the range element
+/// matches type U
+enum isCompatibleRange(T, U) = 
+    (isSomeVector!T && is(Unqual!T.valueType : Unqual!U)) || 
+    (is(T == X[], X) && is(Unqual!X : Unqual!U));
+
 
 /**
     C++ style vector
@@ -71,15 +82,10 @@ private:
     }
 
     pragma(inline, true)
-    void _memcpy(T* dst, T* src, size_t length) {
+    void copy(T* dst, T* src, size_t length) {
+        this.freeRange(dst, length);
 
-        static if(__traits(hasPostblit, T)) {   
-            
-            memcpy(dst, src, T.sizeof*length); 
-            foreach(i; 0..length) {
-                dst[i].__xpostblit();
-            }
-        } else static if (__traits(hasCopyConstructor, T)) {
+        static if (__traits(hasCopyConstructor, T)) {
 
             // Initializer
             T tmp = T.init;
@@ -92,9 +98,54 @@ private:
                 dst[i].__ctor(src[i]);
             }
 
+        } else static if(__traits(hasPostblit, T)) {   
+            
+            memcpy(dst, src, T.sizeof*length); 
+            foreach(i; 0..length) {
+                dst[i].__xpostblit();
+            }
         } else {
 
             memcpy(dst, src, T.sizeof*length);
+        }
+    }
+
+    pragma(inline, true)
+    void move(T* dst, T* src, size_t length) {
+        this.freeRange(dst, length);
+        memmove(dst, src, T.sizeof*length);
+    }
+
+    pragma(inline, true)
+    void freeRange(T* dst, size_t length) {
+        static if (ownsMemory) {
+
+            // Heap allocated items require more smarts.
+            static if (isPointer!T || is(T == class)) {
+                import numem.collections.set : weak_set; 
+                    
+                // To prevent double-frees this is neccesary.
+                weak_set!(void*) freed;
+
+                foreach_reverse(i; 0..length) {
+                    if (cast(void*)dst[i] in freed)
+                        continue;
+                    
+                    freed.insert(cast(void*)dst[i]);
+                    
+                    // Basic types don't need destruction,
+                    // so we can skip this step.
+                    static if (!isBasicType!T)
+                        nogc_delete(dst[i]);
+                    dst[i] = null;
+                }
+
+                nogc_delete(freed);
+            } else static if (!isBasicType!T) {
+
+                foreach_reverse(i; 0..length) 
+                    nogc_delete(dst[i]);
+            }
         }
     }
 
@@ -108,13 +159,7 @@ public:
     ~this() {
         if (this.memory) {
             static if (ownsMemory) {
-                
-                // Delete elements in the array.
-                static if (!isBasicType!T) {
-                    foreach_reverse(item; 0..size_) {
-                        nogc_delete(this.memory[item]);
-                    }
-                }
+                this.freeRange(this.memory, size_);
             }
 
             // Free the pointer
@@ -136,14 +181,14 @@ public:
     @trusted
     this(T[] data) {
         this.resize_(data.length);
-        this._memcpy(this.memory, data.ptr, data.length);
+        this.copy(this.memory, data.ptr, data.length);
     }
 
     /// Constructor
     @trusted
     this(ref T[] data) {
         this.resize_(data.length);
-        this._memcpy(this.memory, data.ptr, data.length);
+        this.copy(this.memory, data.ptr, data.length);
     }
 
     /**
@@ -155,7 +200,7 @@ public:
     this(T)(ref T rhs) if(!is(T == selfType) && isSomeVector!T)  {
         if (rhs.memory) {
             this.resize_(rhs.size_);
-            this._memcpy(this.memory, rhs.memory, rhs.size_);
+            this.copy(this.memory, rhs.memory, rhs.size_);
         }
     }
 
@@ -173,7 +218,7 @@ public:
             auto other = (cast(selfType*)&rhs);
 
             this.resize_(rhs.size_);
-            this._memcpy(self.memory, other.memory, rhs.size_);
+            this.copy(self.memory, other.memory, rhs.size_);
         }
     }
 
@@ -191,7 +236,7 @@ public:
             auto other = (cast(selfType*)&rhs);
 
             self.resize_(rhs.size_);
-            other._memcpy(self.memory, other.memory, other.size_);
+            other.copy(self.memory, other.memory, other.size_);
         }
     }
 
@@ -316,7 +361,7 @@ public:
                 nogc_delete(memory[position]);
 
             // Move memory region around so that the deleted element is overwritten.
-            memmove(memory+position, memory+position+1, size_*(T*).sizeof);
+            this.move(memory+position, memory+position+1, size_*(T*).sizeof);
          
             size_--;
         }
@@ -341,9 +386,44 @@ public:
         // Copy over old elements
         size_t span = end-start;
         // memory[start..start+span] = memory[end..end+span];
-        memmove(memory+start, memory+end, span*(T*).sizeof);
+        this.move(memory+start, memory+end, span*(T*).sizeof);
 
         size_ -= span;
+    }
+
+    /**
+        Inserts elements into the vector
+    */
+    @trusted
+    void insert(U)(size_t offset, auto ref U item) if (is(U : T)) {
+        if (offset >= size_) {
+            this.pushBack(item);
+            return;
+        }
+
+        size_t toShift = size_-offset;
+
+        this.resize_(size_+1);
+        this.move(memory+offset+1, memory+offset, toShift);
+        this.memory[offset] = item;
+    }
+
+    /**
+        Inserts elements into the vector
+    */
+    @trusted
+    void insert(U)(size_t offset, auto ref U items) if (isCompatibleRange!(U, T)) {
+        if (offset >= size_) {
+            this.pushBack(items);
+            return;
+        }
+
+        size_t toCopy = items.length;
+        size_t toShift = size_-offset;
+
+        this.resize_(size_+toCopy);
+        this.move(memory+offset+toCopy, memory+offset, toShift);
+        this.copy(memory+offset, cast(T*)items.ptr, toCopy);
     }
 
     /**
@@ -366,8 +446,10 @@ public:
         Pushes an element to the back of the vector
     */
     @trusted
-    auto pushBack(T)(T item) {
-        this ~= item;
+    ref auto typeof(this) pushBack(T)(T item) {
+
+        this.resize(size_+1);
+        this.memory[size_-1] = item;
         return this;
     }
 
@@ -375,17 +457,11 @@ public:
         Pushes an element to the back of the vector
     */
     @trusted
-    auto pushBack(T)(vector!T item) {
-        this ~= item;
-        return this;
-    }
+    ref auto typeof(this) pushBack(U)(ref auto U items) if (isCompatibleRange!(U, T)) {
+        size_t cSize = size_;
 
-    /**
-        Pushes an element to the back of the vector
-    */
-    @trusted
-    auto pushBack(T)(T[] item) {
-        this ~= item;
+        this.resize(size_+items.length);
+        this.copy(memory+cSize, cast(T*)items.ptr, items.length);
         return this;
     }
 
@@ -393,15 +469,14 @@ public:
         Pushes an element to the front of the vector
     */
     @trusted
-    ref auto pushFront(T)(T value) {
+    ref auto typeof(this) pushFront(T)(T value) {
         size_t cSize = size_;
 
         this.resize(size_+1);
-        if (cSize > 0) {
-            memmove(&this.memory[1], this.memory, cSize*(T*).sizeof);
-        }
-        this.memory[0] = value;
+        if (cSize > 0)
+            this.move(&this.memory[1], this.memory, cSize*(T*).sizeof);
 
+        this.memory[0] = value;
         return this;
     }
 
@@ -409,31 +484,14 @@ public:
         Pushes an element to the front of the vector
     */
     @trusted
-    ref auto pushFront(T)(vector!T value) {
+    ref auto typeof(this) pushFront(U)(ref auto U items) if (isCompatibleRange!(U, T))  {
         size_t cSize = size_;
 
         this.resize(size_+value.size_);
-        if (cSize > 0) {
-            memmove(&this.memory[value.size_], this.memory, cSize*(T*).sizeof);
-        }
-        this.memory[0..value.size_] = value.memory[0..value.size_];
+        if (cSize > 0) 
+            this.move(memory+value.size_, memory, cSize);
 
-        return this;
-    }
-
-    /**
-        Pushes an element to the front of the vector
-    */
-    @trusted
-    ref auto pushFront(T)(T[] value) {
-        size_t cSize = size_;
-
-        this.resize(size_+value.length);
-        if (cSize > 0) {
-            memmove(&this.memory[value.length], this.memory, cSize*(T*).sizeof);
-        }
-        this.memory[0..value.length] = value.memory[0..value.length];
-
+        this.copy(memory, cast(T*)items.ptr, items.length);
         return this;
     }
 
@@ -441,26 +499,16 @@ public:
         Add value to vector
     */
     @trusted
-    ref auto opOpAssign(string op = "~")(T value) {
-        size_t cSize = size_;
-
-        this.resize_(size_+1);
-        this._memcpy(this.memory+cSize, &value, 1);
-
-        return this;
+    ref auto typeof(this) opOpAssign(string op = "~")(T value) {
+        return this.pushBack(value);
     }
 
     /**
         Add vector items to vector
     */
     @trusted
-    ref auto opOpAssign(string op = "~")(vector!T other) {
-        size_t cSize = size_;
-        
-        this.resize_(size_ + other.size_);
-        this._memcpy(this.memory+cSize, other.ptr, other.size_);
-
-        return this;
+    ref auto typeof(this) opOpAssign(string op = "~", U)(ref auto U items) if (isCompatibleRange!(U, T)) {
+        return this.pushBack(items);
     }
 
     /**
@@ -471,7 +519,7 @@ public:
         size_t cSize = size_;
 
         this.resize_(size_ + other.length);
-        this._memcpy(this.memory+cSize, other.ptr, other.length);
+        this.copy(this.memory+cSize, other.ptr, other.length);
         return this;
     }
 
@@ -479,7 +527,7 @@ public:
         Override for $ operator
     */
     @trusted
-    size_t opDollar() const {
+    size_t opDollar() nothrow const {
         return size_;
     }
 
@@ -497,7 +545,7 @@ public:
         Allows slicing the string to the full vector
     */
     @trusted
-    T[] opIndex() {
+    T[] opIndex() nothrow {
         return memory[0..size_];
     }
 
@@ -523,7 +571,7 @@ public:
     @trusted
     void opAssign(T)(in inout(T)[] values) {
         this.resize(values.length);
-        this._memcpy(memory, cast(T*)values.ptr, values.length);
+        this.copy(memory, cast(T*)values.ptr, values.length);
     }
 
     /**
@@ -531,20 +579,44 @@ public:
     */
     @trusted
     void opIndexAssign(in T value, size_t index) {
-        this._memcpy(cast(T*)&memory[index], cast(T*)&value, 1);
+        this.copy(cast(T*)&memory[index], cast(T*)&value, 1);
     }
 
     /**
         Allows assigning a range of values to the vector.
+
+        For nothrow usage, see [tryReplaceRange]
     */
     @trusted
     void opIndexAssign(in T[] values, T[] slice) {
         size_t offset = slice.ptr-this.memory;
-        if (offset+slice.length > size_) {
-            this.resize_(offset+slice.length);
-        }
 
-        this._memcpy(cast(T*)slice.ptr, cast(T*)values.ptr, slice.length);
+        enforce(
+            values.length == slice.length,
+            NuRangeException.sliceLengthMismatch(values.length, slice.length)
+        );
+
+        enforce(
+            offset+slice.length <= size_,
+            NuRangeException.sliceOutOfRange(offset, offset+slice.length)
+        );
+
+        this.copy(cast(T*)slice.ptr, cast(T*)values.ptr, slice.length);
+    }
+
+    /**
+        Replaces a range within the vector of [values] length,
+        at [offset].
+
+        Returns whether this operation succeeded.
+    */
+    @trusted
+    bool tryReplaceRange(U)(ref auto U values, size_t offset) nothrow if (isCompatibleRange!(U, T)) {
+        if (offset+values.length > size_)
+            return false;
+        
+        this.copy(cast(T*)memory+offset, cast(T*)values.ptr, values.length);
+        return true;
     }
 
     /**
@@ -586,4 +658,57 @@ unittest {
     v.remove(0, 0);
     v.remove(1, 1);
     v.remove(2, 2);
+}
+
+@("vector: insert single")
+unittest {
+    vector!uint v;
+    v ~= [1, 2, 4];
+    v.insert(2, 3);
+
+    assert(v[] == [1, 2, 3, 4]);
+}
+
+@("vector: insert range")
+unittest {
+    vector!uint v;
+    v ~= [1, 2, 5, 6];
+    v.insert(2, [3, 4]);
+
+    assert(v[] == [1, 2, 3, 4, 5, 6]);
+}
+
+@("vector: append throwable")
+unittest {
+    static
+    struct Test {
+    @nogc:
+        uint test;
+        this(uint test) {
+            this.test = test;
+        }
+    }
+
+    vector!Test v;
+    v ~= Test(42);
+    assert(v[0].test == 42);
+}
+
+@("vector: slice overlap")
+unittest {
+    static
+    struct Test {
+    @nogc:
+        static uint counter;
+
+        ~this() { counter++; }
+    }
+
+    vector!(Test*) tests;
+    tests ~= nogc_new!Test;
+    tests ~= nogc_new!Test;
+    tests ~= nogc_new!Test;
+
+    tests[0..1] = tests[1..2];
+    assert(Test.counter == 1);
 }
