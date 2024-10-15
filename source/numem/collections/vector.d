@@ -83,7 +83,7 @@ private:
 
     pragma(inline, true)
     void copy(T* dst, T* src, size_t length) {
-        this.freeRange(dst, length);
+        this.freeRange(dst-memory, length);
 
         static if (__traits(hasCopyConstructor, T)) {
 
@@ -110,14 +110,36 @@ private:
         }
     }
 
-    pragma(inline, true)
-    void move(T* dst, T* src, size_t length) {
-        this.freeRange(dst, length);
-        memmove(dst, src, T.sizeof*length);
+    // Gets whether src overlaps with the memory in the vector.
+    bool doSourceOverlap(T* src, size_t length = 0) {
+        return src+length >= memory && src < memory+size_;
     }
 
     pragma(inline, true)
-    void freeRange(T* dst, size_t length) {
+    void move(T* dst, T* src, size_t length) {
+        memmove(dst, src, T.sizeof*length);
+        if (this.doSourceOverlap(src, length)) {
+            if (src < dst) {
+                this.fillRangeInit(src, dst-src);
+            } else if (src > dst) {
+                auto ptr = dst+length;
+                auto len = (src-length)-ptr;
+                this.fillRangeInit(ptr, len);
+            }
+        }
+    }
+
+    pragma(inline, true)
+    void fillRangeInit(T* dst, size_t length) {
+        foreach(i; 0..length) {
+
+            T tmp = T.init;
+            memcpy(dst + i, &tmp, T.sizeof);
+        }
+    }
+
+    pragma(inline, true)
+    void freeRange(size_t offset, size_t length) {
         static if (ownsMemory) {
 
             // Heap allocated items require more smarts.
@@ -127,26 +149,31 @@ private:
                 // To prevent double-frees this is neccesary.
                 weak_set!(void*) freed;
 
-                foreach_reverse(i; 0..length) {
-                    if (cast(void*)dst[i] in freed)
+                foreach_reverse(i; offset..offset+length) {
+                    if (cast(void*)memory[i] in freed)
                         continue;
                     
-                    freed.insert(cast(void*)dst[i]);
+                    freed.insert(cast(void*)memory[i]);
                     
                     // Basic types don't need destruction,
                     // so we can skip this step.
                     static if (!isBasicType!T)
-                        nogc_delete(dst[i]);
-                    dst[i] = null;
+                        nogc_delete(memory[i]);
+                    memory[i] = null;
                 }
 
                 nogc_delete(freed);
             } else static if (!isBasicType!T) {
 
-                foreach_reverse(i; 0..length) 
-                    nogc_delete(dst[i]);
+                foreach_reverse(i; offset..offset+length) 
+                    nogc_delete(memory[i]);
             }
+            
         }
+    }
+
+    void freeAll() {
+        this.freeRange(0, size_);
     }
 
 public:
@@ -159,7 +186,7 @@ public:
     ~this() {
         if (this.memory) {
             static if (ownsMemory) {
-                this.freeRange(this.memory, size_);
+                this.freeRange(0, size_);
             }
 
             // Free the pointer
@@ -341,12 +368,7 @@ public:
     void clear() {
         
         // Delete elements in the array.
-        static if (ownsMemory && !isBasicType!T) {
-            foreach_reverse(item; 0..size_) {
-                nogc_delete(memory[item]);
-            }
-        }
-
+        this.freeAll();
         this.size_ = 0;
     }
 
@@ -496,6 +518,17 @@ public:
     }
 
     /**
+        Appends 2 vectors together, creating a new vector.
+    */
+    @trusted
+    vector!T opBinary(string op: "~", U)(ref auto U items) if (isCompatibleRange!(U, T)) {
+        vector!T output;
+        output ~= this;
+        output ~= items;
+        return output;
+    }
+
+    /**
         Add value to vector
     */
     @trusted
@@ -601,6 +634,11 @@ public:
             NuRangeException.sliceOutOfRange(offset, offset+slice.length)
         );
 
+        enforce(
+            !this.doSourceOverlap(cast(T*)values.ptr, values.length),
+            "Overlapping copies are not allowed!"
+        );
+
         this.copy(cast(T*)slice.ptr, cast(T*)values.ptr, slice.length);
     }
 
@@ -613,6 +651,9 @@ public:
     @trusted
     bool tryReplaceRange(U)(ref auto U values, size_t offset) nothrow if (isCompatibleRange!(U, T)) {
         if (offset+values.length > size_)
+            return false;
+        
+        if (this.doSourceOverlap(cast(T*)values.ptr, values.length))
             return false;
         
         this.copy(cast(T*)memory+offset, cast(T*)values.ptr, values.length);
@@ -696,19 +737,53 @@ unittest {
 
 @("vector: slice overlap")
 unittest {
-    static
-    struct Test {
-    @nogc:
-        static uint counter;
+    try {
+        static
+        struct Test { }
 
-        ~this() { counter++; }
+        vector!(Test*) tests;
+        tests ~= nogc_new!Test;
+        tests ~= nogc_new!Test;
+        tests ~= nogc_new!Test;
+
+        tests[0..1] = tests[1..2];
+    } catch(NuException ex) {
+        ex.free();
+        return;
     }
 
-    vector!(Test*) tests;
-    tests ~= nogc_new!Test;
-    tests ~= nogc_new!Test;
-    tests ~= nogc_new!Test;
+    assert(0, "An exception should've been thrown!");
+}
 
-    tests[0..1] = tests[1..2];
-    assert(Test.counter == 1);
+@("vector: insert pointers")
+unittest {
+    static struct Test { int a; }
+
+    vector!(Test*) tests;
+    tests ~= nogc_new!Test(0);
+    tests ~= nogc_new!Test(1);
+    tests ~= nogc_new!Test(2);
+
+    tests.insert(1, [nogc_new!Test(24), nogc_new!Test(25), nogc_new!Test(26)]);
+    foreach(i; 0..tests.length) {
+        foreach(j; 0..tests.length) {
+            if (i == j) continue;
+            assert(tests[i] !is tests[j]);
+        }
+    }
+
+    assert(tests[0].a == 0);
+    assert(tests[1].a == 24);
+    assert(tests[2].a == 25);
+    assert(tests[3].a == 26);
+    assert(tests[4].a == 1);
+    assert(tests[5].a == 2);
+}
+
+@("vector: append vectors")
+unittest {
+    vector!uint veca = [0, 1, 2, 3, 4];
+    vector!uint vecb = [0, 1, 2, 3, 4];
+
+    assert((veca~vecb)[] == [0, 1, 2, 3, 4, 0, 1, 2, 3, 4]);
 }
