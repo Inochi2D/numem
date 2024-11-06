@@ -9,6 +9,7 @@ module numem.core.memory;
 import numem.core.memory.alloc;
 import numem.core.trace;
 import std.traits;
+import core.stdc.string : memset;
 
 public import numem.core.memory.smartptr;
 
@@ -214,6 +215,22 @@ void nogc_delete(T)(ref T obj_)  {
     debug(trace) dbg_dealloc(obj_);
     
     destruct(obj_);
+}
+
+/**
+    Zero-fills an object
+*/
+void nogc_zeroinit(T)(ref T element) {
+    memset(&element, 0, element.sizeof);
+}
+
+/**
+    Creates an object with all of its bytes set to 0.
+*/
+T nogc_zeroinit(T)() {
+    T element;
+    memset(&element, 0, element.sizeof);
+    return element;
 }
 
 auto nogc_copyemplace(T)(T* target, ref T source) {
