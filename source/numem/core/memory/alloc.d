@@ -15,7 +15,7 @@ void destruct(T)(ref T obj_) {
 
     static if (isPointer!T || is(T == class)) {
         if (obj_ !is null) {
-            auto cInfo = cast(ClassInfo)typeid(T);
+            auto cInfo = cast(ClassInfo)typeid(obj_);
             if (cInfo) {
                 auto c = cInfo;
 
