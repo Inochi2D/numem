@@ -117,6 +117,9 @@ private:
 
     pragma(inline, true)
     void move(T* dst, T* src, size_t length) {
+        if (!src || !dst)
+            return;
+
         memmove(dst, src, T.sizeof*length);
         if (this.doSourceOverlap(src, length)) {
             if (src < dst) {
@@ -168,7 +171,6 @@ private:
                 foreach_reverse(i; offset..offset+length) 
                     nogc_delete(memory[i]);
             }
-            
         }
     }
 
@@ -383,7 +385,7 @@ public:
                 nogc_delete(memory[position]);
 
             // Move memory region around so that the deleted element is overwritten.
-            this.move(memory+position, memory+position+1, size_*(T*).sizeof);
+            this.move(memory+position, memory+position+1, (size_-1)*T.sizeof);
          
             size_--;
         }

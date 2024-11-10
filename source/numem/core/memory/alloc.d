@@ -4,16 +4,34 @@ import std.traits;
 
 @nogc nothrow:
 
+// Deletion function signature.
+private extern (D) alias fp_t = void function (Object);
+
 /**
     Destroy element with a destructor.
 */
 @trusted
 void destruct(T)(ref T obj_) {
 
-    static if(isPointer!T || is(T == class)) {
+    static if (is(T == class)) {
+        if (obj_ !is null) {
+            auto cInfo = cast(ClassInfo)typeid(T);
+            auto c = cInfo;
+
+            // Call destructors in order of most specific
+            // to least-specific
+            do {
+                if (c.destructor)
+                    (cast(fp_t)c.destructor)(cast(Object)obj_);
+            } while((c = c.base) !is null);
+
+            free(cast(void*)obj_);
+            obj_ = null;
+        }
+    } else static if(isPointer!T) {
         if (cast(void*)obj_) {
-            
-            // Don't try to run dtor on null object.
+
+            // Item is a struct, we can destruct it.
             static if (__traits(hasMember, T, "__dtor")) {
                 assumeNothrowNoGC!(typeof(&obj_.__dtor))(&obj_.__dtor)();
             } else static if (__traits(hasMember, T, "__xdtor")) {
