@@ -10,8 +10,10 @@
 */
 module numem.platform;
 
-version(OSX) version = AppleOS;
-else version(iOS) version = AppleOS;
-else version(TVOS) version = AppleOS;
-else version(WatchOS) version = AppleOS;
-else version(VisionOS) version = AppleOS;
+mixin template CheckOS() {
+    version(OSX) version = AppleOS;
+    else version(iOS) version = AppleOS;
+    else version(TVOS) version = AppleOS;
+    else version(WatchOS) version = AppleOS;
+    else version(VisionOS) version = AppleOS;
+}

@@ -11,7 +11,7 @@ private extern (D) alias fp_t = void function (Object);
     Destroy element with a destructor.
 */
 @trusted
-void destruct(T)(ref T obj_) {
+void destruct(T, bool doFree=true)(ref T obj_) {
 
     static if (isPointer!T || is(T == class)) {
         if (obj_ !is null) {
@@ -36,8 +36,10 @@ void destruct(T)(ref T obj_) {
                 }
             }
 
-            free(cast(void*)obj_);
-            obj_ = null;
+            static if (doFree) {
+                free(cast(void*)obj_);
+                obj_ = null;
+            }
         }
     } else {
 

@@ -15,6 +15,8 @@ import numem.core.memory;
 import core.sync.exception;
 import core.time : convert;
 
+mixin CheckOS;
+
 version(Windows) {
     
     import core.sys.windows.basetsd;

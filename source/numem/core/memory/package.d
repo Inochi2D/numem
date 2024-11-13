@@ -209,12 +209,12 @@ T* nogc_new(T)(T value = T.init) if (isBasicType!T) {
 
     For structs this will call the struct's destructor if it has any.
 */
-void nogc_delete(T)(ref T obj_)  {
+void nogc_delete(T, bool doFree=true)(ref T obj_)  {
 
     // Tracing
     debug(trace) dbg_dealloc(obj_);
     
-    destruct(obj_);
+    destruct!(T, doFree)(obj_);
 }
 
 /**
