@@ -117,11 +117,10 @@ public:
 
                 this.subCount();
             } else static if(IsAppleOS) {
-                mach_timespec_t timeout = mach_timespec_t(
-                    tv_sec:     cast(uint)convert!("msecs", "seconds")(timeoutMs),
-                    tv_nsec:    cast(clock_res_t)convert!("msecs", "nsecs")(timeoutMs)
-                );
-                
+                mach_timespec_t timeout;
+                timeout.tv_sec = cast(uint)convert!("msecs", "seconds")(timeoutMs);
+                timeout.tv_nsec = cast(clock_res_t)convert!("msecs", "nsecs")(timeoutMs);
+
                 while(true) {
 
                     auto rc = semaphore_timedwait(handle, timeout);
@@ -136,10 +135,9 @@ public:
                 }
 
             } else version(Posix) {
-                timespec timeout = timespec(
-                    tv_sec:     convert!("msecs", "seconds")(timeoutMs),
-                    tv_nsec:    convert!("msecs", "nsecs")(timeoutMs)
-                );
+                timespec timeout;
+                timeout.tv_sec = convert!("msecs", "seconds")(timeoutMs);
+                timeout.tv_nsec = convert!("msecs", "nsecs")(timeoutMs);
 
                 while(true) {
 
