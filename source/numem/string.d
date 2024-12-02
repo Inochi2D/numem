@@ -144,12 +144,33 @@ public:
     }
 
     /**
+        Creates a string from a slice of strings.
+    */
+    @trusted
+    this(const(T)[][] text) {
+        foreach(i; 0..text.length) {
+            this.append_(text[i]);
+        }
+    }
+
+    /**
         Creates a string from a string with a different
         encoding.
     */
     this(T)(ref auto T rhs) if (isSomeSafeString!T) {
         import numem.text.unicode : decode, encode;
         this = encode!selfType(decode!T(rhs, true));
+    }
+
+    /**
+        Creates a string from a slice of strings with a different
+        encoding.
+    */
+    this(T)(ref auto T[] rhs) if (isSomeSafeString!T) {
+        foreach(i; 0..rhs.length) {
+            import numem.text.unicode : decode, encode;
+            this = encode!selfType(decode!T(rhs[i], true));
+        }
     }
 
     /**
@@ -419,6 +440,23 @@ public:
         if (this.size() < s.size()) return -1;
         if (this.size() > s.size()) return 1;
         return strncmp(this.toCString(), s.toCString(), this.size());
+    }
+
+    /**
+        Makes a copy of the string as a C string which is not owned
+        by any numem object.
+
+        You are responsible for freeing the resulting string.
+    */
+    @system
+    const(T)* copyToUnowned() {
+        import core.stdc.string : memcpy;
+        import core.stdc.stdlib : malloc;
+        size_t buflen = T.sizeof * this.realLength;
+
+        const(T)* str = cast(const(T)*)malloc(buflen);
+        memcpy(cast(void*)str, cast(void*)this.ptr, buflen);
+        return str;
     }
 }
 

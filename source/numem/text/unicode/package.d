@@ -83,9 +83,9 @@ Endianess getEndianFromBOM(codepoint c) {
 UnicodeSequence decode(T)(ref auto T str, bool stripBOM = false) if (isSomeSafeString!T) {
     static if (StringCharSize!T == 1)
         return utf8.decode(str);
-    static if (StringCharSize!T == 2)
+    else static if (StringCharSize!T == 2)
         return utf16.decode(str, stripBOM);
-    static if (StringCharSize!T == 4)
+    else static if (StringCharSize!T == 4)
         return utf32.decode(str, stripBOM);
     else
         assert(0, "String type not supported.");
@@ -97,12 +97,48 @@ UnicodeSequence decode(T)(ref auto T str, bool stripBOM = false) if (isSomeSafeS
 T encode(T)(ref auto UnicodeSequence seq, bool addBOM = false) if (isSomeNString!T) {
     static if (StringCharSize!T == 1)
         return utf8.encode(seq);
-    static if (StringCharSize!T == 2)
+    else static if (StringCharSize!T == 2)
         return utf16.encode(seq, addBOM);
-    static if (StringCharSize!T == 4)
+    else static if (StringCharSize!T == 4)
         return utf32.encode(seq, addBOM);
     else
         assert(0, "String type not supported.");
+}
+
+/**
+    Converts the given string to a UTF-8 string.
+
+    This will always create a copy.
+*/
+ref auto toUTF8(FromT)(ref auto T from) if (isSomeSafeString!T) {
+    static if (StringCharSize!T == 1)
+        return nstring(from);
+    else
+        return encode!nstring(decode(from, true), false);
+}
+
+/**
+    Converts the given string to a UTF-16 string.
+
+    This will always create a copy.
+*/
+ref auto toUTF16(FromT)(ref auto T from, bool addBOM = false) if (isSomeSafeString!T) {
+    static if (StringCharSize!T == 2)
+        return nwstring(from);
+    else
+        return encode!nwstring(decode(from, true), addBOM);
+}
+
+/**
+    Converts the given string to a UTF-32 string.
+
+    This will always create a copy.
+*/
+ref auto toUTF32(FromT)(ref auto T from, bool addBOM = false) if (isSomeSafeString!T) {
+    static if (StringCharSize!T == 2)
+        return ndstring(from);
+    else
+        return encode!ndstring(decode(from, true), addBOM);
 }
 
 /**
