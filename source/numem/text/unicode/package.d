@@ -110,8 +110,8 @@ T encode(T)(ref auto UnicodeSequence seq, bool addBOM = false) if (isSomeNString
 
     This will always create a copy.
 */
-ref auto toUTF8(FromT)(ref auto T from) if (isSomeSafeString!T) {
-    static if (StringCharSize!T == 1)
+ref auto toUTF8(FromT)(ref auto FromT from) if (isSomeSafeString!FromT) {
+    static if (StringCharSize!FromT == 1)
         return nstring(from);
     else
         return encode!nstring(decode(from, true), false);
@@ -122,8 +122,8 @@ ref auto toUTF8(FromT)(ref auto T from) if (isSomeSafeString!T) {
 
     This will always create a copy.
 */
-ref auto toUTF16(FromT)(ref auto T from, bool addBOM = false) if (isSomeSafeString!T) {
-    static if (StringCharSize!T == 2)
+ref auto toUTF16(FromT)(ref auto FromT from, bool addBOM = false) if (isSomeSafeString!FromT) {
+    static if (StringCharSize!FromT == 2)
         return nwstring(from);
     else
         return encode!nwstring(decode(from, true), addBOM);
@@ -134,8 +134,8 @@ ref auto toUTF16(FromT)(ref auto T from, bool addBOM = false) if (isSomeSafeStri
 
     This will always create a copy.
 */
-ref auto toUTF32(FromT)(ref auto T from, bool addBOM = false) if (isSomeSafeString!T) {
-    static if (StringCharSize!T == 2)
+ref auto toUTF32(FromT)(ref auto FromT from, bool addBOM = false) if (isSomeSafeString!FromT) {
+    static if (StringCharSize!FromT == 2)
         return ndstring(from);
     else
         return encode!ndstring(decode(from, true), addBOM);

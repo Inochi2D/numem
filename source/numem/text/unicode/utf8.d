@@ -290,9 +290,10 @@ UnicodeSequence decode(inout(char)[] str) {
 
         // Validate length, add FFFD if invalid.
         size_t clen = str[i].getLength();
-        if (clen >= i+str.length || clen == 0) {
+        if (i+clen > str.length || clen == 0) {
             code ~= unicodeReplacementCharacter;
             i++;
+            continue;
         }
 
         txt[0..clen] = str[i..i+clen];

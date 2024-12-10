@@ -572,7 +572,7 @@ public:
         D slices are short lived and may end up pointing to invalid memory if their string is modified.
     */
     @trusted
-    T[] opSlice(size_t dim = 0)(size_t start, size_t end) {
+    inout(T)[] opSlice(size_t dim = 0)(size_t start, size_t end) inout {
         return memory[start..end];
     }
 

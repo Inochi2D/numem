@@ -416,19 +416,16 @@ public:
     }
 
     /**
-        Tests equality between nstrings
+        Tests equality between strings
     */
     @trusted
-    bool opEquals(R)(R other) if(is(R == basic_string!T)) {
-        return this.length == other.length && this[0..$] == other[0..$];
-    }
-
-    /**
-        Tests equality between nstrings
-    */
-    @trusted
-    bool opEquals(R)(R other) if(is(R == immutable(T)[])) {
-        return this.size == other.length && this[0..$-1] == other[0..$];
+    bool opEquals(R)(ref auto inout R other) inout if (isSomeString!R) {
+        static if (isSomeCString!R)
+            size_t len = cstrlen(other);
+        else
+            size_t len = other.length;
+        
+        return this.length == len && this.vec_[0..len] == other[0..len];
     }
 
     /**

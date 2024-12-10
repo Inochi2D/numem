@@ -15,6 +15,7 @@ import numem.core.memory;
 
 version(Windows) import core.sys.windows.winbase : GetEnvironmentVariableW, SetEnvironmentVariableW;
 else import core.sys.posix.stdlib : setenv, getenv;
+import core.sys.windows.raserror;
 
 @nogc:
 
@@ -26,7 +27,7 @@ struct Environment {
 private:
     static nstring get(const(char)* key) {
         version(Windows) {
-            auto utf16k = key.toUTF16;
+            auto utf16k = key.fromStringz.toUTF16;
 
             // Try getting the size of the env var.
             // if this fails, the env var is probably empty.
@@ -37,7 +38,7 @@ private:
             // Windows includes the null terminator, but n*string does too
             // so to not have 2 null terminators, subtract 1.
             nwstring envstr = nwstring(bufSize-1);
-            bufSize = GetEnvironmentVariableW(utf16k.ptr, envstr.ptr, envstr.length+1);
+            bufSize = GetEnvironmentVariableW(utf16k.ptr, cast(wchar*)envstr.ptr, cast(uint)(envstr.length+1));
 
             nogc_delete(utf16k);
             return envstr.toUTF8;
@@ -48,9 +49,9 @@ private:
 
     static bool set(const(char)* key, nstring value) {
         version(Windows) {
-            auto utf16k = key.toUTF16();
+            auto utf16k = key.fromStringz.toUTF16();
             auto utf16v = value.toUTF16();
-            return SetEnvironmentVariableW(utf16k.ptr, utf16v.ptr);
+            return cast(bool)SetEnvironmentVariableW(utf16k.ptr, utf16v.ptr);
         } else {
             return setenv(key, value.ptr, 1) == 0;
         }
