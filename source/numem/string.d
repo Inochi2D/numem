@@ -387,32 +387,32 @@ public:
         D slices are short lived and may end up pointing to invalid memory if their string is modified.
     */
     @trusted
-    const(T)[] opSlice(size_t start, size_t end) {
-        return cast(const(T)[])this.vec_[start..end];
+    inout(T)[] opSlice(size_t start, size_t end) inout {
+        return cast(inout(T)[])this.vec_[start..end];
     }
 
     /**
         Allows slicing the string to the full vector
     */
     @trusted
-    const(T)[] opIndex() {
-        return cast(const(T)[])this.vec_[0..this.size()];
+    inout(T)[] opIndex() inout {
+        return cast(inout(T)[])this.vec_[0..this.size()];
     }
 
     /**
         Allows slicing the string to get a substring.
     */
     @trusted
-    const(T)[] opIndex(size_t[2] slice) {
-        return cast(const(T)[])this.vec_[slice[0]..slice[1]];
+    inout(T)[] opIndex(size_t[2] slice) inout {
+        return cast(inout(T)[])this.vec_[slice[0]..slice[1]];
     }
 
     /**
         Allows getting a character from the string.
     */
     @trusted
-    ref const(T) opIndex(size_t index) {
-        return cast(const(T))(this.vec_.data()[index]);
+    ref inout(T) opIndex(size_t index) inout {
+        return cast(inout(T))(this.vec_.data()[index]);
     }
 
     /**
@@ -425,7 +425,7 @@ public:
         else
             size_t len = other.length;
         
-        return this.length == len && this.vec_[0..len] == other[0..len];
+        return this.length == len && this[0..len] == other[0..len];
     }
 
     /**
