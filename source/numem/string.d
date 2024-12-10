@@ -362,7 +362,7 @@ public:
     */
     @trusted
     size_t opDollar() {
-        return vec_.size();
+        return this.size();
     }
 
     /**
