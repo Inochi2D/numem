@@ -258,7 +258,7 @@ unittest {
     // Associative array of ints that are
     // indexed by string keys.
     // The KeyType is string.
-    map!(string, int) aa = nogc_construct!(map!(string, int))(); 
+    map!(string, int) aa; 
     aa["hello"] = 3; // set value associated with key "hello" to 3
     int value = aa["hello"]; // lookup value from a key
     assert(value == 3);

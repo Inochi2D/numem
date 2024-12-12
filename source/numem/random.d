@@ -1,4 +1,4 @@
-module numem.core.random;
+module numem.random;
 import numem.core;
 import std.traits;
 

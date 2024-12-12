@@ -9,7 +9,13 @@
     Automatically imports all of the base numem functionality.
     Some extra functionality has to be 
 */
-deprecated("To import core numem functionality, just import numem.")
-module numem.all;
+module numem;
 
-public import numem;
+
+public import numem.core;
+public import numem.collections;
+public import numem.io;
+public import numem.string;
+public import numem.conv;
+public import numem.events;
+public import numem.format;

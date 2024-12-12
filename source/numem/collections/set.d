@@ -162,7 +162,7 @@ unittest {
 
 @("set: insertion, deletion and testing")
 unittest {
-    set!(string) keywords = nogc_construct!(set!string)();
+    set!(string) keywords;
 
     assert(keywords.insert("public"));
     assert(keywords.insert("private"));

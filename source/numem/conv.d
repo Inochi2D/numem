@@ -9,9 +9,15 @@
     Utilities for converting between some basic types
 */
 module numem.conv;
+import numem.string;
+import numem.format;
 import core.stdc.stdlib;
 import std.traits;
-import numem.all;
+
+
+//
+//      TODO: REIMPLEMENT ALL OF THIS IN PURE D.
+//
 
 @nogc:
 

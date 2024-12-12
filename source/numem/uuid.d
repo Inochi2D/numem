@@ -8,8 +8,8 @@
 /**
     RFC4122 compliant UUIDs
 */
-module numem.core.uuid;
-import numem.core.random;
+module numem.uuid;
+import numem.random;
 import numem.string;
 import numem.io.endian;
 import numem.conv;

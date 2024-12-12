@@ -5,8 +5,6 @@ copyright "Copyright © 2023, Inochi2D Project"
 license "BSD 2-clause"
 targetPath "out/"
 
-dependency "tinyd-rt" version=">=0.0.0" optional=true
-
 buildOptions "debugInfoC" platform="windows"
 
 configuration "main" {
