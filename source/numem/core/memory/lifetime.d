@@ -12,9 +12,8 @@ module numem.core.memory.lifetime;
 import numem.core.utils;
 import numem.core.hooks;
 import numem.core.trace;
-import std.traits;
 import core.lifetime : forward;
-import core.internal.traits : isInnerClass;
+import core.internal.traits;
 
 // Deletion function signature.
 private extern (D) alias fp_t = void function (Object) @nogc nothrow;
@@ -62,32 +61,6 @@ void destruct(T, bool doFree=true)(ref T obj_) @nogc nothrow {
             assumeNothrowNoGC!(typeof(&obj_.__xdtor))(&obj_.__xdtor)();
         }
     }
-}
-
-/**
-    Runs copy postblit operations for `dst`.
-
-    If `dst` has a copy constructor it will be run,
-    otherwise if it has a `this(this)` postblit that will be run.
-
-    If no form of postblit is available, this function will be NO-OP.
-*/
-pragma(inline, true)
-void postblit(T)(ref T dst, ref T src) @nogc nothrow {
-    static if (__traits(hasCopyConstructor, T)) {
-        dst.__ctor(src);
-    } else static if(__traits(hasPostblit, T)) {
-        dst.__xpostblit();
-    }
-}
-
-/**
-    Runs move postblit operation for `dst`.
-*/
-pragma(inline, true)
-void move_postblit(T)(ref T dst, ref T src) @nogc nothrow {
-    static if (hasElaborateMove!T)
-        assumeNothrowNoGC!(typeof(&__move_post_blt))(&__move_post_blt)(dst, src);
 }
 
 /**
@@ -230,4 +203,79 @@ template RefT(T) {
         alias RefT = T;
     else
         alias RefT = T*;
+}
+
+/**
+    Gets whether `T` supports moving.
+*/
+enum IsMovable(T) =
+    is(T == struct) ||
+    (__traits(isStaticArray, T) && hasElaborateMove!(T.init[0]));
+
+/**
+    Blits instance `from` to location `to`.
+*/
+void __blit(T, bool copy)(ref T to, ref T from) {
+    nuMemcpy(to, from, nuAllocSize!T);
+    static if (copy) __copy_postblit(to, from);
+    else __move_postblit(to, from);
+}
+
+/**
+    Runs copy postblit operations for `dst`.
+
+    If `dst` has a copy constructor it will be run,
+    otherwise if it has a `this(this)` postblit that will be run.
+
+    If no form of postblit is available, this function will be NO-OP.
+*/
+pragma(inline, true)
+void __copy_postblit(T)(ref T dst, ref T src) @nogc nothrow {
+    static if (__traits(hasCopyConstructor, T)) {
+        dst.__ctor(src);
+    } else static if(__traits(hasPostblit, T)) {
+        dst.__xpostblit();
+    }
+}
+
+/**
+    Ported from D runtime, this function is released under the boost license.
+
+    Recursively calls the `opPostMove` callbacks of a struct and its members if
+    they're defined.
+
+    When moving a struct instance, the compiler emits a call to this function
+    after blitting the instance and before releasing the original instance's
+    memory.
+
+    Params:
+        newLocation = reference to struct instance being moved into
+        oldLocation = reference to the original instance
+
+    __move_postblit will do nothing if the type does not support elaborate moves.
+*/
+pragma(inline, true)
+void __move_postblit(T)(ref T newLocation, ref T oldLocation) {
+    static if (is(T == struct)) {
+
+        // Call __most_postblit for all members which have move semantics.
+        static foreach(i, M; typeof(T.tupleof)) {
+            static if (hasElaborateMove!T) {
+                __move_postblit(newLocation.tupleof[i], oldLocation.tupleof[i]);
+            }
+        }
+
+        static if (__traits(hasMember, T, "opPostMove")) {
+            static assert(is(typeof(T.init.opPostMove(lvalueOf!T))) &&
+                          !is(typeof(T.init.opPostMove(rvalueOf!T))),
+                "`" ~ T.stringof ~ ".opPostMove` must take exactly one argument of type `" ~ T.stringof ~ "` by reference");
+        
+            newLocation.opPostMove(oldLocation);
+        }
+    } else static if (__traits(isStaticArray, T)) {
+        static if (T.length && hasElaborateMove!(typeof(newLocation[0]))) {
+            foreach(i; 0..T.length)
+                __move_postblit(newLocation[i], oldLocation[i]);
+        }
+    }
 }
