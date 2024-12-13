@@ -44,13 +44,11 @@ This is a incomplete and unordered roadmap of features I want to add and have ad
  - [ ] Character encoding handling
    - [x] UTF-8
    - [x] UTF-16
-   - [ ] UTF-32
+   - [x] UTF-32
    - [ ] Unicode
      - [x] Codepoints
      - [ ] Grapheme handling
      - [ ] Character classification
-   - [ ] Allow plugging more handlers in?
- - [ ] String formatting (compatible with phobos syntax?)
 
 \*: Implemented but untested.  
 \*\*: Partially implemented.
