@@ -19,6 +19,18 @@ debug(trace) import numem.core.trace;
 struct AllowInitEmpty;
 
 /**
+    Constructs the given object.
+
+    Attempting to construct a non-initialized `object` is undefined behaviour.
+*/
+void nogc_construct(T, UT = T, Args...)(ref UT object, Args args) {
+    static if (is(T == class) || isPointer!T)
+        emplace(object, args);
+    else
+        emplace(*object, args);
+}
+
+/**
     Allocates a new instance of type T.
 */
 RefT!T nogc_new(T, Args...)(Args args) {
@@ -26,11 +38,7 @@ RefT!T nogc_new(T, Args...)(Args args) {
     if (!newobject)
         nuAbort();
 
-    static if (is(T == class) || isPointer!T)
-        emplace(newobject, args);
-    else
-        emplace(*newobject, args);
-    
+    nogc_construct!(T, RefT!T, Args)(newobject, args);
 
     // Tracing
     debug(trace)
@@ -83,4 +91,18 @@ T nogc_zeroinit(T)() {
 */
 void nogc_emplace(T, Args...)(ref auto T dest, Args args)  {
     emplace!(T, T, Args)(dest, args);
+}
+
+/**
+    Moves `from` to `to` via a destructive copy.
+    
+    If `from` is not a valid object, then accessing `to` will be undefined
+    behaviour.
+
+    After the move operation, the original memory location of `from` will be
+    reset to its base initialized state before any constructors are run.
+*/
+void moveTo(T)(ref T from, ref T to) if (IsMovable!T) {
+    __blit(T, false)(to, from);
+    initializeAt(from);
 }
