@@ -316,11 +316,11 @@ unittest {
 @("uuid: generation")
 unittest {
     import numem.core;
+
     Random random = nogc_new!Random();
+    scope(exit) nogc_delete(random);
 
     UUID uuid = UUID.createRandom(random);
-    import std.stdio : writeln;
-
-
-    nogc_delete(random);
+    scope(exit) nogc_delete(uuid);
+    assert(uuid != UUID.nil());
 }
