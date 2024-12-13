@@ -12,6 +12,9 @@ import std.traits;
 import core.stdcpp.string;
 import std.traits : Unqual, hasFunctionAttributes;
 
+// Objective-C support
+version(Have_objective_d) import foundation.nsstring : NSString;
+
 /// Gets whether the provided type is some type of string.
 enum isSomeString(T) =
     isSomeSafeString!T ||
@@ -151,6 +154,17 @@ public:
         foreach(i; 0..text.length) {
             this.append_(text[i]);
         }
+    }
+
+    /**
+        Creates a string from an Objective-C NSString.
+
+        This will release 1 reference from the NSString.
+    */
+    version(Have_objective_d)
+    this(NSString str) {
+        this.set_(str.toString());
+        str.release();
     }
 
     /**
@@ -311,6 +325,14 @@ public:
         To D string
     */
     alias toString = toDString;
+
+    /**
+        To Objective-C NSString
+    */
+    version(Have_objective_d)
+    NSString toNSString() {
+        return NSString.create(ptr);
+    }
 
     /**
         Set content of string
