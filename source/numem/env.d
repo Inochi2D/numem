@@ -102,7 +102,7 @@ bool nuSetEnvironmentVariable(nstring key, nstring value) @nogc {
         import core.sys.windows.winbase : SetEnvironmentVariableW;
         auto utf16k = key.toUTF16();
         auto utf16v = value.toUTF16();
-        return SetEnvironmentVariableW(cast(wchar*)utf16k.ptr, cast(wchar*)utf16v.ptr);
+        return cast(bool)SetEnvironmentVariableW(cast(wchar*)utf16k.ptr, cast(wchar*)utf16v.ptr);
     } else version(Posix) {
 
         import core.sys.posix.stdlib : setenv;
