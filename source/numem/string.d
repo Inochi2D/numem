@@ -581,9 +581,6 @@ unittest {
     vector!nstring copy = strings;
     nogc_delete(copy);
 
-    import numem.io.stdio : writeln;
-    writeln(strings[0], " ", strings[1]);
-
     assert(strings[0] == "a");
     assert(strings[1] == "b");
 

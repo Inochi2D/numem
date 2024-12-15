@@ -15,7 +15,6 @@ void nuWrite(nstring str) {
     import core.stdc.stdio : putchar;
     foreach(i; 0..str.length)
         putchar(str[i]);
-    putchar('\0');
 }
 
 /**
