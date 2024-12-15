@@ -9,23 +9,14 @@
     Numem casting helpers
 */
 module numem.core.casting;
+import numem.core.traits;
 
 nothrow @nogc:
 
 /**
-    Removes all qualifiers from type T.
-*/
-template Unqual(T : const U, U) {
-    static if(is(U == shared V, V))
-        alias Unqual = V;
-    else
-        alias Unqual = U;
-}
-
-/**
     Safely casts between `T` and `U`.
 */
-T dynamic_cast(T, U)(auto ref U from) if(is(T : U)) {
+auto ref T dynamic_cast(T, U)(auto ref U from) if(is(T : U)) {
     return cast(T)from;
 }
 
@@ -36,7 +27,7 @@ T dynamic_cast(T, U)(auto ref U from) if(is(T : U)) {
     This will NOT call opCast of aggregate types!
 */
 pragma(inline, true)
-T reinterpret_cast(T, U)(auto ref U from) if (T.sizeof == U.sizeof) {
+auto ref T reinterpret_cast(T, U)(auto ref U from) if (T.sizeof == U.sizeof) {
     union tmp { U from; T to; }
     return tmp(from).to;
 }
@@ -76,7 +67,7 @@ unittest {
     ```
 */
 pragma(inline, true)
-T const_cast(T, U)(auto ref U from) if (is(Unqual!T : Unqual!U) || is(Unqual!U : Unqual!T)) {
+auto ref T const_cast(T, U)(auto ref U from) if (isAnyCompatible!(T, U)) {
     return reinterpret_cast!(T, U)(from);
 }
 

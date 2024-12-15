@@ -8,8 +8,8 @@ module numem.io.endian;
 import numem.core;
 import numem.collections.vector;
 import numem.string;
+import core.internal.traits;
 import std.traits : isNumeric, isIntegral, isBasicType;
-import std.traits : Unqual;
 
 @nogc nothrow:
 

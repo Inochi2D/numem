@@ -12,8 +12,10 @@ module numem.core.memory.lifetime;
 import numem.core.utils;
 import numem.core.hooks;
 import numem.core.trace;
-import core.lifetime : forward;
-import core.internal.traits;
+import numem.core.traits;
+import core.lifetime;
+import numem.core.casting;
+import numem.core.memory;
 
 // Deletion function signature.
 private extern (D) alias fp_t = void function (Object) @nogc nothrow;
@@ -22,9 +24,8 @@ private extern (D) alias fp_t = void function (Object) @nogc nothrow;
     Destroy element with a destructor.
 */
 @trusted
-void destruct(T, bool doFree=true)(ref T obj_) @nogc nothrow {
-
-    static if (isPointer!T || is(T == class)) {
+void destruct(T, bool reInit=true)(ref T obj_) @nogc nothrow {
+    static if (isHeapAllocated!T) {
         if (obj_ !is null) {
             auto cInfo = cast(ClassInfo)typeid(obj_);
             if (cInfo) {
@@ -40,37 +41,25 @@ void destruct(T, bool doFree=true)(ref T obj_) @nogc nothrow {
             } else {
 
                 // Item is a struct, we can destruct it directly.
-                static if (__traits(hasMember, T, "__dtor")) {
-                    assumeNothrowNoGC!(typeof(&obj_.__dtor))(&obj_.__dtor)();
-                } else static if (__traits(hasMember, T, "__xdtor")) {
+                static if (__traits(hasMember, T, "__xdtor")) {
                     assumeNothrowNoGC!(typeof(&obj_.__xdtor))(&obj_.__xdtor)();
+                } else static if (__traits(hasMember, T, "__dtor")) {
+                    assumeNothrowNoGC!(typeof(&obj_.__dtor))(&obj_.__dtor)();
                 }
-            }
-
-            static if (doFree) {
-                nuFree(cast(void*)obj_);
-                obj_ = null;
             }
         }
     } else {
 
         // Item is a struct, we can destruct it.
-        static if (__traits(hasMember, T, "__dtor")) {
-            assumeNothrowNoGC!(typeof(&obj_.__dtor))(&obj_.__dtor)();
-        } else static if (__traits(hasMember, T, "__xdtor")) {
+        static if (__traits(hasMember, T, "__xdtor")) {
             assumeNothrowNoGC!(typeof(&obj_.__xdtor))(&obj_.__xdtor)();
+        } else static if (__traits(hasMember, T, "__dtor")) {
+            assumeNothrowNoGC!(typeof(&obj_.__dtor))(&obj_.__dtor)();
         }
     }
-}
 
-/**
-    Gets the amount of bytes needed to allocate an instance of type `T`.
-*/
-template nuAllocSize(T) {
-    static if (is(T == class))
-        enum nuAllocSize = __traits(classInstanceSize, T);
-    else 
-        enum nuAllocSize = T.sizeof;
+    static if (reInit)
+        initializeAt(obj_);
 }
 
 /**
@@ -83,16 +72,49 @@ void initializeAt(T)(scope ref T chunk) @nogc nothrow @trusted {
         // in general circumstances is null, we don't want this, so class check
         // should be first! Otherwise the chunk = T.init will mess us up.
         const void[] initSym = __traits(initSymbol, T);
-        nuMemcpy(cast(void*)chunk, initSym.ptr, initSym.length);
+        nuMemcpy(cast(void*)chunk, cast(void*)initSym.ptr, initSym.length);
     } else static if (__traits(isZeroInit, T)) {
+
         nuMemset(cast(void*)&chunk, 0, T.sizeof);
     } else static if (__traits(isScalar, T) || 
         (T.sizeof <= 16 && !hasElaborateAssign!T && __traits(compiles, () { T chunk; chunk = T.init; }))) {
-        chunk = T.init;
+
+        // To avoid triggering postblits/move constructors we need to do a memcpy here as well.
+        // If the user wants to postblit after initialization, they should call the relevant postblit function.
+        T tmp = T.init;
+        nuMemcpy(cast(void*)&chunk, &tmp, T.sizeof);
     } else static if (__traits(isStaticArray, T)) {
+
         foreach(i; 0..T.length)
             initializeAt(chunk[i]);
     } else {
+
+        const void[] initSym = __traits(initSymbol, T);
+        nuMemcpy(cast(void*)&chunk, initSym.ptr, initSym.length);
+    }
+}
+
+/**
+    Initializes the memory at the specified chunk, but ensures no 
+    context pointers are wiped.
+*/
+void initializeAtNoCtx(T)(scope ref T chunk) @nogc nothrow @trusted {
+    static if (__traits(isZeroInit, T)) {
+
+        nuMemset(cast(void*)&chunk, 0, T.sizeof);
+    } else static if (__traits(isScalar, T) || 
+        (T.sizeof <= 16 && !hasElaborateAssign!T && __traits(compiles, () { T chunk; chunk = T.init; }))) {
+
+        // To avoid triggering postblits/move constructors we need to do a memcpy here as well.
+        // If the user wants to postblit after initialization, they should call the relevant postblit function.
+        T tmp = T.init;
+        nuMemcpy(cast(void*)&chunk, &tmp, T.sizeof);
+    } else static if (__traits(isStaticArray, T)) {
+
+        foreach(i; 0..T.length)
+            initializeAt(chunk[i]);
+    } else {
+
         const void[] initSym = __traits(initSymbol, T);
         nuMemcpy(cast(void*)&chunk, initSym.ptr, initSym.length);
     }
@@ -196,45 +218,103 @@ void emplace(UT, Args...)(auto ref UT dst, auto ref Args args) @nogc nothrow {
 }
 
 /**
-    Gets the reference type version of type T.
+    Copies source to target.
 */
-template RefT(T) {
-    static if (is(T == class) || isPointer!T)
-        alias RefT = T;
-    else
-        alias RefT = T*;
+void __copy(S, T)(ref S source, ref T target) @nogc {
+    static if (is(T == struct)) {
+        static if (!__traits(hasCopyConstructor, T))
+            __blit(target, source);
+        
+        static if (hasElaborateCopyConstructor!T)
+            __copy_postblit(source, target);
+    } else static if (is(T == E[n], E, size_t n)) {
+        
+        // Some kind of array or range.
+        static if (hasElaborateCopyConstructor!E) {
+            size_t i;
+            try {
+                for(i = 0; i < n; i++)
+                    __copy(source[i], target[i]);
+            } catch(Exception ex) {
+                while(i--)
+                    nogc_delete(const_cast!(Unconst!(E)*)(&target[i]));
+                throw e;
+            }
+        } else static if (!__traits(hasCopyConstructor, T))
+            __blit(target, source);
+    } else {
+        *(const_cast!(Unconst!(T)*)(&target)) = *const_cast!(Unconst!(T)*)(&source);
+    }
 }
 
 /**
-    Gets whether `T` supports moving.
+    Moves source to target, via destructive copy if neccesary.
+    source will be reset to its init state after the move.
 */
-enum IsMovable(T) =
-    is(T == struct) ||
-    (__traits(isStaticArray, T) && hasElaborateMove!(T.init[0]));
+void __move(S, T)(ref S source, ref T target) @nogc {
+    static if(is(T == struct)) {
+        static if (hasElaborateDestructor!T)
+            destruct!(T, false)(target);
+        
+        assert(&source !is &target, "Source and target must not be identical");
+        __blit(target, source);
+        
+        static if (hasElaborateMove!T)
+            __move_postblit(target, source);
+
+        // If the source defines a destructor or a postblit the type needs to be
+        // obliterated to avoid double frees and undue aliasing.
+        static if (hasElaborateDestructor!T || hasElaborateCopyConstructor!T) {
+            initializeAtNoCtx(source);
+        }
+    } else static if (is(T == E[n], E, size_t n)) {
+        static if (!hasElaborateMove!T && 
+                   !hasElaborateDestructor!T && 
+                   !hasElaborateCopyConstructor!T) {
+            
+            assert(source.ptr !is target.ptr, "Source and target must not be identical");
+            __blit(target, source);
+            initializeAt(source);
+        } else {
+            foreach(i; 0..source.length) {
+                __move(source[i], target[i]);
+            }
+        }
+    } else {
+        target = source;
+        initializeAt(source);
+    }
+}
 
 /**
     Blits instance `from` to location `to`.
+
+    Effectively this acts as a simple memory copy, 
+    a postblit needs to be run after to finalize the object.
 */
-void __blit(T, bool copy)(ref T to, ref T from) {
-    nuMemcpy(to, from, nuAllocSize!T);
-    static if (copy) __copy_postblit(to, from);
-    else __move_postblit(to, from);
+pragma(inline, true)
+void __blit(T)(ref T to, ref T from) @nogc nothrow {
+    nuMemcpy(const_cast!(Unqual!T*)(&to), const_cast!(Unqual!T*)(&from), AllocSize!T);
 }
 
 /**
-    Runs copy postblit operations for `dst`.
-
-    If `dst` has a copy constructor it will be run,
-    otherwise if it has a `this(this)` postblit that will be run.
-
-    If no form of postblit is available, this function will be NO-OP.
+    Runs postblit operations for a copy operation.
 */
 pragma(inline, true)
-void __copy_postblit(T)(ref T dst, ref T src) @nogc nothrow {
-    static if (__traits(hasCopyConstructor, T)) {
-        dst.__ctor(src);
-    } else static if(__traits(hasPostblit, T)) {
+void __copy_postblit(S, T)(ref S source, ref T target) @nogc nothrow {
+    static if (__traits(hasPostblit, T)) {
         dst.__xpostblit();
+    } else static if (__traits(hasCopyConstructor, T)) {
+
+        // https://issues.dlang.org/show_bug.cgi?id=22766
+        initializeAt(target);
+
+        // Copy context pointer if needed.
+        static if (__traits(isNested, T))
+            *(cast(void**)&target.tupleof[$-1]) = cast(void*) source.tupleof[$-1];
+        
+        // Invoke copy ctor.
+        target.__ctor(source);
     }
 }
 
@@ -278,4 +358,43 @@ void __move_postblit(T)(ref T newLocation, ref T oldLocation) {
                 __move_postblit(newLocation[i], oldLocation[i]);
         }
     }
+}
+
+/**
+    Forwards function arguments while keeping `out`, `ref`, and `lazy` on
+    the parameters.
+
+    Params:
+        args = a parameter list or an $(REF AliasSeq,std,meta).
+    Returns:
+        An `AliasSeq` of `args` with `out`, `ref`, and `lazy` saved.
+*/
+template forward(args...)
+{
+    import core.internal.traits : AliasSeq;
+
+    template fwd(alias arg)
+    {
+        // by ref || lazy || const/immutable
+        static if (__traits(isRef,  arg) ||
+                   __traits(isOut,  arg) ||
+                   __traits(isLazy, arg) ||
+                   !is(typeof(move(arg))))
+            alias fwd = arg;
+        // (r)value
+        else
+            @property auto fwd()
+            {
+                version (DigitalMars) { /* @@BUG 23890@@ */ } else pragma(inline, true);
+                return move(arg);
+            }
+    }
+
+    alias Result = AliasSeq!();
+    static foreach (arg; args)
+        Result = AliasSeq!(Result, fwd!arg);
+    static if (Result.length == 1)
+        alias forward = Result[0];
+    else
+        alias forward = Result;
 }

@@ -16,7 +16,7 @@ import numem.core;
 
 private {
     struct refcountmg_t(T) {
-     nothrow @nogc:
+    nothrow @nogc:
         T* ref_;
         size_t strongRefs;
         size_t weakRefs;

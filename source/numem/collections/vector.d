@@ -6,11 +6,11 @@
 */
 
 module numem.collections.vector;
+import numem.core.hooks;
+import numem.core.memory.lifetime;
 import numem.core.memory.smartptr;
 import numem.core;
 import numem.core.exception;
-import core.stdc.stdlib : malloc, realloc, free;
-import core.stdc.string : memcpy, memmove;
 import core.atomic : atomicFetchAdd, atomicFetchSub, atomicStore, atomicLoad;
 import std.math.rounding : quantize, ceil;
 import std.traits;
@@ -47,7 +47,19 @@ private:
 
     // Internal resize function
     pragma(inline, true)
-    void resize_(size_t size) {
+    void resize_(size_t size, bool shrinkToFit=false) {
+        if (shrinkToFit && memory && capacity_ > size_) {
+            static if (ownsMemory) {
+                if (size < size_)
+                    this.deleteRange(size, size_);
+            }
+
+            memory = cast(T*)nuRealloc(cast(void*)memory, size*T.sizeof);
+            capacity_ = size;
+            size_ = size;
+            return;
+        }
+
         if (size >= capacity_) 
             this.reserve_(size);
 
@@ -65,49 +77,28 @@ private:
             capacity_ = capacity + (capacity%VECTOR_ALIGN);
 
             // Reallocate the malloc'd portion if there is anything to realloc.
-            if (memory) memory = cast(T*) realloc(cast(void*)memory, capacity_*T.sizeof);
-            else memory = cast(T*)malloc(capacity_*T.sizeof);
+            if (memory) memory = cast(T*) nuRealloc(cast(void*)memory, capacity_*T.sizeof);
+            else memory = cast(T*) nuAlloc(capacity_*T.sizeof);
 
             // Initialize newly allocated memory, else if T has postblit or move constructors,
             // those slots will be mistaken for live objects and their destructor called during
             // a opOpAssign operation.
             // But, we need to do this without triggering the postblit or move-constructor here,
             // or the same problem happen!
-            for (size_t n = before; n < capacity_; ++n) {
-
-                T tmp = T.init;
-                memcpy(memory + n, &tmp, T.sizeof);
-            }
+            for (size_t n = before; n < capacity_; n++)
+                initializeAt(memory[n]);
         }
     }
 
     pragma(inline, true)
+    void assign(T[] src) {
+        this.resize_(src.length);
+        this.copy(this.memory, src.ptr, src.length);
+    }
+
+    pragma(inline, true)
     void copy(T* dst, T* src, size_t length) {
-        this.freeRange(dst-memory, length);
-
-        static if (__traits(hasCopyConstructor, T)) {
-
-            // Initializer
-            T tmp = T.init;
-            foreach(i; 0..length) {
-
-                // Copy over initializer
-                memcpy(dst + i, &tmp, T.sizeof);
-
-                // Call copy constructor
-                dst[i].__ctor(src[i]);
-            }
-
-        } else static if(__traits(hasPostblit, T)) {   
-            
-            memcpy(dst, src, T.sizeof*length); 
-            foreach(i; 0..length) {
-                dst[i].__xpostblit();
-            }
-        } else {
-
-            memcpy(dst, src, T.sizeof*length);
-        }
+        nogc_copy(dst[0..length], src[0..length]);
     }
 
     // Gets whether src overlaps with the memory in the vector.
@@ -117,82 +108,32 @@ private:
 
     pragma(inline, true)
     void move(T* dst, T* src, size_t length) {
-        if (!src || !dst)
-            return;
-
-        memmove(dst, src, T.sizeof*length);
-        if (this.doSourceOverlap(src, length)) {
-            if (src < dst) {
-                this.fillRangeInit(src, dst-src);
-            } else if (src > dst) {
-                auto ptr = dst+length;
-                auto len = (src-length)-ptr;
-                this.fillRangeInit(ptr, len);
-            }
-        }
+        nuMemmove(dst, src, T.sizeof*length);
     }
 
     pragma(inline, true)
-    void fillRangeInit(T* dst, size_t length) {
-        foreach(i; 0..length) {
-
-            T tmp = T.init;
-            memcpy(dst + i, &tmp, T.sizeof);
-        }
+    void deleteRange(size_t start, size_t end) {
+        static if (ownsMemory)
+            nogc_delete(this.memory[start..end]);
     }
 
-    pragma(inline, true)
-    void freeRange(size_t offset, size_t length) {
-        static if (ownsMemory) {
-
-            // Heap allocated items require more smarts.
-            static if (isPointer!T || is(T == class)) {
-                import numem.collections.set : weak_set; 
-                    
-                // To prevent double-frees this is neccesary.
-                weak_set!(void*) freed;
-
-                foreach_reverse(i; offset..offset+length) {
-                    if (cast(void*)memory[i] in freed)
-                        continue;
-                    
-                    freed.insert(cast(void*)memory[i]);
-                    
-                    // Basic types don't need destruction,
-                    // so we can skip this step.
-                    static if (!isBasicType!T)
-                        nogc_delete(memory[i]);
-                    memory[i] = null;
-                }
-
-                nogc_delete(freed);
-            } else static if (!isBasicType!T) {
-
-                foreach_reverse(i; offset..offset+length) 
-                    nogc_delete(memory[i]);
-            }
-        }
-    }
-
-    void freeAll() {
-        this.freeRange(0, size_);
+    void deleteAll() {
+        this.deleteRange(0, size_);
     }
 
 public:
 
-    /// Gets the type of character stored in the string.
+    /// Gets the type of the values stored in the vector.
     alias valueType = T;
 
     /// Destructor
     @trusted
     ~this() {
         if (this.memory) {
-            static if (ownsMemory) {
-                this.freeRange(0, size_);
-            }
+            this.deleteAll();
 
             // Free the pointer
-            free(cast(void*)this.memory);
+            nuFree(this.memory);
         }
 
         this.memory = null;
@@ -209,15 +150,13 @@ public:
     /// Constructor
     @trusted
     this(T[] data) {
-        this.resize_(data.length);
-        this.copy(this.memory, data.ptr, data.length);
+        this.assign(data);
     }
 
     /// Constructor
     @trusted
     this(ref T[] data) {
-        this.resize_(data.length);
-        this.copy(this.memory, data.ptr, data.length);
+        this.assign(data);
     }
 
     /**
@@ -228,8 +167,7 @@ public:
     @trusted
     this(T)(ref T rhs) if(!is(T == selfType) && isSomeVector!T)  {
         if (rhs.memory) {
-            this.resize_(rhs.size_);
-            this.copy(this.memory, rhs.memory, rhs.size_);
+            this.assign(rhs[]);
         }
     }
 
@@ -308,9 +246,7 @@ public:
     @trusted
     void shrinkToFit() {
         if (capacity_ > size_) {
-            capacity_ = size_;
-            if (size_ > 0) memory = cast(T*) realloc(memory, size_);
-            else free(memory);
+            this.resize_(size_, true);
         }
     }
 
@@ -370,7 +306,7 @@ public:
     void clear() {
         
         // Delete elements in the array.
-        this.freeAll();
+        this.deleteAll();
         this.size_ = 0;
     }
 
@@ -381,11 +317,11 @@ public:
     void remove(size_t position) {
         if (position < size_) {
 
-            static if (ownsMemory && !isBasicType!T) 
+            static if (ownsMemory) 
                 nogc_delete(memory[position]);
 
             // Move memory region around so that the deleted element is overwritten.
-            this.move(memory+position, memory+position+1, (size_-1)*T.sizeof);
+            this.move(memory+position, memory+position+1, (size_-1));
          
             size_--;
         }
@@ -397,20 +333,14 @@ public:
     */
     @trusted
     void remove(size_t start, size_t end) {
-
         assert(start <= end && end <= size_);
 
-        // NOTE: the ".." operator is start inclusive, end exclusive.
-        static if (ownsMemory && !isBasicType!T) {
-            foreach_reverse(i; start..end)
-                nogc_delete(memory[i]);
-
-        }
+        static if (ownsMemory && !isBasicType!T)
+            this.deleteRange(start, end);
 
         // Copy over old elements
         size_t span = end-start;
-        // memory[start..start+span] = memory[end..end+span];
-        this.move(memory+start, memory+end, span*(T*).sizeof);
+        this.move(memory+start, memory+end, span);
 
         size_ -= span;
     }
@@ -420,16 +350,10 @@ public:
     */
     @trusted
     void insert(U)(size_t offset, auto ref U item) if (is(U : T)) {
-        if (offset >= size_) {
-            this.pushBack(item);
-            return;
-        }
 
-        size_t toShift = size_-offset;
-
-        this.resize_(size_+1);
-        this.move(memory+offset+1, memory+offset, toShift);
-        this.memory[offset] = item;
+        // Simplify by reusing implementation for ranged inserts.
+        const U[1] itm = item;
+        this.insert(offset, itm[]);
     }
 
     /**
@@ -470,7 +394,7 @@ public:
         Pushes an element to the back of the vector
     */
     @trusted
-    ref auto typeof(this) pushBack(T)(T item) {
+    ref auto typeof(this) pushBack()(ref auto T item) {
 
         this.resize(size_+1);
         this.memory[size_-1] = item;
@@ -493,12 +417,12 @@ public:
         Pushes an element to the front of the vector
     */
     @trusted
-    ref auto typeof(this) pushFront(T)(T value) {
+    ref auto typeof(this) pushFront()(ref auto T value) {
         size_t cSize = size_;
 
         this.resize(size_+1);
         if (cSize > 0)
-            this.move(&this.memory[1], this.memory, cSize*(T*).sizeof);
+            this.move(&this.memory[1], this.memory, cSize);
 
         this.memory[0] = value;
         return this;
@@ -534,7 +458,7 @@ public:
         Add value to vector
     */
     @trusted
-    ref auto typeof(this) opOpAssign(string op = "~")(T value) {
+    ref auto typeof(this) opOpAssign(string op = "~")(ref auto T value) {
         return this.pushBack(value);
     }
 
@@ -658,7 +582,7 @@ public:
         if (this.doSourceOverlap(cast(T*)values.ptr, values.length))
             return false;
         
-        this.copy(cast(T*)memory+offset, cast(T*)values.ptr, values.length);
+        this.copy(cast(T*)&memory[offset], cast(T*)values.ptr, values.length);
         return true;
     }
 

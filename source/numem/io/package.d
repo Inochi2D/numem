@@ -9,3 +9,4 @@ module numem.io;
 public import numem.io.stream;
 public import numem.io.endian;
 public import numem.io.file;
+public import numem.io.stdio;

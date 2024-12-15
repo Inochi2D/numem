@@ -19,8 +19,7 @@
 */
 module numem.core.hooks;
 public import core.attribute : weak;
-
-@nogc nothrow:
+import numem.core.utils;
 
 /**
     Allocates `bytes` worth of memory.
@@ -32,7 +31,8 @@ public import core.attribute : weak;
 */
 @weak
 extern(C)
-void* nuAlloc(size_t bytes) {
+void* nuAlloc(size_t bytes) @nogc nothrow {
+
     import core.stdc.stdlib : malloc;
     return malloc(bytes);
 }
@@ -48,7 +48,8 @@ void* nuAlloc(size_t bytes) {
 */
 @weak
 extern(C)
-void* nuRealloc(void* data, size_t newSize) {
+void* nuRealloc(void* data, size_t newSize) @nogc nothrow {
+
     import core.stdc.stdlib : realloc;
     return realloc(data, newSize);
 }
@@ -63,7 +64,8 @@ void* nuRealloc(void* data, size_t newSize) {
 */
 @weak
 extern(C)
-void nuFree(void* data) {
+void nuFree(void* data) @nogc nothrow {
+
     import core.stdc.stdlib : free;
     free(data);
 }
@@ -79,9 +81,24 @@ void nuFree(void* data) {
 */
 @weak
 extern(C)
-void* nuMemcpy(inout(void)* dst, inout(void)* src, size_t bytes) {
+void* nuMemcpy(return scope void* dst, return scope void* src, size_t bytes) @nogc nothrow {
+
     import core.stdc.string : memcpy;
-    return memcpy(cast(void*)dst, cast(void*)src, bytes);
+    return memcpy(dst, src, bytes);
+}
+
+/**
+    Copies `bytes` worth of data from `src` into `dst`.
+    Memory needs to be allocated and within range.
+
+    This calls `nuMemcpy(inout(void)* dst, inout(void)* src, size_t bytes)`
+    internally.
+*/
+extern(D)
+void* nuCopy(T)(inout(T)[] dst, inout(T)[] src) @nogc nothrow {
+
+    assert(dst.length >= src.length, "Destination is shorter than source!");
+    return nuMemcpy(dst.ptr, src.ptr, T.sizeof*src.length);
 }
 
 /**
@@ -95,7 +112,8 @@ void* nuMemcpy(inout(void)* dst, inout(void)* src, size_t bytes) {
 */
 @weak
 extern(C)
-void* nuMemmove(void* dst, void* src, size_t bytes) {
+void* nuMemmove(void* dst, void* src, size_t bytes) @nogc nothrow {
+
     import core.stdc.string : memmove;
     return memmove(dst, src, bytes);
 }
@@ -108,7 +126,9 @@ void* nuMemmove(void* dst, void* src, size_t bytes) {
     
     By default calls C stdlib memset.
 */
-void* nuMemset(void* dst, ubyte value, size_t bytes) {
+extern(C)
+void* nuMemset(void* dst, ubyte value, size_t bytes) @nogc nothrow {
+
     import core.stdc.string : memset;
     return memset(dst, value, bytes);
 }
@@ -123,7 +143,8 @@ void* nuMemset(void* dst, ubyte value, size_t bytes) {
 */
 @weak
 extern(C)
-void nuAbort() {
+void nuAbort() @nogc nothrow {
+
     import core.stdc.stdlib : abort;
     abort();
 }

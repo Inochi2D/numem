@@ -5,6 +5,7 @@
     Authors: Luna Nielsen
 */
 module numem.string;
+import numem.core.hooks;
 import numem.collections.vector;
 import numem.core;
 import std.string;
@@ -83,7 +84,7 @@ struct basic_string(T) if (is(T == char) || is(T == dchar) || is(T == wchar)) {
 nothrow @nogc:
 private:
     alias selfType = basic_string!T;
-    vector!T vec_;
+    weak_vector!T vec_;
 
     void append_(const(T)[] span) {
         if (span.length == 0) return;
@@ -101,7 +102,7 @@ private:
 
     void set_(const(T)[] span) {
         vec_.resize(span.length+1);
-        vec_.tryReplaceRange(span[0..span.length], 0);
+        vec_.tryReplaceRange(span[0..$], 0);
         vec_[this.size()] = '\0';
     }
 
@@ -113,7 +114,7 @@ public:
     /// Destructor
     @trusted
     ~this() {
-        if (this.vec_.data()) {
+        if (this.ptr) {
             nogc_delete(this.vec_);
         }
     }
@@ -191,20 +192,6 @@ public:
         Makes a copy of a string
     */
     @trusted
-    this(ref return scope selfType rhs) {
-
-        // NOTE: We need to turn these into pointers because
-        // The D compiler otherwise thinks its supposed
-        // to free the operands.
-        selfType* self = &this;
-        selfType* other = &rhs;
-        (*self).set_((*other)[]);
-    }
-
-    /**
-        Makes a copy of a string
-    */
-    @trusted
     this(ref return scope inout(selfType) rhs) inout {
         if (rhs.size > 0) {
 
@@ -216,7 +203,6 @@ public:
             (*self).set_((*other)[]);
         }
     }
-
 
     /**
         Gets the length of the string
@@ -473,8 +459,8 @@ public:
         import core.stdc.stdlib : malloc;
         size_t buflen = T.sizeof * this.realLength;
 
-        const(T)* str = cast(const(T)*)malloc(buflen);
-        memcpy(cast(void*)str, cast(void*)this.ptr, buflen);
+        const(T)* str = cast(const(T)*)nuAlloc(buflen);
+        nuMemcpy(cast(void*)str, cast(void*)this.ptr, buflen);
         return str;
     }
 }
@@ -592,6 +578,9 @@ unittest {
 
     vector!nstring copy = strings;
     nogc_delete(copy);
+
+    import numem.io.stdio : writeln;
+    writeln(strings[0], " ", strings[1]);
 
     assert(strings[0] == "a");
     assert(strings[1] == "b");
