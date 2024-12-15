@@ -157,15 +157,25 @@ public:
         }
     }
 
-    /**
-        Creates a string from an Objective-C NSString.
-
-        This will release 1 reference from the NSString.
-    */
     version(Have_objective_d)
-    this(NSString str) {
-        this.set_(str.toString());
-        str.release();
+    static if (is(T == char)) {
+
+        /**
+            Creates a string from an Objective-C NSString.
+
+            This will release 1 reference from the NSString.
+        */
+        this(NSString str) {
+            this.set_(str.toString());
+            str.release();
+        }
+
+        /**
+            To Objective-C NSString
+        */
+        NSString toNSString() {
+            return NSString.create(ptr);
+        }
     }
 
     /**
@@ -311,14 +321,6 @@ public:
         To D string
     */
     alias toString = toDString;
-
-    /**
-        To Objective-C NSString
-    */
-    version(Have_objective_d)
-    NSString toNSString() {
-        return NSString.create(ptr);
-    }
 
     /**
         Set content of string
