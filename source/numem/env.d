@@ -71,14 +71,14 @@ nstring nuGetEnvironmentVariable(nstring key) @nogc {
 
         // Try getting the size of the env var.
         // if this fails, the env var is probably empty.
-        uint bufSize = GetEnvironmentVariableW(utf16k.ptr, null, 0);
+        uint bufSize = GetEnvironmentVariableW(cast(wchar*)utf16k.ptr, null, 0);
         if (bufSize == 0)
             return nstring.init;
         
         // Windows includes the null terminator, but n*string does too
         // so to not have 2 null terminators, subtract 1.
         nwstring envstr = nwstring(bufSize-1);
-        bufSize = GetEnvironmentVariableW(cast(wchar*)utf16k.ptr, cast(wchar*)envstr.ptr, envstr.length+1);
+        bufSize = GetEnvironmentVariableW(cast(wchar*)utf16k.ptr, cast(wchar*)envstr.ptr, cast(uint)envstr.length+1);
 
         nogc_delete(utf16k);
         return envstr.toUTF8;
