@@ -78,7 +78,7 @@ nstring nuGetEnvironmentVariable(nstring key) @nogc {
         // Windows includes the null terminator, but n*string does too
         // so to not have 2 null terminators, subtract 1.
         nwstring envstr = nwstring(bufSize-1);
-        bufSize = GetEnvironmentVariableW(utf16k.ptr, envstr.ptr, envstr.length+1);
+        bufSize = GetEnvironmentVariableW(cast(wchar*)utf16k.ptr, cast(wchar*)envstr.ptr, envstr.length+1);
 
         nogc_delete(utf16k);
         return envstr.toUTF8;
@@ -96,17 +96,17 @@ nstring nuGetEnvironmentVariable(nstring key) @nogc {
 */
 @weak
 extern(C)
-bool nuSetEnvironmentVariable(nstring key, nstring val) @nogc {
+bool nuSetEnvironmentVariable(nstring key, nstring value) @nogc {
     version(Windows) {
 
         import core.sys.windows.winbase : SetEnvironmentVariableW;
         auto utf16k = key.toUTF16();
         auto utf16v = value.toUTF16();
-        return SetEnvironmentVariableW(utf16k.ptr, utf16v.ptr);
+        return SetEnvironmentVariableW(cast(wchar*)utf16k.ptr, cast(wchar*)utf16v.ptr);
     } else version(Posix) {
 
         import core.sys.posix.stdlib : setenv;
-        return setenv(key.ptr, val.ptr, 1) == 0;
+        return setenv(key.ptr, value.ptr, 1) == 0;
     } else {
         return false;
     }
