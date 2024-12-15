@@ -141,7 +141,7 @@ public:
 
                 while(true) {
 
-                    if (!sem_timedwait(handle, &timeout)) {
+                    if (!sem_timedwait(&handle, &timeout)) {
                         this.subCount();
                         return true;
                     }
@@ -207,7 +207,7 @@ public:
             if (rc)
                 throw nogc_new!SyncError("Unable to signal semaphore");
         } else version(Posix) {
-            auto rc = sem_post(handle);
+            auto rc = sem_post(&handle);
             if (rc)
                 throw nogc_new!SyncError("Unable to signal semaphore");
         }
