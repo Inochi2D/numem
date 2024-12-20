@@ -13,6 +13,8 @@ import numem.string;
 import numem.format;
 import core.stdc.stdlib;
 import std.traits;
+import numem.conv.ieee754;
+import numem.conv.common;
 
 
 //
@@ -20,6 +22,21 @@ import std.traits;
 //
 
 @nogc:
+
+pragma(inline, true)
+errcode_t parseString(string buffer, ref float result) {
+    fparse_t args;
+    auto err = parseFArgs(buffer, args);
+    if (err != SUCCESS)
+        return err;
+
+    if (args.m10 == 0) {
+        result = args.signed ? -0.0 : 0.0;
+        return SUCCESS;
+    }
+
+    return SUCCESS;
+}
 
 /**
     Convert nstring to signed integer

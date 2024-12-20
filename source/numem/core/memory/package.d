@@ -8,6 +8,7 @@
 module numem.core.memory;
 import numem.core.memory.lifetime;
 import numem.core.hooks;
+import numem.core.heap;
 import numem.core.traits;
 
 public import numem.core.memory.smartptr;
@@ -48,6 +49,27 @@ Ref!T nogc_new(T, Args...)(auto ref Args args) {
         dbg_alloc(newobject);
     
     return newobject;
+}
+
+/** 
+    Allocates a new instance of `T` on the specified heap.
+
+    Params:
+        heap = The heap to allocate the instance on.
+        args = The arguments to pass to the type's constructor.
+    Returns: 
+        A reference to the instantiated object or `null` if allocation
+        failed.
+*/
+Ref!T nogc_new(T, Args...)(NuHeap heap, auto ref Args args) {
+    if (Ref!T newobject = cast(Ref!T)heap.alloc(AllocSize!T)) {
+        nogc_construct(newobject, args);
+
+        // Tracing
+        debug(trace)
+            dbg_alloc(newobject);
+    }
+    return null;
 }
 
 /**

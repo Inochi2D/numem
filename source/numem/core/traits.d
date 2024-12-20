@@ -182,6 +182,32 @@ enum isHeapAllocated(T) =
 enum isArray(T) = is(T == E[n], E, size_t n);
 
 /**
+    Gets whether type T is a floating point type.
+*/
+enum isFloatingPoint(T) = __traits(isFloating, T);
+
+/**
+    Gets whether type T is a integral point type.
+*/
+enum isIntegral(T) = __traits(isIntegral, T);
+
+/**
+    Gets whether type T is a numeric type.
+*/
+enum isNumeric(T) = 
+    __traits(isFloating, T) && 
+    __traits(isIntegral, T);
+
+template FtoI(T) {
+    static if (is(T == double))
+        alias FtoI = ulong;
+    else static if (is(T == float))
+        alias FtoI = uint;
+    else
+        alias FtoI = size_t;
+}
+
+/**
     Gets whether `Lhs` can be assigned to `Rhs`.
 */
 template isAssignable(Lhs, Rhs = Lhs) {
