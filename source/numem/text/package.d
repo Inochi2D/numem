@@ -12,3 +12,4 @@ module numem.text;
 
 public import numem.text.encoding;
 public import numem.text.ascii;
+public import numem.text.uni;
