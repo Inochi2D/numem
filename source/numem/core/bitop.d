@@ -12,7 +12,13 @@ module numem.core.bitop;
 import numem.core.traits;
 import numem.core.casting;
 
-
+/**
+    Inverts the binary representation of T.
+*/
+pragma(inline, true)
+T invert(T)(T value) if (__traits(isScalar, T)) {
+    return value ^ T.max;
+}
 
 pragma(inline, true)
 ref auto T toBits(T)(ref auto T t) if (isIntegral!T) {
