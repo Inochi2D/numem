@@ -10,6 +10,7 @@
 */
 module numem.core.heap;
 import numem.core.hooks;
+import numem.core.memory;
 
 /**
     A heap represents a destination for placement new operations.

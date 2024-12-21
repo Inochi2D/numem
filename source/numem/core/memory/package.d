@@ -35,7 +35,7 @@ void nogc_construct(T, Args...)(ref T object, Args args) {
 }
 
 /**
-    Allocates a new instance of type T.
+    Allocates a new instance of `T`.
 */
 Ref!T nogc_new(T, Args...)(auto ref Args args) {
     Ref!T newobject = cast(Ref!T)nuAlloc(AllocSize!T);
@@ -73,10 +73,39 @@ Ref!T nogc_new(T, Args...)(NuHeap heap, auto ref Args args) {
 }
 
 /**
+    Deallocates the specified instance of `T` from the specified heap.
     Finalizes `obj_` by calling its destructor (if any).
 
     If `doFree` is `true`, memory associated with obj_ will additionally be freed 
     after finalizers have run; otherwise the object is reset to its original state.
+
+    Params:
+        heap = The heap to allocate the instance on.
+        obj_ = Instance to destroy and deallocate.
+*/
+void nogc_delete(T, bool doFree=true)(NuHeap heap, ref T obj_) if (isHeapAllocated!T) {
+    if (reinterpret_cast!(void*)(obj_) !is null) {
+        debug(trace) 
+            dbg_dealloc(obj_);
+
+        destruct!(T, !doFree)(obj_);
+
+        // Free memory if need be.
+        static if (doFree)
+            heap.free(cast(void*)obj_);
+
+        obj_ = null;
+    }
+}
+
+/**
+    Finalizes `obj_` by calling its destructor (if any).
+
+    If `doFree` is `true`, memory associated with obj_ will additionally be freed 
+    after finalizers have run; otherwise the object is reset to its original state.
+
+    Params:
+        obj_ = Instance to destroy and deallocate.
 */
 void nogc_delete(T, bool doFree=true)(ref T obj_)  {
 
@@ -189,15 +218,38 @@ void nogc_copy(T)(T[] dst, T[] src) {
 
     After the move operation, the original memory location of `from` will be
     reset to its base initialized state before any constructors are run.
+
+    Params: 
+        from = The source of the move operation.
+        to = The destination of the move operation.
 */
 void moveTo(T)(ref T from, ref T to) {
     __move(from, to);
 }
 
 /**
+    Moves `from` to return value.
+    
+    Useful for moving stack allocated structs.
+
+    Params: 
+        from = The source of the move operation.
+    
+    Returns: 
+        The moved value, `from` will be reset to its initial state.
+*/
+T move(T)(scope ref return T from) {
+    return __move(from);
+}
+
+/**
     Copies `from` to `to` via a blit operation.
 
     Postblits and copy constructors will be called subsequently.
+
+    Params: 
+        from = The source of the copy operation.
+        to = The destination of the copy operation.
 */
 void copyTo(T)(ref T from, ref T to) {
     __copy(from, to);

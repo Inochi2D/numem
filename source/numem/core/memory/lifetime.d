@@ -286,6 +286,13 @@ void __move(S, T)(ref S source, ref T target) @nogc {
     }
 }
 
+///
+T __move(T)(scope ref return T source) @nogc @trusted {
+    T target = void;
+    __move(source, target);
+    return target;
+}
+
 /**
     Blits instance `from` to location `to`.
 
@@ -379,14 +386,14 @@ template forward(args...)
         static if (__traits(isRef,  arg) ||
                    __traits(isOut,  arg) ||
                    __traits(isLazy, arg) ||
-                   !is(typeof(move(arg))))
+                   !is(typeof(__move(arg))))
             alias fwd = arg;
         // (r)value
         else
             @property auto fwd()
             {
                 version (DigitalMars) { /* @@BUG 23890@@ */ } else pragma(inline, true);
-                return move(arg);
+                return __move(arg);
             }
     }
 
