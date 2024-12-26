@@ -153,7 +153,6 @@ void emplace(T, UT, Args...)(ref UT dst, auto ref Args args) @nogc nothrow {
             alias fargs = args;
             alias fargsT = Args;
         }
-        import core.stdc.stdio : printf;
 
         static if (is(typeof(dst.__ctor(forward!fargs)))) {
             assumeNothrowNoGC((T chunk, fargsT args) {
