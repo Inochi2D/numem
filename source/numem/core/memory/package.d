@@ -254,3 +254,24 @@ T move(T)(scope ref return T from) {
 void copyTo(T)(ref T from, ref T to) {
     __copy(from, to);
 }
+
+/**
+    Returns `bytes` aligned to a multiple of `alignment`.
+*/
+pragma(inline, true)
+size_t alignSize(size_t bytes, size_t alignment) {
+    return bytes+(bytes%alignment);
+}
+
+/**
+    Aligns `bytes` to the closest memory page boundary.
+    If page-size is unknown, aligns to increments of `fallback`.
+
+    Returns:
+        New byte count aligned to page size.
+*/
+size_t alignToPage(size_t bytes, size_t fallback=4096) {
+    import numem.core.system : sysGetPageSize;
+    size_t pageSize = sysGetPageSize();
+    return alignSize(bytes, pageSize == 1 ? fallback : pageSize);
+}
