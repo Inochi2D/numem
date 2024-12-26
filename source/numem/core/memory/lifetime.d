@@ -251,11 +251,28 @@ void __copy(S, T)(ref S source, ref T target) @nogc {
     Moves source to target, via destructive copy if neccesary.
     source will be reset to its init state after the move.
 */
-void __move(S, T)(ref S source, ref T target) @nogc {
+void __move(S, T)(ref S source, ref T target) @nogc @trusted {
+    static if (is(T == struct) && hasElaborateDestructor!T) {
+        if(&source is &target)
+            return;
+
+        destruct!(T, false)(target);
+    }
+
+    return __moveImpl(source, target);
+}
+
+///
+T __move(T)(ref return scope T source) @nogc @trusted {
+    T target = void;
+    __moveImpl(source, target);
+    return target;
+}
+
+private
+pragma(inline, true)
+void __moveImpl(S, T)(ref S source, ref T target) @nogc @trusted {
     static if(is(T == struct)) {
-        static if (hasElaborateDestructor!T)
-            destruct!(T, false)(target);
-        
         assert(&source !is &target, "Source and target must not be identical");
         __blit(target, source);
         
@@ -286,12 +303,6 @@ void __move(S, T)(ref S source, ref T target) @nogc {
     }
 }
 
-///
-T __move(T)(scope ref return T source) @nogc @trusted {
-    T target = void;
-    __move(source, target);
-    return target;
-}
 
 /**
     Blits instance `from` to location `to`.
