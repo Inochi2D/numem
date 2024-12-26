@@ -19,6 +19,7 @@ import numem.core.hooks;
         Page size in bytes or 1 if unknown.
 */
 @weak
+extern(C)
 uint sysGetPageSize() {
     version(Windows) {
         import core.sys.windows.core : GetSystemInfo, SYSTEM_INFO;
