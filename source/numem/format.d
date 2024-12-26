@@ -1,10 +1,21 @@
+/*
+    Copyright © 2023, Inochi2D Project
+    Distributed under the 2-Clause BSD License, see LICENSE file.
+    
+    Authors: Luna Nielsen
+*/
+
+/**
+    Numem string formatting
+*/
 module numem.format;
+
 import numem.string;
 import numem.text.ascii;
 import numem.conv;
 import numem.collections;
-
-import std.traits : isBasicType;
+import numem.core.traits;
+import numem.text.uni;
 
 private {
     nstring _formatSingle(T)(T element) {
@@ -24,14 +35,6 @@ private {
 
             return nstring(T.stringof);
         }
-    }
-
-    bool isNumericStr(nstring str) @nogc nothrow {
-        foreach(i; 0..str.length) {
-            if (!isNumeric(str[i])) 
-                return false;
-        }
-        return true;
     }
 }
 
@@ -96,7 +99,7 @@ nstring format(Args...)(nstring fmt, Args args) @nogc {
             }
 
             auto fmtslice = nstring(fmt[ci+1..i-1]);
-            if (isNumericStr(fmtslice)) {
+            if (isIntegral(fmtslice[])) {
                 size_t idx = toInt!size_t(fmtslice);
                 if (idx < formatted.length) {
                     out_ ~= formatted[idx];

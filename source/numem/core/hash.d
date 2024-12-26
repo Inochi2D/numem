@@ -71,7 +71,7 @@ hashcode_t crc32()(ref auto void[] data) {
     the printable ascii range.
 */
 hashcode_t asciiHash(const(char)[] text) {
-    import numem.text.ascii : isUniAlphaNumeric;
+    import numem.text.uni : isUniAlphaNumeric;
 
     // Clamp within printable range.
     hashcode_t hash = clamp(cast(hashcode_t)text[0], 32, 125);

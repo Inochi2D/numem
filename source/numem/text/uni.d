@@ -62,3 +62,14 @@ bool isUniIdentifier(inout(char)[] iden) {
 
     return true;
 }
+
+/**
+    Gets whether the given string is integral.
+*/
+bool isIntegral(inout(char)[] str) {
+    foreach(i; 0..str.length) {
+        if (!isDigit(str[i])) 
+            return false;
+    }
+    return true;
+}
