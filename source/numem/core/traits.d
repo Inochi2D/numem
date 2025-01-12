@@ -118,7 +118,7 @@ private struct __DummyStruct { }
 /**
     Returns the rvalue equivalent of T.
 */
-@property T rvalueOf(T)(T val) => val;
+@property T rvalueOf(T)(T val) { return val; }
 
 /**
     Returns the rvalue equivalent of `T`.
