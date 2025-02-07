@@ -5,13 +5,12 @@ copyright "Copyright © 2023, Inochi2D Project"
 license "BSD 2-clause"
 targetPath "out/"
 
-
-buildOptions "debugInfoC" platform="windows"
-
 // Enable Objective-C integration on apple platforms.
 configuration "appleos" {
     platforms "osx" "ios" "watchos" "tvos" "visionos"
     targetType "library"
+
+    version "appleOS"
 
     dependency "objective-d" version="~>1.0" optional=true default=false
 }
