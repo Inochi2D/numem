@@ -10,7 +10,6 @@
 */
 module numem.sync.semaphore;
 import core.atomic;
-import numem.platform;
 import numem.core.memory;
 import core.sync.exception;
 import core.time : convert;
@@ -23,7 +22,7 @@ version(Windows) {
     import core.sys.windows.winerror;
 
     alias SemaphoreHandle = HANDLE;
-} else static if(IsAppleOS) {
+} else version(appleOS) {
 
     import core.sync.config;
     import core.stdc.errno;
@@ -68,7 +67,7 @@ public:
         bool rc = true;
 
         version(Windows) rc = cast(bool)CloseHandle(handle);
-        else static if(IsAppleOS) rc = !semaphore_destroy(mach_task_self(), handle);
+        else version(appleOS) rc = !semaphore_destroy(mach_task_self(), handle);
         else version(Posix) rc = !sem_destroy(&handle);
         assert(rc, "Unable to destroy semahpore");
     }
@@ -82,7 +81,7 @@ public:
             handle = CreateSemaphoreA(null, cast(LONG)count, int.max, null);
             if (handle == handle.init)
                 throw nogc_new!SyncError("Unable to create semaphore");
-        } else static if(IsAppleOS) {
+        } else version(appleOS) {
 
             auto rc = semaphore_create(mach_task_self(), &handle, SYNC_POLICY_FIFO, cast(int)count);
             if (rc)
@@ -116,7 +115,7 @@ public:
                     throw nogc_new!SyncError("Unable to wait for semaphore");
 
                 this.subCount();
-            } else static if(IsAppleOS) {
+            } else version(appleOS) {
                 mach_timespec_t timeout;
                 timeout.tv_sec = cast(uint)convert!("msecs", "seconds")(timeoutMs);
                 timeout.tv_nsec = cast(clock_res_t)convert!("msecs", "nsecs")(timeoutMs);
@@ -162,7 +161,7 @@ public:
                 
                 this.subCount();
 
-            } else static if(IsAppleOS) {
+            } else version(appleOS) {
 
                 while(true) {
                     auto rc = semaphore_wait(handle);
@@ -202,7 +201,7 @@ public:
         version(Windows) {
             if (!ReleaseSemaphore(handle, 1, null))
                 throw nogc_new!SyncError("Unable to signal semaphore");
-        } else static if(IsAppleOS) {
+        } else version(appleOS) {
             auto rc = semaphore_signal(handle);
             if (rc)
                 throw nogc_new!SyncError("Unable to signal semaphore");
