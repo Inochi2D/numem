@@ -353,7 +353,7 @@ public:
 
         // Simplify by reusing implementation for ranged inserts.
         const U[1] itm = item;
-        this.insert(offset, itm[]);
+        this.insert(offset, cast(T[])itm[]);
     }
 
     /**
