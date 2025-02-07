@@ -25,7 +25,6 @@ import std.functional : binaryFun;
     O(log(n)) insertion, removal, and search time.
     `Set` is designed to operate even without initialization through `makeSet`.
 */
-@AllowInitEmpty
 struct SetImpl(K, alias less = "a < b", bool allowDuplicates = false, bool ownsMemory = false) {
 public:
 @nogc:

@@ -25,7 +25,6 @@ import std.functional : binaryFun;
     The API should looks closely like the builtin associative arrays.
     O(log(n)) insertion, removal, and search time.
 */
-@AllowInitEmpty
 struct MapImpl(K, V, alias less = "a < b", bool allowDuplicates = false, bool ownsMemory = false) {
 public:
 @nogc:

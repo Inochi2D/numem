@@ -16,12 +16,6 @@ debug(trace) import numem.core.trace;
 import numem.core.casting;
 
 /**
-    UDA which allows initializing an empty struct, even when copying is disabled.
-*/
-deprecated("This UDA is no longer in use by numem.")
-struct AllowInitEmpty;
-
-/**
     Constructs the given object.
 
     Attempting to construct a non-initialized `object` is undefined behaviour.
