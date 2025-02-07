@@ -90,7 +90,7 @@ void initializeAt(T)(scope ref T chunk) @nogc nothrow @trusted {
     } else {
 
         const void[] initSym = __traits(initSymbol, T);
-        nuMemcpy(cast(void*)&chunk, initSym.ptr, initSym.length);
+        nuMemcpy(cast(void*)&chunk, cast(void*)initSym.ptr, initSym.length);
     }
 }
 
@@ -146,21 +146,20 @@ void emplace(T, UT, Args...)(ref UT dst, auto ref Args args) @nogc nothrow {
                 "The first argument must be a pointer to the outer class");
             
             chunk.outer = args[0];
-            alias fargs = args[1..$];
-            alias fargsT = Args[1..$];
+
+            alias args1 = args[1..$];
+            alias Args1 = Args[1..$];
 
         } else {
-            alias fargs = args;
-            alias fargsT = Args;
+            alias args1 = args;
+            alias Args1 = Args;
         }
 
-        static if (is(typeof(dst.__ctor(forward!fargs)))) {
-            assumeNothrowNoGC((T chunk, fargsT args) {
-                chunk.__ctor(forward!args);
-            })(dst, fargs);
+        static if (is(typeof(dst.__ctor(forward!args1)))) {
+            __xctor(dst, forward!args1);
         } else {
-            static assert(fargs.length == 0 && !is(typeof(&T.__ctor)),
-                "No constructor for " ~ T.stringof ~ " found matching arguments "~fargsT.stringof~"!");
+            static assert(args1.length == 0 && !is(typeof(&T.__ctor)),
+                "No constructor for " ~ T.stringof ~ " found matching arguments "~Args1.stringof~"!");
         }
 
     } else static if (args.length == 0) {
@@ -187,21 +186,19 @@ void emplace(T, UT, Args...)(ref UT dst, auto ref Args args) @nogc nothrow {
                 dst = T(forward!args);
             else static if(args.length == 1 && __traits(compiles, dst = forward!(args[0])))
                 dst = forward!(args[0]);
-            else static assert(0,
+            else assert(0,
                 "Can't emplace " ~ T.stringof ~ " at compile-time using " ~ Args.stringof ~ ".");
         } else {
             S* p = cast(S*)cast(void*)&dst;
             static if (UT.sizeof > 0)
                 initializeAt(*p);
             
-            p.__ctor(forward!args);
+            __xctor(p, forward!args);
         }
     } else static if (is(typeof(dst.__ctor(forward!args)))) {
         
         initializeAt(dst);
-        assumeNothrowNoGC((T chunk, Args args) {
-            chunk.__ctor(forward!args);
-        })(dst, args);
+        __xctor(dst, forward!args);
     } else {
         static assert(!(Args.length == 1 && is(Args[0] : T)),
             "Can't emplace a " ~ T.stringof ~ " because the postblit is disabled.");
@@ -212,8 +209,8 @@ void emplace(T, UT, Args...)(ref UT dst, auto ref Args args) @nogc nothrow {
 }
 
 /// 
-void emplace(UT, Args...)(auto ref UT dst, auto ref Args args) @nogc nothrow {
-    emplace!(UT, UT, Args)(dst, forward!args);
+void emplace(UT, Args...)(auto ref UT dst, auto ref Args args) @nogc {
+    emplace!(UT, UT)(dst, forward!args);
 }
 
 /**
@@ -378,6 +375,21 @@ void __move_postblit(T)(ref T newLocation, ref T oldLocation) {
 }
 
 /**
+    Little function which calls constructors while pretending they're nothrow and nogc.
+*/
+private
+void __xctor(T, Args...)(ref T chunk, auto ref Args args) @nogc nothrow {
+    alias ctor_t = void function(ref T chunk, Args) @nogc nothrow;
+    auto ctor_fp = (ref T chunk, Args args) {
+        
+        version (DigitalMars) { /* @@BUG 23890@@ */ } else pragma(inline, true);
+        chunk.__ctor(args);
+    };
+
+    return (cast(ctor_t)ctor_fp)(chunk, args);
+}
+
+/**
     Forwards function arguments while keeping `out`, `ref`, and `lazy` on
     the parameters.
 
@@ -386,12 +398,10 @@ void __move_postblit(T)(ref T newLocation, ref T oldLocation) {
     Returns:
         An `AliasSeq` of `args` with `out`, `ref`, and `lazy` saved.
 */
-template forward(args...)
-{
-    import core.internal.traits : AliasSeq;
+template forward(args...) {
+    import numem.core.meta : AliasSeq;
 
-    template fwd(alias arg)
-    {
+    template fwd(alias arg) {
         // by ref || lazy || const/immutable
         static if (__traits(isRef,  arg) ||
                    __traits(isOut,  arg) ||
@@ -400,8 +410,7 @@ template forward(args...)
             alias fwd = arg;
         // (r)value
         else
-            @property auto fwd()
-            {
+            @property auto fwd() {
                 version (DigitalMars) { /* @@BUG 23890@@ */ } else pragma(inline, true);
                 return __move(arg);
             }
@@ -410,6 +419,7 @@ template forward(args...)
     alias Result = AliasSeq!();
     static foreach (arg; args)
         Result = AliasSeq!(Result, fwd!arg);
+    
     static if (Result.length == 1)
         alias forward = Result[0];
     else

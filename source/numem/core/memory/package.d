@@ -20,12 +20,11 @@ import numem.core.casting;
 
     Attempting to construct a non-initialized `object` is undefined behaviour.
 */
-void nogc_construct(T, Args...)(ref T object, Args args) {
+void nogc_construct(T, Args...)(ref T object, auto ref Args args) {
     static if (isPointer!T)
-        emplace(*object, args);
+        emplace(*object, forward!args);
     else
-        emplace(object, args);
-
+        emplace(object, forward!args);
 }
 
 /**
@@ -36,7 +35,7 @@ Ref!T nogc_new(T, Args...)(auto ref Args args) {
     if (!newobject)
         nuAbort();
 
-    nogc_construct(newobject, args);
+    nogc_construct(newobject, forward!args);
 
     // Tracing
     debug(trace)
@@ -57,7 +56,7 @@ Ref!T nogc_new(T, Args...)(auto ref Args args) {
 */
 Ref!T nogc_new(T, Args...)(NuHeap heap, auto ref Args args) {
     if (Ref!T newobject = cast(Ref!T)heap.alloc(AllocSize!T)) {
-        nogc_construct(newobject, args);
+        nogc_construct(newobject, forward!args);
 
         // Tracing
         debug(trace)
@@ -176,8 +175,8 @@ void nogc_zeroinit(T)(T[] elements) {
     Allocates a new class on the heap.
     Immediately exits the application if out of memory.
 */
-void nogc_emplace(T, Args...)(ref auto T dest, Args args)  {
-    emplace!(T, T, Args)(dest, args);
+void nogc_emplace(T, Args...)(ref auto T dest, auto ref Args args)  {
+    emplace!(T, T, Args)(dest, forward!args);
 }
 
 /**
