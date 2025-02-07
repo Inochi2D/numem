@@ -38,7 +38,6 @@ void* nuAlloc(size_t bytes) @nogc nothrow {
     return malloc(bytes);
 }
 
-
 /**
     Reallocates memory at `data` to be `bytes` worth of memory.
     

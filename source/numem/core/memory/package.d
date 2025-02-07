@@ -22,9 +22,9 @@ import numem.core.casting;
 */
 void nogc_construct(T, Args...)(ref T object, auto ref Args args) {
     static if (isPointer!T)
-        emplace(*object, forward!args);
+        emplace(*object, args);
     else
-        emplace(object, forward!args);
+        emplace(object, args);
 }
 
 /**
@@ -35,7 +35,7 @@ Ref!T nogc_new(T, Args...)(auto ref Args args) {
     if (!newobject)
         nuAbort();
 
-    nogc_construct(newobject, forward!args);
+    nogc_construct(newobject, args);
 
     // Tracing
     debug(trace)
@@ -56,7 +56,7 @@ Ref!T nogc_new(T, Args...)(auto ref Args args) {
 */
 Ref!T nogc_new(T, Args...)(NuHeap heap, auto ref Args args) {
     if (Ref!T newobject = cast(Ref!T)heap.alloc(AllocSize!T)) {
-        nogc_construct(newobject, forward!args);
+        nogc_construct(newobject, args);
 
         // Tracing
         debug(trace)

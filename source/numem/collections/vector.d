@@ -85,8 +85,8 @@ private:
             // a opOpAssign operation.
             // But, we need to do this without triggering the postblit or move-constructor here,
             // or the same problem happen!
-            for (size_t n = before; n < capacity_; n++)
-                initializeAt(memory[n]);
+            for (size_t n = before; n < capacity_; n++) 
+                initializeAtNoCtx(memory[n]);
         }
     }
 

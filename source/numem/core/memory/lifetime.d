@@ -116,7 +116,7 @@ void initializeAtNoCtx(T)(scope ref T chunk) @nogc nothrow @trusted {
     } else {
 
         const void[] initSym = __traits(initSymbol, T);
-        nuMemcpy(cast(void*)&chunk, initSym.ptr, initSym.length);
+        nuMemcpy(cast(void*)&chunk, cast(void*)initSym.ptr, initSym.length);
     }
 }
 
@@ -424,4 +424,20 @@ template forward(args...) {
         alias forward = Result[0];
     else
         alias forward = Result;
+}
+
+@("Alloc class and append to vector")
+unittest {
+    static class TestClass {
+        int x;
+
+        this() { x = 42; }
+    }
+
+    import numem.collections.vector : vector;
+    vector!TestClass vec;
+    vec ~= nogc_new!TestClass();
+    vec ~= nogc_new!TestClass();
+    vec ~= nogc_new!TestClass();
+    vec ~= nogc_new!TestClass();
 }
