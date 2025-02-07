@@ -21,7 +21,7 @@ import numem.core.trace;
     An exception which can be thrown from numem
 */
 class NuException : Exception {
-nothrow @nogc:
+@nogc:
 private:
     nstring _msg;
 
@@ -86,7 +86,7 @@ public:
     nogc range exception.
 */
 class NuRangeException : NuException {
-nothrow @nogc:
+@nogc:
 public:
     import numem.format : format;
 
