@@ -10,7 +10,7 @@ import numem.core.hooks;
 */
 @weak
 extern(C)
-void nuWrite(nstring str) {
+void nuWrite(nstring str) @nogc {
     
     import core.stdc.stdio : putchar;
     foreach(i; 0..str.length)
@@ -31,7 +31,7 @@ __gshared const(char)* endl = NEWLINE;
 /**
     Writes to standard output
 */
-void write(Args...)(Args args) {
+void write(Args...)(Args args) @nogc {
 
     import numem.conv : toString;
     static foreach(arg; args) {
@@ -40,7 +40,9 @@ void write(Args...)(Args args) {
         } else static if (is(typeof(arg) == string)) {
             nuWrite(nstring(arg));
         } else {
-            nuWrite(arg.toString());
+
+            // Recursively convert to nstring.
+            write(arg.toString());
         }
     }
 }
@@ -50,7 +52,7 @@ void write(Args...)(Args args) {
 
     Adds a newline at the end of the line
 */
-void writeln(Args...)(Args args) {
+void writeln(Args...)(Args args) @nogc {
     write(args);
     nuWrite(nstring(endl));
 }
@@ -61,7 +63,8 @@ void writeln(Args...)(Args args) {
 
     Adds a newline at the end of the line
 */
-void writefln(Args...)(nstring fmt, Args args) {
+void writefln(Args...)(nstring fmt, Args args) @nogc {
+
     import numem.format : format;
     writeln(format(fmt.ptr, args));
 }
