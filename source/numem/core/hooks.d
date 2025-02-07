@@ -30,6 +30,7 @@ import numem.core.utils;
     By default calls C stdlib alloc.
 */
 @weak
+export
 extern(C)
 void* nuAlloc(size_t bytes) @nogc nothrow {
 
@@ -47,6 +48,7 @@ void* nuAlloc(size_t bytes) @nogc nothrow {
     By default calls C stdlib realloc.
 */
 @weak
+export
 extern(C)
 void* nuRealloc(void* data, size_t newSize) @nogc nothrow {
 
@@ -63,6 +65,7 @@ void* nuRealloc(void* data, size_t newSize) @nogc nothrow {
     By default calls C stdlib alloc.
 */
 @weak
+export
 extern(C)
 void nuFree(void* data) @nogc nothrow {
 
@@ -80,6 +83,7 @@ void nuFree(void* data) @nogc nothrow {
     By default calls C stdlib memcpy.
 */
 @weak
+export
 extern(C)
 void* nuMemcpy(return scope void* dst, return scope void* src, size_t bytes) @nogc nothrow {
 
@@ -111,6 +115,7 @@ void* nuCopy(T)(inout(T)[] dst, inout(T)[] src) @nogc nothrow {
     By default calls C stdlib memmove.
 */
 @weak
+export
 extern(C)
 void* nuMemmove(void* dst, void* src, size_t bytes) @nogc nothrow {
 
@@ -127,6 +132,7 @@ void* nuMemmove(void* dst, void* src, size_t bytes) @nogc nothrow {
     By default calls C stdlib memset.
 */
 extern(C)
+export
 void* nuMemset(void* dst, ubyte value, size_t bytes) @nogc nothrow {
 
     import core.stdc.string : memset;
@@ -142,6 +148,7 @@ void* nuMemset(void* dst, ubyte value, size_t bytes) @nogc nothrow {
     By default calls C stdlib abort.
 */
 @weak
+export
 extern(C)
 void nuAbort() @nogc nothrow {
 
