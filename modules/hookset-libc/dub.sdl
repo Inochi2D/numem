@@ -1,0 +1,5 @@
+name "hookset-libc"
+description "libc based hookset for numem."
+authors "Kitsunebi Games" "Luna" "Inochi2D Project"
+license "BSL-1.0"
+targetPath "out/"

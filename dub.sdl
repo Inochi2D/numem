@@ -1,24 +1,24 @@
 name "numem"
 description "Memory managment utilities for D"
-authors "Inochi2D Project"
 copyright "Copyright © 2023, Inochi2D Project"
-license "BSD 2-clause"
+authors "Kitsunebi Games" "Luna" "Inochi2D Project"
+license "BSL-1.0"
 targetPath "out/"
 
-// Enable Objective-C integration on apple platforms.
-configuration "appleos" {
-    platforms "osx" "ios" "watchos" "tvos" "visionos"
-    targetType "library"
+subPackage "modules/hookset-libc"
 
-    version "appleOS"
+dependency "numem:hookset-libc" version="*" optional=true default=true
+dependency "silly" version="~>1.1.1" optional=true default=true
 
-    dependency "objective-d" version="~>1.0" optional=true default=false
+configuration "static" {
+    targetType "staticLibrary"
 }
 
-configuration "main" {
-    targetType "library"
+configuration "dynamic" {
+    targetType "dynamicLibrary"
 }
 
 configuration "unittest" {
-    dependency "silly" version="~>1.1.1"
+    targetType "autodetect"
+    sourcePaths "tests/"
 }

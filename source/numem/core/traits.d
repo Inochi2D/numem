@@ -1,21 +1,30 @@
-/*
-    Copyright © 2024, Inochi2D Project
-    Distributed under the 2-Clause BSD License, see LICENSE file.
-
-    Authors: Luna the Foxgirl
-*/
-
 /**
-    Numem traits collection.
+    Numem Traits
+    
+    Copyright:
+        Copyright © 2005-2009, The D Language Foundation.
+        Copyright © 2023-2025, Kitsunebi Games
+        Copyright © 2023-2025, Inochi2D Project
+    
+    License:    $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
+    Authors:    
+        $(HTTP digitalmars.com, Walter Bright),
+        Tomasz Stachowiak (isExpressions),
+        $(HTTP erdani.org, Andrei Alexandrescu),
+        Shin Fujishiro,
+        $(HTTP octarineparrot.com, Robert Clipsham),
+        $(HTTP klickverbot.at, David Nadlinger),
+        Kenji Hara,
+        Shoichi Kato
+        Luna Nielsen
 */
 module numem.core.traits;
 import numem.core.meta;
-import std.traits;
 
 /**
-    Gets a sequence over all of the fields in type `T`.
+    Gets a sequence over all of the fields in type $(D T).
 
-    If `T` is a type with no fields, returns a sequence containing the input.
+    If $(D T) is a type with no fields, returns a sequence containing the input.
 */
 template Fields(T) {
     static if(is(T == struct) || is(T == union))
@@ -27,7 +36,7 @@ template Fields(T) {
 }
 
 /**
-    Gets the base element type of type `T`.
+    Gets the base element type of type $(D T).
 */
 template BaseElemOf(T) {
     static if(is(OriginalType!T == E[N], E, size_t N))
@@ -37,7 +46,7 @@ template BaseElemOf(T) {
 }
 
 /**
-    Gets the original type of `T`.
+    Gets the original type of $(D T).
 */
 template OriginalType(T) {
     template Impl(T) {
@@ -49,7 +58,7 @@ template OriginalType(T) {
 }
 
 /**
-    Modifies type `T` to follow the predicate specified by `Modifier`.
+    Modifies type $(D T) to follow the predicate specified by $(D Modifier).
 */
 template ModifyTypePreservingTQ(alias Modifier, T) {
          static if (is(T U ==          immutable U)) alias ModifyTypePreservingTQ =          immutable Modifier!U;
@@ -64,12 +73,12 @@ template ModifyTypePreservingTQ(alias Modifier, T) {
 }
 
 /**
-    Removes const type qualifiers from `T`.
+    Removes const type qualifiers from $(D T).
 */
 alias Unconst(T : const U, U) = U;
 
 /**
-    Removes shared type qualifiers from `T`.
+    Removes shared type qualifiers from $(D T).
 */
 alias Unshared(T : shared U, U) = U;
 
@@ -84,7 +93,7 @@ template Unqual(T : const U, U) {
 }
 
 /**
-    Gets the reference type version of type `T`.
+    Gets the reference type version of type $(D T).
 */
 template Ref(T) {
     static if (is(T == class) || isHeapAllocated!T)
@@ -94,7 +103,7 @@ template Ref(T) {
 }
 
 /**
-    Gets the amount of bytes needed to allocate an instance of type `T`.
+    Gets the amount of bytes needed to allocate an instance of type $(D T).
 */
 template AllocSize(T) {
     static if (is(T == class))
@@ -104,7 +113,7 @@ template AllocSize(T) {
 }
 
 /**
-    Gets the alignment of type `T` in bytes.
+    Gets the alignment of type $(D T) in bytes.
 */
 template AllocAlign(T) {
     static if(is(T == class))
@@ -121,35 +130,35 @@ private struct __DummyStruct { }
 @property T rvalueOf(T)(T val) { return val; }
 
 /**
-    Returns the rvalue equivalent of `T`.
+    Returns the rvalue equivalent of $(D T).
 
     Can only be used at compile time for type checking.
 */
 @property T rvalueOf(T)(inout(__DummyStruct) = __DummyStruct.init);
 
 /**
-    Returns the lvalue equivalent of `T`.
+    Returns the lvalue equivalent of $(D T).
 
     Can only be used at compile time for type checking.
 */
 @property ref T lvalueOf(T)(inout __DummyStruct = __DummyStruct.init);
 
 /**
-    Gets whether `T` supports moving.
+    Gets whether $(D T) supports moving.
 */
 enum isMovable(T) =
     (is(T == struct) || is(T == union)) ||
     (__traits(isStaticArray, T) && hasElaborateMove!(T.init[0]));
 
 /**
-    Gets whether `T` is an aggregate type (i.e. a type which contains other types)
+    Gets whether $(D T) is an aggregate type (i.e. a type which contains other types)
 */
 enum isAggregateType(T) =
     is(T == class) || is(T == interface) ||
     is(T == struct) || is(T == union);
 
 /**
-    Gets whether `T` is a class-like (i.e. class or interface)
+    Gets whether $(D T) is a class-like (i.e. class or interface)
 */
 enum isClasslike(T) =
     is(T == class) || is(T == interface);
@@ -165,19 +174,19 @@ enum isScalarType(T) = __traits(isScalar, T) && is(T : real);
 enum isBasicType(T) = isScalarType!T || is(immutable T == immutable void);
 
 /**
-    Gets whether `T` is a pointer type.
+    Gets whether $(D T) is a pointer type.
 */
 enum isPointer(T) =
     is(T == U*, U) && !isClasslike!T;
 
 /**
-    Gets whether `T` is heap allocated.
+    Gets whether $(D T) is heap allocated.
 */
 enum isHeapAllocated(T) =
     is(T == class) || is(T == U*, U);
 
 /**
-    Gets whether type `T` is an array.
+    Gets whether type $(D T) is an array.
 */
 enum isArray(T) = is(T == E[n], E, size_t n);
 
@@ -208,7 +217,7 @@ template FtoI(T) {
 }
 
 /**
-    Gets whether `Lhs` can be assigned to `Rhs`.
+    Gets whether $(D Lhs) can be assigned to $(D Rhs).
 */
 template isAssignable(Lhs, Rhs = Lhs) {
     enum isAssignable = 
@@ -217,20 +226,20 @@ template isAssignable(Lhs, Rhs = Lhs) {
 }
 
 /**
-    Gets whether `Lhs` can be assigned to `Rhs` or `Rhs` can be assigned to `Lhs`.
+    Gets whether $(D Lhs) can be assigned to $(D Rhs) or $(D Rhs) can be assigned to $(D Lhs).
 */
 enum isAnyAssignable(Lhs, Rhs = Lhs) =
     isAssignable!(Lhs, Rhs) || isAssignable!(Rhs, Lhs);
 
 /**
-    Gets whether the unqualified versions of `Lhs` and `Rhs` are in
+    Gets whether the unqualified versions of $(D Lhs) and $(D Rhs) are in
     any way compatible in any direction.
 */
 enum isAnyCompatible(Lhs, Rhs) =
     is(Unqual!Lhs : Unqual!Rhs) || is(Unqual!Rhs : Unqual!Lhs);
 
 /**
-    Gets whether `symbol` has the user defined attribute `attrib`.
+    Gets whether $(D symbol) has the user defined attribute $(D attrib).
 */
 template hasUDA(alias symbol, alias attrib) {
 
@@ -264,7 +273,7 @@ template isInnerClass(T) if(is(T == class)) {
 }
 
 /**
-    Gets whether `T` or any of its children has an elaborate move.
+    Gets whether $(D T) or any of its children has an elaborate move.
 */
 template hasElaborateMove(T) {
     static if (__traits(isStaticArray, T)) 
@@ -279,8 +288,8 @@ template hasElaborateMove(T) {
 }
 
 /**
-    Gets whether type `T` has elaborate assign semantics
-    (i.e. is `opAssign` declared for the type)
+    Gets whether type $(D T) has elaborate assign semantics
+    (i.e. is $(D opAssign) declared for the type)
 */
 template hasElaborateAssign(T) {
     static if (__traits(isStaticArray, T)) 
@@ -295,7 +304,7 @@ template hasElaborateAssign(T) {
 }
 
 /**
-    Gets whether type `T` has elaborate copy constructor semantics
+    Gets whether type $(D T) has elaborate copy constructor semantics
     (i.e. is a copy constructor or postblit constructor declared.)
 */
 template hasElaborateCopyConstructor(T) {
@@ -308,7 +317,7 @@ template hasElaborateCopyConstructor(T) {
 }
 
 /**
-    Gets whether type `T` has elaborate destructor semantics (is ~this() declared).
+    Gets whether type $(D T) has elaborate destructor semantics (is ~this() declared).
 */
 template hasElaborateDestructor(T) {
     static if (__traits(isStaticArray, T)) 
@@ -318,4 +327,118 @@ template hasElaborateDestructor(T) {
                                       anySatisfy!(.hasElaborateDestructor, Fields!T);
     else
         enum hasElaborateDestructor = false;
+}
+
+/**
+    Detect whether symbol or type $(D T) is a function, a function pointer or a delegate.
+
+    Params:
+        T = The type to check
+    Returns:
+        A $(D_KEYWORD bool)
+ */
+enum bool isSomeFunction(alias T) =
+    is(T == return) ||
+    is(typeof(T) == return) ||
+    is(typeof(&T) == return); // @property
+
+/**
+    Detect whether $(D T) is a callable object, which can be called with the
+    function call operator `$(LPAREN)...$(RPAREN)`.
+*/
+template isCallable(alias callable) {
+    static if (is(typeof(&callable.opCall) == delegate))
+        // T is a object which has a member function opCall().
+        enum bool isCallable = true;
+    else static if (is(typeof(&callable.opCall) V : V*) && is(V == function))
+        // T is a type which has a static member function opCall().
+        enum bool isCallable = true;
+    else static if (is(typeof(&callable.opCall!()) TemplateInstanceType))
+    {
+        enum bool isCallable = isCallable!TemplateInstanceType;
+    }
+    else static if (is(typeof(&callable!()) TemplateInstanceType))
+    {
+        enum bool isCallable = isCallable!TemplateInstanceType;
+    }
+    else
+    {
+        enum bool isCallable = isSomeFunction!callable;
+    }
+}
+
+/**
+    Get the function type from a callable object $(D func), or from a function pointer/delegate type.
+
+    Using builtin $(D typeof) on a property function yields the types of the
+    property value, not of the property function itself.  Still,
+    $(D FunctionTypeOf) is able to obtain function types of properties.
+
+    Note:
+        Do not confuse function types with function pointer types; function types are
+        usually used for compile-time reflection purposes.
+*/
+template FunctionTypeOf(alias func)
+if (isCallable!func) {
+    static if ((is(typeof(& func) Fsym : Fsym*) && is(Fsym == function)) || is(typeof(& func) Fsym == delegate))
+    {
+        alias FunctionTypeOf = Fsym; // HIT: (nested) function symbol
+    }
+    else static if (is(typeof(& func.opCall) Fobj == delegate) || is(typeof(& func.opCall!()) Fobj == delegate))
+    {
+        alias FunctionTypeOf = Fobj; // HIT: callable object
+    }
+    else static if (
+            (is(typeof(& func.opCall) Ftyp : Ftyp*) && is(Ftyp == function)) ||
+            (is(typeof(& func.opCall!()) Ftyp : Ftyp*) && is(Ftyp == function))
+        )
+    {
+        alias FunctionTypeOf = Ftyp; // HIT: callable type
+    }
+    else static if (is(func T) || is(typeof(func) T))
+    {
+        static if (is(T == function))
+            alias FunctionTypeOf = T;    // HIT: function
+        else static if (is(T Fptr : Fptr*) && is(Fptr == function))
+            alias FunctionTypeOf = Fptr; // HIT: function pointer
+        else static if (is(T Fdlg == delegate))
+            alias FunctionTypeOf = Fdlg; // HIT: delegate
+        else
+            static assert(0);
+    }
+    else
+        static assert(0);
+}
+
+/**
+    Get the type of the return value from a function,
+    a pointer to function, a delegate, a struct
+    with an opCall, a pointer to a struct with an opCall,
+    or a class with an $(D opCall). Please note that $(D_KEYWORD ref)
+    is not part of a type, but the attribute of the function.
+
+    Note:
+        To reduce template instantiations, consider instead using
+        $(D_INLINECODE typeof(() { return func(args); } ())) if the argument types are known or
+        $(D_INLINECODE static if (is(typeof(func) Ret == return))) if only that basic test is needed.)
+*/
+template ReturnType(alias func)
+if (isCallable!func) {
+    static if (is(FunctionTypeOf!func R == return))
+        alias ReturnType = R;
+    else
+        static assert(0, "argument has no return type");
+}
+
+/**
+    Get, as a tuple, the types of the parameters to a function, a pointer
+    to function, a delegate, a struct with an `opCall`, a pointer to a
+    struct with an `opCall`, or a class with an `opCall`.
+*/
+template Parameters(alias func)
+if (isCallable!func) {
+    static if (is(FunctionTypeOf!func P == function))
+        alias Parameters = P;
+    else
+        static assert(0, "argument has no parameters");
 }

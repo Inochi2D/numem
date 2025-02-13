@@ -1,14 +1,14 @@
-/*
-    Copyright © 2024, Inochi2D Project
-    Distributed under the 2-Clause BSD License, see LICENSE file.
-
-    Authors: Luna the Foxgirl
-*/
-
 /**
     Numem meta templates.
 
     Most of these are taken directly from the D runtime.
+    
+    Copyright:
+        Copyright © 2023-2025, Kitsunebi Games
+        Copyright © 2023-2025, Inochi2D Project
+    
+    License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
+    Authors:   Luna Nielsen
 */
 module numem.core.meta;
 
@@ -19,7 +19,7 @@ alias AliasSeq(AliasList...) = AliasList;
 
 /**
     A template which gets whether all the inputs satisfy the condition
-    outlined in `F`.
+    outlined in $(D F).
 */
 template allSatisfy(alias F, T...) {
     static foreach(U; T) {
@@ -33,7 +33,7 @@ template allSatisfy(alias F, T...) {
 
 /**
     A template which gets whether any of the inputs satisfy the 
-    condition outlined in `F`.
+    condition outlined in $(D F).
 */
 template anySatisfy(alias F, T...) {
     static foreach(U; T) {
@@ -76,7 +76,7 @@ template staticMap(alias F, T...) {
 }
 
 /**
-    Returns a sequence containing the provided sequence after filtering by `F`.
+    Returns a sequence containing the provided sequence after filtering by $(D F).
 */
 template Filter(alias F, T...) {
     static if (T.length == 0)

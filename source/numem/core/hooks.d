@@ -1,12 +1,5 @@
-/*
-    Copyright © 2023, Inochi2D Project
-    Distributed under the 2-Clause BSD License, see LICENSE file.
-    
-    Authors: Luna Nielsen
-*/
-
 /**
-    Numem Hooks.
+    Numem Core Hooks.
 
     This file contains all the core hooks numem calls internally to handle memory.
     Given that some platforms may not have a C standard library, these hooks allow you
@@ -14,143 +7,128 @@
 
     In this case, all of the hooks presented here will need to be implemented to cover
     all of the used internal hooks within numem.
-
-    Various extra hooks are provided in other files throughout numem, but are optional.
+    
+    Copyright:
+        Copyright © 2023-2025, Kitsunebi Games
+        Copyright © 2023-2025, Inochi2D Project
+    
+    License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
+    Authors:   Luna Nielsen
 */
 module numem.core.hooks;
-public import core.attribute : weak;
-import numem.core.utils;
 
 /**
-    Allocates `bytes` worth of memory.
+    Allocates $(D bytes) worth of memory.
+
+    Params:
+        bytes = How many bytes to allocate.
     
-    NOTE: External libraries may override this
-    implementation.
+    Returns:
+        Newly allocated memory or $(D null) on failure.
+        To avoid a memory leak, free the memory with $(D nu_free).
     
-    By default calls C stdlib alloc.
+    Notes:
+        Given the implementation of $(D nu_malloc) and $(D nu_free) may be
+        independent of the libc allocator, memory allocated with
+        $(D nu_malloc) should $(B always) be freed with $(D nu_free)!
 */
-@weak
 export
 extern(C)
-void* nuAlloc(size_t bytes) @nogc nothrow {
-
-    import core.stdc.stdlib : malloc;
-    return malloc(bytes);
-}
+void* nu_malloc(size_t bytes) @nogc nothrow @system;
 
 /**
-    Reallocates memory at `data` to be `bytes` worth of memory.
+    Reallocates memory prior allocated with $(D nu_malloc) or
+    $(D nu_alignedalloc).
+
+    This function may re-allocate the memory if resizing the allocation
+    to the new size is not possible.
+
+    Params:
+        data    = Pointer to prior allocated memory.
+        newSize = New size of the allocation, in bytes.
+
+    Returns:
+        The address of the reallocated memory or $(D null) on failure.
+        To avoid a memory leak, free the memory with $(D nu_free).
     
-    NOTE: External libraries may override this
-    implementation.
-    
-    By default calls C stdlib realloc.
+    Notes:
+        Given the implementation of $(D nu_realloc) and $(D nu_free) may be
+        independent of the libc allocator, memory allocated with
+        $(D nu_realloc) should $(B always) be freed with $(D nu_free)!
 */
-@weak
+
 export
 extern(C)
-void* nuRealloc(void* data, size_t newSize) @nogc nothrow {
-
-    import core.stdc.stdlib : realloc;
-    return realloc(data, newSize);
-}
+void* nu_realloc(void* data, size_t newSize) @nogc nothrow @system;
 
 /**
-    Frees the memory at `data`.
-    
-    NOTE: External libraries may override this
-    implementation.
-    
-    By default calls C stdlib alloc.
+    Frees allocated memory.
+
+    Params:
+        data = Pointer to start of memory prior allocated.
+
+    Notes:
+        Given the implementation of the allocators and $(D nu_free) may be
+        independent of the libc allocator, memory allocated with
+        numem functions should $(B always) be freed with $(D nu_free)!
 */
-@weak
 export
 extern(C)
-void nuFree(void* data) @nogc nothrow {
-
-    import core.stdc.stdlib : free;
-    free(data);
-}
+void nu_free(void* data) @nogc nothrow @system;
 
 /**
-    Copies `bytes` worth of data from `src` into `dst`.
-    Memory needs to be allocated and within range.
+    Copies $(D bytes) worth of data from $(D src) into $(D dst).
     
-    NOTE: External libraries may override this
-    implementation.
-    
-    By default calls C stdlib memcpy.
+    $(D src) and $(D dst) needs to be allocated and within range,
+    additionally the source and destination may not overlap.
+
+    Params:
+        dst =   Destination of the memory copy operation.
+        src =   Source of the memory copy operation
+        bytes = The amount of bytes to copy.
 */
-@weak
 export
 extern(C)
-void* nuMemcpy(return scope void* dst, return scope void* src, size_t bytes) @nogc nothrow {
-
-    import core.stdc.string : memcpy;
-    return memcpy(dst, src, bytes);
-}
+void* nu_memcpy(return scope void* dst, return scope void* src, size_t bytes) @nogc nothrow @system;
 
 /**
-    Copies `bytes` worth of data from `src` into `dst`.
-    Memory needs to be allocated and within range.
-
-    This calls `nuMemcpy(inout(void)* dst, inout(void)* src, size_t bytes)`
-    internally.
-*/
-extern(D)
-void* nuCopy(T)(inout(T)[] dst, inout(T)[] src) @nogc nothrow {
-
-    assert(dst.length >= src.length, "Destination is shorter than source!");
-    return nuMemcpy(dst.ptr, src.ptr, T.sizeof*src.length);
-}
-
-/**
-    Moves `bytes` worth of data from `src` into `dst`.
-    Memory needs to be allocated and within range.
+    Moves $(D bytes) worth of data from $(D src) into $(D dst).
     
-    NOTE: External libraries may override this
-    implementation.
-    
-    By default calls C stdlib memmove.
+    $(D src) and $(D dst) needs to be allocated and within range.
+
+    Params:
+        dst =   Destination of the memory copy operation.
+        src =   Source of the memory copy operation
+        bytes = The amount of bytes to copy.
 */
-@weak
 export
 extern(C)
-void* nuMemmove(void* dst, void* src, size_t bytes) @nogc nothrow {
-
-    import core.stdc.string : memmove;
-    return memmove(dst, src, bytes);
-}
+void* nu_memmove(void* dst, void* src, size_t bytes) @nogc nothrow @system;
 
 /**
-    Fills `dst` with `value` for `bytes` bytes.
-    
-    NOTE: External libraries may override this
-    implementation.
-    
-    By default calls C stdlib memset.
-*/
-extern(C)
-export
-void* nuMemset(void* dst, ubyte value, size_t bytes) @nogc nothrow {
+    Fills $(D dst) with $(D bytes) amount of $(D value)s.
 
-    import core.stdc.string : memset;
-    return memset(dst, value, bytes);
-}
+    Params:
+        dst =   Destination of the memory copy operation.
+        value = The byte to repeatedly copy to the memory starting at $(D dst)
+        bytes = The amount of bytes to write.
+*/
+export
+extern(C)
+void* nu_memset(void* dst, ubyte value, size_t bytes) @nogc nothrow @system;
 
 /**
-    Hook which forcefully quits or crashes the application due to an invalid state.
+    Called internally by numem if a fatal error occured.
+
+    This function $(B should) exit the application and if possible,
+    print an error. But it $(B may) not print an error.
+
+    Params:
+        A D string containing the error in question.
     
-    NOTE: External libraries may override this
-    implementation.
-    
-    By default calls C stdlib abort.
+    Returns:
+        Never returns, the application should crash at this point.
 */
-@weak
 export
 extern(C)
-void nuAbort() @nogc nothrow {
-
-    import core.stdc.stdlib : abort;
-    abort();
-}
+void nu_fatal(const(char)[] errMsg) @nogc nothrow @system;
