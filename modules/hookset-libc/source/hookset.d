@@ -22,7 +22,6 @@ private {
 
 export extern(C) @nogc nothrow @system:
 
-
 void* nu_malloc(size_t bytes) {
     return malloc(bytes);
 }
