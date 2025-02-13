@@ -6,9 +6,7 @@
     Authors:   Walter Bright, Ernesto Castellotti
 */
 module numem.volatile;
-nothrow:
-@safe:
-@nogc:
+nothrow @safe @nogc:
 
 /**
     Read/write value from/to the memory location indicated by ptr.
