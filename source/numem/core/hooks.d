@@ -124,7 +124,7 @@ void* nu_memset(void* dst, ubyte value, size_t bytes) @nogc nothrow @system;
     print an error. But it $(B may) not print an error.
 
     Params:
-        A D string containing the error in question.
+        errMsg = A D string containing the error in question.
     
     Returns:
         Never returns, the application should crash at this point.

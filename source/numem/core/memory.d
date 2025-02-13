@@ -25,7 +25,7 @@ enum size_t ALIGN_PTR_SIZE = (void*).sizeof;
     If the slice is not yet allocated, it will be.
 
     When creating a slice with complex types you may wish to chain the resize
-    operation with $(D nogc_initialize).
+    operation with $(D numem.lifetime.nogc_initialize).
 
     Set $(D length) to $(D 0) to free the buffer.
 
@@ -34,11 +34,25 @@ enum size_t ALIGN_PTR_SIZE = (void*).sizeof;
         length =    The length of the buffer (in elements.)
         alignment = The alignment of the buffer (in bytes.)
 
+    Notes:
+        $(UL
+            $(LI
+                Resizing the buffer to be smaller than it was originally will
+                cause the elements to be deleted; if, and only if the type
+                is an aggregate value type (aka. $(D struct) or $(D union))
+                and said type has an elaborate destructor.  
+            )
+            $(LI
+                Class pointers will NOT be deleted, this must be done
+                manually.
+            )
+        )
+
     Returns:
         The resized buffer.
 */
-ref T[] nu_resize(T)(ref T[] buffer, size_t length, int alignment = 1) {
-    static if (hasElaborateDestructor!T) {
+ref T[] nu_resize(T)(ref T[] buffer, size_t length, int alignment = 1) @nogc nothrow {
+    static if (hasElaborateDestructor!T && !isHeapAllocated!T) {
         if (length < buffer.length) {
 
             // Handle destructor invocation.

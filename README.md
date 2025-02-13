@@ -44,3 +44,15 @@ All features of classes are available without the GC, such as subclassing and in
 
 Numem allows creating slice buffers, however these buffers are less safe than higher level
 alternatives available in nucore.
+
+```d
+float[] myFloatSlice;
+myFloatSlice.nu_resize(42);
+foreach(i; 0..myFloatSlice.length)
+    myFloatSlice[i] = 0.0;
+
+// Slices MUST be freed by resizing the slice to 0,
+// other functions will either fail or cause memory corruption.
+// as slices are using the aligned allocation functions.
+myFloatSlice.nu_resize(0);
+```

@@ -10,6 +10,11 @@
     
     License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
     Authors:   Luna Nielsen
+
+    See_Also:
+        $(D numem.core.memory.nu_resize)
+        $(D numem.core.memory.nu_dup)
+        $(D numem.core.memory.nu_idup)
 */
 module numem.lifetime;
 import numem.core.traits;

@@ -134,7 +134,7 @@ private struct __DummyStruct { }
 
     Can only be used at compile time for type checking.
 */
-@property T rvalueOf(T)(inout(__DummyStruct) = __DummyStruct.init);
+@property T rvalueOf(T)(inout __DummyStruct = __DummyStruct.init);
 
 /**
     Returns the lvalue equivalent of $(D T).
@@ -162,6 +162,12 @@ enum isAggregateType(T) =
 */
 enum isClasslike(T) =
     is(T == class) || is(T == interface);
+
+/**
+    Gets whether $(D T) is a struct-like (i.e. struct or union)
+*/
+enum isStructLike(T) =
+    is(T == struct) || is(T == union);
 
 /**
     Gets whether the provided type is a scalar type.
@@ -420,7 +426,7 @@ if (isCallable!func) {
     Note:
         To reduce template instantiations, consider instead using
         $(D_INLINECODE typeof(() { return func(args); } ())) if the argument types are known or
-        $(D_INLINECODE static if (is(typeof(func) Ret == return))) if only that basic test is needed.)
+        $(D_INLINECODE static if (is(typeof(func) Ret == return))) if only that basic test is needed.
 */
 template ReturnType(alias func)
 if (isCallable!func) {
