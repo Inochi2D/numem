@@ -1,5 +1,5 @@
 module numem.core.atomic;
-import ldc.attributes : weak;
+import numem.core.attributes : weak;
 
 @weak export:
 
