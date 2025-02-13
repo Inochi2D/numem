@@ -4,6 +4,7 @@
     Most of these are taken directly from the D runtime.
     
     Copyright:
+        Copyright © 2005-2009, The D Language Foundation.
         Copyright © 2023-2025, Kitsunebi Games
         Copyright © 2023-2025, Inochi2D Project
     

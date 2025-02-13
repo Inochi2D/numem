@@ -90,10 +90,16 @@ ref T[] nu_resize(T)(ref T[] buffer, size_t length, int alignment = 1) @nogc not
     Params:
         text = string to duplicate
 
+    Memorysafety:
+        This function copies data out of the string into a new
+        memory allocation; as such it has to be freed.
+        It is otherwise safe, in that it won't modify
+        the original memory provided.
+
     Returns:
         Duplicated string, must be freed with $(D nu_resize)
 */
-const(T)[] nu_dup(T)(inout(T)[] text) @nogc
+const(T)[] nu_dup(T)(inout(T)[] text) @nogc @trusted
 if (is(T == char) || is(T == wchar) || is(T == dchar)) {
     T[] buf;
     buf.nu_resize(text.length);
@@ -104,14 +110,61 @@ if (is(T == char) || is(T == wchar) || is(T == dchar)) {
 
 /**
     Duplicates a D string to a new immutable string slice.
+
+    Params:
+        text = string to duplicate
+
+    Memorysafety:
+        This function copies data out of the string into a new
+        memory allocation; as such it has to be freed.
+        It is otherwise safe, in that it won't modify
+        the original memory provided.
+
+    Returns:
+        Duplicated string, must be freed with $(D nu_resize)
 */
-immutable(T)[] nu_idup(T)(inout(T)[] text) @nogc
+immutable(T)[] nu_idup(T)(inout(T)[] text) @nogc @trusted
 if (is(T == char) || is(T == wchar) || is(T == dchar)) {
     T[] buf;
     buf.nu_resize(text.length);
 
     buf[0..$] = text[0..$];
     return cast(immutable(T)[])buf;
+}
+
+/**
+    Appends a null terminator at the end of the string,
+    resizes the memory allocation if need be.
+
+    Params:
+        text = string to add a null-terminator to, in-place
+
+    Memorysafety:
+        This function is not memory safe, in that if you attempt
+        to use it on string literals it may lead to memory corruption
+        or crashes. This is meant to be used internally. It may reallocate
+        the underlying memory of the provided string, as such all prior
+        string references should be assumed to be invalid.
+
+    Returns:
+        Slice of the null-terminated string, the null terminator is hidden.
+*/
+inout(T)[] nu_terminate(T)(inout(T)[] text) @nogc @system
+if (is(T == char) || is(T == wchar) || is(T == dchar)) {
+    
+    // Early escape out, already terminated.
+    if (text[$-1] == '\0')
+        return text;
+
+    // Resize by 1, add null terminator.
+    // Sometimes this won't be needed, if extra memory was
+    // already allocated.
+    text.nu_resize(text.length+1);
+    buf[$-1] = '\0';
+
+    // Return length _without_ null terminator by slicing it out.
+    // The memory allocation is otherwise still the same.
+    return cast(inout(T)[])buf[0..$-1];
 }
 
 /**
