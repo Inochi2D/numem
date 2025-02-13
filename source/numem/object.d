@@ -140,9 +140,11 @@ public:
             invoke the destructor of said object.
     */
     final
-    void retain() @trusted nothrow {
+    auto retain() @trusted nothrow {
         if (isValid)
             nu_atomic_add_32(refcount, 1);
+        
+        return this;
     }
 
     /**
@@ -155,10 +157,11 @@ public:
             invoke the destructor of said object.
 
         Returns:
-            $(D true) if the reference count reached 0, $(D false) otherwise.
+            The class instance release was called on, $(D null) if
+            the class was freed.
     */
     final
-    bool release() @trusted {
+    auto release() @trusted {
         if (isValid) {
             nu_atomic_sub_32(refcount, 1);
 
@@ -166,11 +169,11 @@ public:
             if (nu_atomic_load_32(refcount) == 0) {
                 NuRefCounted self = this;
                 nogc_delete(self);
-                return true;
+                return null;
             }
         }
 
-        return false;
+        return this;
     }
 
     /**
