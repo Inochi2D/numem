@@ -39,7 +39,6 @@ void nogc_construct(T, Args...)(ref T object, Args args) {
         emplace(*object, args);
     else
         emplace(object, args);
-
 }
 
 /**
@@ -257,12 +256,4 @@ T move(T)(scope ref return T from) {
 */
 void copyTo(T)(ref T from, ref T to) {
     __copy(from, to);
-}
-
-/**
-    Returns $(D bytes) aligned to a multiple of $(D alignment).
-*/
-pragma(inline, true)
-size_t alignSize(size_t bytes, size_t alignment) {
-    return bytes+(bytes%alignment);
 }
