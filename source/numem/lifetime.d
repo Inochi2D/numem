@@ -136,6 +136,30 @@ void nogc_delete(T, bool doFree=true)(T[] objects) {
 }
 
 /**
+    Initializes the object at the memory in $(D dst), filling it out with
+    its default state.
+
+    This variant will also initialize class instances on the stack which
+    can then be constructed with $(D nogc_construct). However you may
+    still need to $(D nogc_delete) these instances, with $(D doFree) set 
+    to false.
+
+    Params:
+        dst = A memory range allocated, big enough to store $(D T)
+    
+    Returns:
+        A reference to the initialized element, or $(D T.init) if it failed.
+*/
+T nogc_initialize(T)(void[] dst) {
+    if (dst.length < AllocSize!T)
+        return T.init;
+
+    T tmp = cast(T)dst.ptr;
+    initializeAt(tmp);
+    return tmp;
+}
+
+/**
     Initializes the object at $(D element), filling it out with
     its default state.
 
@@ -146,7 +170,7 @@ void nogc_delete(T, bool doFree=true)(T[] objects) {
         A reference to the initialized element.
 */
 ref T nogc_initialize(T)(ref T element) {
-    initializeAt(element);
+    initializeAtNoCtx(element);
     return element;
 }
 
@@ -171,14 +195,14 @@ T[] nogc_initialize(T)(T[] elements) {
     Zero-fills an object
 */
 void nogc_zeroinit(T)(ref T element) {
-    nuMemset(&element, 0, element.sizeof);
+    nu_memset(&element, 0, element.sizeof);
 }
 
 /**
     Zero-fills an object
 */
 void nogc_zeroinit(T)(T[] elements) {
-    nuMemset(elements.ptr, 0, elements.length*T.sizeof);
+    nu_memset(elements.ptr, 0, elements.length*T.sizeof);
 }
 
 /**
