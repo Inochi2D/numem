@@ -138,4 +138,9 @@ unittest {
     klass.value = 42;
     assert(&klass.func1 !is null);
     assert(klass.func1() == 42);
+
+    // Initializing struct should blit its initial state back in.
+    TestStruct strukt = TestStruct(1000);
+    assert(strukt.value == 1000);
+    assert(nogc_initialize(strukt).value == 0);
 }
