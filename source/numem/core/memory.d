@@ -14,6 +14,7 @@
 module numem.core.memory;
 import numem.core.hooks;
 import numem.core.traits;
+import numem.core.atomic;
 
 /**
     System pointer size.
@@ -47,6 +48,12 @@ enum size_t ALIGN_PTR_SIZE = (void*).sizeof;
                 manually.
             )
         )
+
+    Threadsafety:
+        The underlying data will, if possible be updated atomically, however
+        this does $(B NOT) prevent you from accessing stale references
+        elsewhere. If you wish to access a slice across threads, you should
+        use synchronisation primitives such as a mutex.
 
     Returns:
         The resized buffer.
@@ -160,11 +167,67 @@ if (is(T == char) || is(T == wchar) || is(T == dchar)) {
     // Sometimes this won't be needed, if extra memory was
     // already allocated.
     text.nu_resize(text.length+1);
-    buf[$-1] = '\0';
+    (cast(T*)text.ptr)[text.length] = '\0';
 
     // Return length _without_ null terminator by slicing it out.
     // The memory allocation is otherwise still the same.
-    return cast(inout(T)[])buf[0..$-1];
+    return cast(inout(T)[])text[0..$-1];
+}
+
+/**
+    Gets whether 2 memory ranges are overlapping.
+
+    Params:
+        a =         Start address of first range.
+        aLength =   Length of first range, in bytes.
+        b =         Start address of second range.
+        bLength =   Length of second range, in bytes.
+
+    Returns:
+        $(D true) if range $(D a) and $(D b) overlaps, $(D false) otherwise.
+        It is assumed that start points at $(D null) and lengths of $(D 0) never
+        overlap.
+
+    Example:
+        $(D_CODE
+            int[] arr1 = [1, 2, 3, 4];
+            int[] arr2 = arr1[1..$-1];
+
+            size_t arr1len = arr1.length*int.sizeof;
+            size_t arr2len = arr2.length*int.sizeof;
+
+            // Test all iterations that are supported.
+            assert(nu_is_overlapping(arr1.ptr, arr1len, arr2.ptr, arr2len));
+            assert(!nu_is_overlapping(arr1.ptr, arr1len, arr2.ptr, 0));
+            assert(!nu_is_overlapping(arr1.ptr, 0, arr2.ptr, arr2len));
+            assert(!nu_is_overlapping(null, arr1len, arr2.ptr, arr2len));
+            assert(!nu_is_overlapping(arr1.ptr, arr1len, null, arr2len));
+        )
+*/
+export
+extern(C)
+bool nu_is_overlapping(void* a, size_t aLength, void* b, size_t bLength) {
+    
+    // Early exit, null don't overlap.
+    if (a is null || b is null)
+        return false;
+
+    // Early exit, no length.
+    if (aLength == 0 || bLength == 0)
+        return false;
+    
+    void* aEnd = a+aLength;
+    void* bEnd = b+bLength;
+
+    // Overlap occurs if src is within [dst..dstEnd]
+    // or dst is within [src..srcEnd]
+    if (a >= b && a < bEnd)
+        return true;
+
+    if (b >= a && b < aEnd)
+        return true;
+
+    return false;
 }
 
 /**
@@ -335,11 +398,11 @@ void* __nu_store_aligned_ptr(void* ptr, size_t size, size_t alignment) nothrow @
 
     // Update the location.
     void** rawLocation = cast(void**)(aligned - ALIGN_PTR_SIZE);
-    *rawLocation = ptr;
+    nu_atomic_store_ptr(cast(void**)rawLocation, ptr);
 
     // Update the size.
     size_t* sizeLocation = cast(size_t*)(aligned - 2 * ALIGN_PTR_SIZE);
-    *sizeLocation = size;
+    nu_atomic_store_ptr(cast(void**)sizeLocation, cast(void*)size);
 
     assert(nu_is_aligned(aligned, alignment));
     return aligned;
