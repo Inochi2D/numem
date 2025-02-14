@@ -95,6 +95,9 @@ extern void* nu_memcpy(return scope void* dst, return scope void* src, size_t by
         dst =   Destination of the memory copy operation.
         src =   Source of the memory copy operation
         bytes = The amount of bytes to copy.
+    
+    Returns:
+        Pointer to $(D dst)
 */
 extern(C)
 extern void* nu_memmove(void* dst, void* src, size_t bytes) @nogc nothrow @system;
@@ -106,6 +109,9 @@ extern void* nu_memmove(void* dst, void* src, size_t bytes) @nogc nothrow @syste
         dst =   Destination of the memory copy operation.
         value = The byte to repeatedly copy to the memory starting at $(D dst)
         bytes = The amount of bytes to write.
+    
+    Returns:
+        Pointer to $(D dst)
 */
 extern(C)
 extern void* nu_memset(void* dst, ubyte value, size_t bytes) @nogc nothrow @system;
