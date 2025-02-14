@@ -40,6 +40,36 @@ unittest {
     assert(nu_atomic_load_32(value) == 41);
 }
 
+@("load: ptr")
+unittest {
+    if (!nu_atomic_supported)
+        return;
+
+    size_t value = 42;
+    assert(cast(size_t)nu_atomic_load_ptr(cast(void**)&value) == 42);
+}
+
+@("store: ptr")
+unittest {
+    if (!nu_atomic_supported)
+        return;
+
+    size_t value = 128;
+    nu_atomic_store_ptr(cast(void**)&value, cast(void*)42);
+    assert(cast(size_t)nu_atomic_load_ptr(cast(void**)&value) == 42);
+}
+
+@("cmpxhg: ptr")
+unittest {
+    if (!nu_atomic_supported)
+        return;
+
+    size_t value = 128;
+
+    nu_atomic_cmpxhg_ptr(cast(void**)&value, cast(void*)128, cast(void*)42);
+    assert(cast(size_t)nu_atomic_load_ptr(cast(void**)&value) == 42);
+}
+
 shared static this() {
     import std.stdio : writeln;
     if (!nu_atomic_supported) {
