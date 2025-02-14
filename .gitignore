@@ -2,6 +2,7 @@
 docs.json
 __dummy.html
 docs/
+__dummy_docs/
 /numem
 numem.so
 numem.dylib
