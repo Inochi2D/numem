@@ -112,7 +112,7 @@ public:
         Once the reference count for a class reaches 0, it will be destructed
         and freed automatically. All references to the class after refcount
         reaches 0 will be invalid and should not be used.
-        $(NuRefCounted.release) returns a value which can be used to determine whether
+        $(D NuRefCounted.release) returns a value which can be used to determine whether
         the destructor was invoked.
 */
 class NuRefCounted : NuObject {
