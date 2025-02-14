@@ -15,7 +15,7 @@ while allowing more seamless integration with other programming languages.
 # Configuration
 
 Numem provides a couple of version flags for configuring some base features of numem.
-Packages which intend to extend numem should appropriately implement these flags to handle,
+Packages which intend to extend numem should appropriately implement these flags to handle
 parts of numem being non-functional.
 
 | Flag               | Description                                                                          |
