@@ -21,9 +21,9 @@ public import numem.object;
 struct nu_version {
 @nogc:
 public:
-    uint major;
-    uint minor;
-    uint patch;
+    uint major;     /// Major
+    uint minor;     /// Minor
+    uint patch;     /// Patch
 }
 
 /**
