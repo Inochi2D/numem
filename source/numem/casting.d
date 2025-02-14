@@ -37,11 +37,11 @@ auto ref T reinterpret_cast(T, U)(auto ref U from) @trusted if (T.sizeof == U.si
     The unqualified version of the types need to be implicitly 
     convertible in at least one direction.
 
-    Example:
-        $(D_CODE
-            const(char)* myString = "Hello, world!";
-            char* myStringMut = const_cast!(char*)(myString);
-        )
+    Examples:
+        ---
+        const(char)* myString = "Hello, world!";
+        char* myStringMut = const_cast!(char*)(myString);
+        ---
 */
 pragma(inline, true)
 auto ref T const_cast(T, U)(auto ref U from) @trusted if (isAnyCompatible!(T, U)) {

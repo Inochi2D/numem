@@ -35,11 +35,11 @@ version(GDC) {
     definition."
 
     Examples:
-        $(D_CODE
-            import numem.core.attributes;
+        ---
+        import numem.core.attributes;
 
-            @weak int user_hook() { return 1; }
-        )
+        @weak int user_hook() { return 1; }
+        ---
 */
 version(LDC) {
     immutable weak = _weak();
@@ -59,11 +59,11 @@ version(LDC) {
     section names.
 
     Examples:
-        $(D_CODE
-            import numem.core.attributes;
+        ---
+        import numem.core.attributes;
 
-            @section(".mySection") int myGlobal;
-        )
+        @section(".mySection") int myGlobal;
+        ---
 */
 version(LDC) {
     struct section { string name; }
@@ -81,17 +81,17 @@ version(LDC) {
     Use this attribute to attach an Objective-C selector to a method.
 
     Examples:
-        $(D_CODE
-            extern (Objective-C)
-            class NSObject
-            {
-                this() @selector("init");
-                static NSObject alloc() @selector("alloc");
-                NSObject initWithUTF8String(in char* str) @selector("initWithUTF8String:");
-                ObjcObject copyScriptingValue(ObjcObject value, NSString key, NSDictionary properties)
-                    @selector("copyScriptingValue:forKey:withProperties:");
-            }
-        )
+        ---
+        extern (Objective-C)
+        class NSObject
+        {
+            this() @selector("init");
+            static NSObject alloc() @selector("alloc");
+            NSObject initWithUTF8String(in char* str) @selector("initWithUTF8String:");
+            ObjcObject copyScriptingValue(ObjcObject value, NSString key, NSDictionary properties)
+                @selector("copyScriptingValue:forKey:withProperties:");
+        }
+        ---
 */
 version(D_ObjectiveC)
 struct selector {

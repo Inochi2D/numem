@@ -188,21 +188,22 @@ if (is(T == char) || is(T == wchar) || is(T == dchar)) {
         It is assumed that start points at $(D null) and lengths of $(D 0) never
         overlap.
 
-    Example:
-        $(D_CODE
-            int[] arr1 = [1, 2, 3, 4];
-            int[] arr2 = arr1[1..$-1];
+    Examples:
+        ---
+        int[] arr1 = [1, 2, 3, 4];
+        int[] arr2 = arr1[1..$-1];
 
-            size_t arr1len = arr1.length*int.sizeof;
-            size_t arr2len = arr2.length*int.sizeof;
+        size_t arr1len = arr1.length*int.sizeof;
+        size_t arr2len = arr2.length*int.sizeof;
 
-            // Test all iterations that are supported.
-            assert(nu_is_overlapping(arr1.ptr, arr1len, arr2.ptr, arr2len));
-            assert(!nu_is_overlapping(arr1.ptr, arr1len, arr2.ptr, 0));
-            assert(!nu_is_overlapping(arr1.ptr, 0, arr2.ptr, arr2len));
-            assert(!nu_is_overlapping(null, arr1len, arr2.ptr, arr2len));
-            assert(!nu_is_overlapping(arr1.ptr, arr1len, null, arr2len));
-        )
+        // Test all iterations that are supported.
+        assert(nu_is_overlapping(arr1.ptr, arr1len, arr2.ptr, arr2len));
+        assert(!nu_is_overlapping(arr1.ptr, arr1len, arr2.ptr, 0));
+        assert(!nu_is_overlapping(arr1.ptr, 0, arr2.ptr, arr2len));
+        assert(!nu_is_overlapping(null, arr1len, arr2.ptr, arr2len));
+        assert(!nu_is_overlapping(arr1.ptr, arr1len, null, arr2len));
+        ---
+
 */
 export
 extern(C)
