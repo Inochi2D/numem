@@ -207,7 +207,7 @@ if (is(T == char) || is(T == wchar) || is(T == dchar)) {
 */
 export
 extern(C)
-bool nu_is_overlapping(void* a, size_t aLength, void* b, size_t bLength) {
+bool nu_is_overlapping(void* a, size_t aLength, void* b, size_t bLength) @nogc nothrow {
     
     // Early exit, null don't overlap.
     if (a is null || b is null)
