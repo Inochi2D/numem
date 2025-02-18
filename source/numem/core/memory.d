@@ -93,10 +93,10 @@ ref T[] nu_resize(T)(ref T[] buffer, size_t length, int alignment = 1) @nogc {
 }
 
 /**
-    Duplicates a D string to a new string slice.
+    Creates a shallow duplicate of the given buffer.
 
     Params:
-        text = string to duplicate
+        buffer = Buffer to duplicate.
 
     Memorysafety:
         This function copies data out of the string into a new
@@ -105,39 +105,33 @@ ref T[] nu_resize(T)(ref T[] buffer, size_t length, int alignment = 1) @nogc {
         the original memory provided.
 
     Returns:
-        Duplicated string, must be freed with $(D nu_resize)
+        Duplicated slice, must be freed with $(D nu_resize)
 */
-const(T)[] nu_dup(T)(inout(T)[] text) @nogc @trusted
-if (is(T == char) || is(T == wchar) || is(T == dchar)) {
+inout(T)[] nu_dup(T)(inout(T)[] buffer) @nogc @trusted {
     T[] buf;
-    buf.nu_resize(text.length);
 
-    buf[0..$] = text[0..$];
-    return cast(const(T)[])buf;
+    buf.nu_resize(buffer.length);
+    nu_memcpy(cast(void*)buf.ptr, cast(void*)buffer.ptr, buf.length*T.sizeof);
+    return cast(inout(T)[])buf;
 }
 
 /**
-    Duplicates a D string to a new immutable string slice.
+    Creates a shallow immutable duplicate of the given buffer.
 
     Params:
-        text = string to duplicate
+        buffer = Buffer to duplicate.
 
     Memorysafety:
-        This function copies data out of the string into a new
+        This function copies data out of the slice into a new
         memory allocation; as such it has to be freed.
         It is otherwise safe, in that it won't modify
         the original memory provided.
 
     Returns:
-        Duplicated string, must be freed with $(D nu_resize)
+        Duplicated slice, must be freed with $(D nu_resize)
 */
-immutable(T)[] nu_idup(T)(inout(T)[] text) @nogc @trusted
-if (is(T == char) || is(T == wchar) || is(T == dchar)) {
-    T[] buf;
-    buf.nu_resize(text.length);
-
-    buf[0..$] = text[0..$];
-    return cast(immutable(T)[])buf;
+immutable(T)[] nu_idup(T)(inout(T)[] buffer) @nogc @trusted {
+    return cast(immutable(T)[])nu_dup(buffer);
 }
 
 /**
