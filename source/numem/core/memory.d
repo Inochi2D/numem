@@ -58,29 +58,30 @@ enum size_t ALIGN_PTR_SIZE = (void*).sizeof;
     Returns:
         The resized buffer.
 */
-ref T[] nu_resize(T)(ref T[] buffer, size_t length, int alignment = 1) @nogc nothrow {
+ref T[] nu_resize(T)(ref T[] buffer, size_t length, int alignment = 1) @nogc {
     static if (hasElaborateDestructor!T && !isHeapAllocated!T) {
         if (length < buffer.length) {
 
             // Handle destructor invocation.
-            foreach_reverse(i; length..buffer.length) {
-                nogc_delete(buffer[i]);
-            }
+            nogc_delete!(T, false)(buffer[length..buffer.length]);
 
             // Handle buffer deletion.
             if (length == 0) {
-                nu_aligned_free(cast(void*)buffer.ptr, alignment);
+                if (buffer.length > 0)
+                    nu_aligned_free(cast(void*)buffer.ptr, alignment);
+                
                 buffer = null;
+                return buffer;
             }
-
-            return buffer;
         }
 
     } else {
 
         // No destructors, just free normally.
         if (length == 0) {
-            nu_aligned_free(cast(void*)buffer.ptr, alignment);
+            if (buffer.length > 0)
+                nu_aligned_free(cast(void*)buffer.ptr, alignment);
+            
             buffer = null;
             return buffer;
         }
