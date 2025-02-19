@@ -22,6 +22,37 @@ import numem.casting;
 private extern (D) alias fp_t = void function (Object) @nogc nothrow;
 
 /**
+    UDA which allows specifying which functions numem should call when
+    destroying an object with $(D destruct).
+*/
+struct nu_destroywith(alias handlerFunc) {
+private:
+    alias Handler = handlerFunc;
+}
+
+private
+template nu_getdestroywith(T, A...) {
+    static if (A.length == 0) {
+        alias attrs = __traits(getAttributes, T);
+
+        static if (attrs.length > 0)
+            alias nu_getdestroywith = nu_getdestroywith!(T, attrs);
+        else
+            alias nu_getdestroywith = void;
+    } else static if (A.length == 1) {
+        static if (nu_isdestroywith!(T, A[0]))
+            alias nu_getdestroywith = A[0].Handler;
+        else
+            alias nu_getdestroywith = void;
+    } else static if (nu_isdestroywith!(T, A[0]))
+            alias nu_getdestroywith = A[0].Handler;
+        else
+            alias nu_getdestroywith = nu_getdestroywith!(T, A[1 .. $]);
+}
+
+private enum nu_isdestroywith(T, alias H) = is(typeof(H.Handler)) && is(typeof((H.Handler(lvalueOf!T))));
+
+/**
     Initializes the memory at the specified chunk.
 */
 void initializeAt(T)(scope ref T chunk) @nogc nothrow @trusted {
@@ -84,36 +115,43 @@ void initializeAtNoCtx(T)(scope ref T chunk) @nogc nothrow @trusted {
 */
 @trusted
 void destruct(T, bool reInit=true)(ref T obj_) @nogc {
-    static if (isHeapAllocated!T) {
-        if (obj_ !is null) {
-            auto cInfo = cast(ClassInfo)typeid(obj_);
-            if (cInfo) {
-                auto c = cInfo;
 
-                // Call destructors in order of most specific
-                // to least-specific
-                do {
-                    if (c.destructor)
-                        (cast(fp_t)c.destructor)(cast(Object)obj_);
-                } while((c = c.base) !is null);
-                
-            } else {
+    // Handle custom destruction functions.
+    alias destroyWith = nu_getdestroywith!T;
+    static if (is(typeof(destroyWith))) {
+        destroyWith(obj_);
+    } else {
+        static if (isHeapAllocated!T) {
+            if (obj_ !is null) {
+                auto cInfo = cast(ClassInfo)typeid(obj_);
+                if (cInfo) {
+                    auto c = cInfo;
 
-                // Item is a struct, we can destruct it directly.
-                static if (__traits(hasMember, T, "__xdtor")) {
-                    assumeNoGC(&obj_.__xdtor);
-                } else static if (__traits(hasMember, T, "__dtor")) {
-                    assumeNoGC(&obj_.__dtor);
+                    // Call destructors in order of most specific
+                    // to least-specific
+                    do {
+                        if (c.destructor)
+                            (cast(fp_t)c.destructor)(cast(Object)obj_);
+                    } while((c = c.base) !is null);
+                    
+                } else {
+
+                    // Item is a struct, we can destruct it directly.
+                    static if (__traits(hasMember, T, "__xdtor")) {
+                        assumeNoGC(&obj_.__xdtor);
+                    } else static if (__traits(hasMember, T, "__dtor")) {
+                        assumeNoGC(&obj_.__dtor);
+                    }
                 }
             }
-        }
-    } else {
+        } else {
 
-        // Item is a struct, we can destruct it directly.
-        static if (__traits(hasMember, T, "__xdtor")) {
-            assumeNoGC(&obj_.__xdtor);
-        } else static if (__traits(hasMember, T, "__dtor")) {
-            assumeNoGC(&obj_.__dtor);
+            // Item is a struct, we can destruct it directly.
+            static if (__traits(hasMember, T, "__xdtor")) {
+                assumeNoGC(&obj_.__xdtor);
+            } else static if (__traits(hasMember, T, "__dtor")) {
+                assumeNoGC(&obj_.__dtor);
+            }
         }
     }
 

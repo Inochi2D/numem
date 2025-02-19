@@ -144,3 +144,17 @@ unittest {
     assert(strukt.value == 1000);
     assert(nogc_initialize(strukt).value == 0);
 }
+
+// Test creating destroy-with
+@nu_destroywith!((ref value) { value.i = 42; })
+struct ValueT {
+    int i = 0;
+}
+
+@("nu_destroywith")
+unittest {
+    ValueT myvalue;
+    
+    nogc_delete(myvalue);
+    assert(myvalue.i == 42);
+}

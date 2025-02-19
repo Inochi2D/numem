@@ -26,6 +26,7 @@ import numem.heap;
 
 // Utilities that are useful in the same regard from core.
 public import numem.core.memory : nu_dup, nu_idup, nu_resize;
+public import numem.core.lifetime : nu_destroywith;
 
 @nogc:
 
