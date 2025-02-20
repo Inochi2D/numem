@@ -153,7 +153,7 @@ immutable(T)[] nu_idup(T)(inout(T)[] buffer) @nogc @trusted {
     Returns:
         Slice of the null-terminated string, the null terminator is hidden.
 */
-inout(T)[] nu_terminate(T)(inout(T)[] text) @nogc @system
+inout(T)[] nu_terminate(T)(ref inout(T)[] text) @nogc @system
 if (is(T == char) || is(T == wchar) || is(T == dchar)) {
     
     // Early escape out, already terminated.
@@ -165,10 +165,11 @@ if (is(T == char) || is(T == wchar) || is(T == dchar)) {
     // already allocated.
     text.nu_resize(text.length+1);
     (cast(T*)text.ptr)[text.length] = '\0';
+    text = text[0..$-1];
 
     // Return length _without_ null terminator by slicing it out.
     // The memory allocation is otherwise still the same.
-    return cast(inout(T)[])text[0..$-1];
+    return text;
 }
 
 /**
@@ -371,13 +372,13 @@ export
 extern(C)
 void nu_aligned_free(void* ptr, size_t alignment) nothrow @nogc {
     
-    // Handle unaligned memory.
-    if (alignment == 1)
-        return nu_free(ptr);
-    
     // Handle null case.
     if (!ptr)
         return;
+    
+    // Handle unaligned memory.
+    if (alignment == 1)
+        return nu_free(ptr);
 
     assert(alignment != 0);
     assert(nu_is_aligned(ptr, alignment));
@@ -388,6 +389,8 @@ void nu_aligned_free(void* ptr, size_t alignment) nothrow @nogc {
 
 private
 void* __nu_store_aligned_ptr(void* ptr, size_t size, size_t alignment) nothrow @nogc {
+    
+    // Handle null case.
     if (!ptr)
         return null;
 
