@@ -109,7 +109,7 @@ void main() {
 ## Using slices
 
 Numem allows creating slice buffers, however these buffers are less safe than higher level
-alternatives available in nucore.
+alternatives available in [nulib](https://github.com/Inochi2D/nulib).
 
 ```d
 float[] myFloatSlice;
