@@ -5,8 +5,11 @@
     Given that some platforms may not have a C standard library, these hooks allow you
     to override how numem handles memory for such platforms from an external library.
 
-    In this case, all of the hooks presented here will need to be implemented to cover
+    In this case, most of the hooks presented here will need to be implemented to cover
     all of the used internal hooks within numem.
+
+    Hooks which are prefixed $(D nuopt_) are optional and may be omitted, they are
+    usually for language-specific interoperability.
     
     Copyright:
         Copyright © 2023-2025, Kitsunebi Games
@@ -130,3 +133,25 @@ extern void* nu_memset(void* dst, ubyte value, size_t bytes) @nogc nothrow @syst
 */
 extern(C)
 extern void nu_fatal(const(char)[] errMsg) @nogc nothrow @system;
+
+
+/**
+    Hooks for handling auto release pools.
+
+    These $(I optional) pool callback functions allows implementers of
+    numem to hook into the auto release pool system.
+
+    Push should push a new context onto an internal stack, while pop should
+    release an element from the stack.
+
+    These functions are mainly useful for Objective-C interoperability.
+
+    See_Also:
+        $(LINK2 https://clang.llvm.org/docs/AutomaticReferenceCounting.html#autoreleasepool, ARC Documentation)
+*/
+extern(C)
+__gshared void* function() @nogc nothrow @system nuopt_autoreleasepool_push = null;
+
+/// ditto
+extern(C)
+__gshared void function(void*) @nogc nothrow @system nuopt_autoreleasepool_pop = null;

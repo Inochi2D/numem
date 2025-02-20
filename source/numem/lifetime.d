@@ -26,9 +26,44 @@ import numem.heap;
 
 // Utilities that are useful in the same regard from core.
 public import numem.core.memory : nu_dup, nu_idup, nu_resize;
-public import numem.core.lifetime : nu_destroywith;
+public import numem.core.lifetime : nu_destroywith, nu_autoreleasewith;
 
 @nogc:
+
+/**
+    Creates a new auto release pool spanning the current scope.
+
+    Returns:
+        A stack allocated object with copying and moving disabled.
+*/
+auto autoreleasepool_scope() {
+    static
+    struct nu_arpool_stackctx {
+    @nogc:
+    private:
+        void* ctx;
+    
+    public:
+        ~this() { nu_autoreleasepool_pop(ctx); }
+        this(void* ctx) { this.ctx = ctx; }
+
+        @disable this(this);
+    }
+
+    return nu_arpool_stackctx(nu_autoreleasepool_push());
+}
+
+/**
+    Creates a scoped auto release pool.
+
+    Params:
+        scope_ = The scope in which the auto release pool acts.
+*/
+void autoreleasepool(void delegate() scope @nogc scope_) {
+    void* ctx = nu_autoreleasepool_push();
+    scope_();
+    nu_autoreleasepool_pop(ctx);
+}
 
 /**
     Constructs the given object.

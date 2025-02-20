@@ -18,6 +18,7 @@ module numem.object;
 import numem.core.atomic;
 import numem.lifetime;
 import numem.core.exception;
+import numem.core.lifetime : nu_autorelease;
 
 /**
     Numem base-class which allows using basic class functions without a garbage
@@ -115,6 +116,7 @@ public:
         $(D NuRefCounted.release) returns a value which can be used to determine whether
         the destructor was invoked.
 */
+@nu_autoreleasewith!((ref obj) { obj.release(); })
 class NuRefCounted : NuObject {
 @nogc:
 private:
@@ -140,7 +142,7 @@ public:
             invoke the destructor of said object.
     */
     final
-    auto retain() @trusted nothrow {
+    NuRefCounted retain() @trusted nothrow {
         if (isValid)
             nu_atomic_add_32(refcount, 1);
         
@@ -161,7 +163,7 @@ public:
             the class was freed.
     */
     final
-    auto release() @trusted {
+    NuRefCounted release() @trusted {
         if (isValid) {
             nu_atomic_sub_32(refcount, 1);
 
@@ -173,6 +175,18 @@ public:
             }
         }
 
+        return this;
+    }
+
+    /**
+        Pushes this refcounted object to the topmost auto release pool.
+
+        Returns:
+            The class instance release was called on.
+    */
+    final
+    NuRefCounted autorelease() @trusted {
+        nu_autorelease!NuRefCounted(this);
         return this;
     }
 
@@ -192,4 +206,28 @@ public:
     bool isValid() @trusted nothrow {
         return nu_atomic_load_32(refcount) != 0;
     }
+}
+
+/**
+    Helper function which allows typed chaining of retain calls.
+
+    Params:
+        elem = The element to perform the operation on
+    
+    Returns:
+        The element or $(D null) if it was freed as a result
+        of the operation.
+*/
+T retained(T)(T elem) @nogc @trusted if (is(T : NuRefCounted)) {
+    return cast(T)elem.retain();
+}
+
+/// ditto
+T released(T)(T elem) @nogc @trusted if (is(T : NuRefCounted)) {
+    return cast(T)elem.release();
+}
+
+/// ditto
+T autoreleased(T)(T elem) @nogc @trusted if (is(T : NuRefCounted)) {
+    return cast(T)elem.autorelease();
 }

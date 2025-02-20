@@ -16,41 +16,12 @@ module numem.core.lifetime;
 import numem.core.hooks;
 import numem.core.traits;
 import numem.core.exception;
+import numem.core.memory;
 import numem.casting;
+import numem.lifetime : nogc_construct, nogc_initialize, nogc_delete;
 
 // Deletion function signature.
 private extern (D) alias fp_t = void function (Object) @nogc nothrow;
-
-/**
-    UDA which allows specifying which functions numem should call when
-    destroying an object with $(D destruct).
-*/
-struct nu_destroywith(alias handlerFunc) {
-private:
-    alias Handler = handlerFunc;
-}
-
-private
-template nu_getdestroywith(T, A...) {
-    static if (A.length == 0) {
-        alias attrs = __traits(getAttributes, T);
-
-        static if (attrs.length > 0)
-            alias nu_getdestroywith = nu_getdestroywith!(T, attrs);
-        else
-            alias nu_getdestroywith = void;
-    } else static if (A.length == 1) {
-        static if (nu_isdestroywith!(T, A[0]))
-            alias nu_getdestroywith = A[0].Handler;
-        else
-            alias nu_getdestroywith = void;
-    } else static if (nu_isdestroywith!(T, A[0]))
-            alias nu_getdestroywith = A[0].Handler;
-        else
-            alias nu_getdestroywith = nu_getdestroywith!(T, A[1 .. $]);
-}
-
-private enum nu_isdestroywith(T, alias H) = is(typeof(H.Handler)) && is(typeof((H.Handler(lvalueOf!T))));
 
 /**
     Initializes the memory at the specified chunk.
@@ -429,6 +400,7 @@ void __move_postblit(T)(ref T newLocation, ref T oldLocation) {
 template forward(args...)
 {
     import core.internal.traits : AliasSeq;
+    import numem.object;
 
     template fwd(alias arg)
     {
@@ -455,3 +427,195 @@ template forward(args...)
     else
         alias forward = Result;
 }
+
+/**
+    UDA which allows specifying which functions numem should call when
+    destroying an object with $(D destruct).
+*/
+struct nu_destroywith(alias handlerFunc) {
+private:
+    alias Handler = handlerFunc;
+}
+
+/**
+    UDA which allows specifying which functions numem should call when
+    autoreleasing an object with $(D nu_autorelease).
+*/
+struct nu_autoreleasewith(alias handlerFunc) {
+private:
+    alias Handler = handlerFunc;
+}
+
+/**
+    Adds the given item to the topmost auto release pool.
+
+    Params:
+        item =  The item to automatically be destroyed when the pool
+                goes out of scope.
+    
+    Returns:
+        $(D true) if the item was successfully added to the pool,
+        $(D false) otherwise.
+*/
+bool nu_autorelease(T)(T item) @trusted @nogc {
+    alias autoreleaseWith = nu_getautoreleasewith!T;
+    
+    if (nu_arpool_stack.length > 0) {
+        nu_arpool_stack[$-1].push(
+            nu_arpool_element(
+                cast(void*)item,
+                (void* obj) {
+                    T obj_ = cast(T)obj;
+                    static if (is(typeof(autoreleaseWith))) {
+                        autoreleaseWith(obj_);
+                    } else {
+                        nogc_delete!(T)(obj_);
+                    }
+                }
+            )
+        );
+        return true;
+    }
+    return false;
+}
+
+/**
+    Pushes an auto release pool onto the pool stack.
+
+    Returns:
+        A context pointer, meaning is arbitrary.
+
+    Memorysafety:
+        $(D nu_autoreleasepool_push) and $(D nu_autoreleasepool_pop) are internal
+        API and are not safely used outside of the helpers.
+    
+    See_Also:
+        $(D numem.lifetime.autoreleasepool_scope), 
+        $(D numem.lifetime.autoreleasepool)
+*/
+void* nu_autoreleasepool_push() @system @nogc {
+    nu_arpool_stack.nu_resize(nu_arpool_stack.length+1);
+    nogc_construct(nu_arpool_stack[$-1]);
+
+    if (nuopt_autoreleasepool_push)
+        nu_arpool_stack[$-1].fctx = nuopt_autoreleasepool_push();
+
+    
+    return cast(void*)&nu_arpool_stack[$-1];
+}
+
+/**
+    Pops an auto release pool from the pool stack.
+
+    Params:
+        ctx = A context pointer.
+
+    Memorysafety:
+        $(D nu_autoreleasepool_push) and $(D nu_autoreleasepool_pop) are internal
+        API and are not safely used outside of the helpers.
+    
+    See_Also:
+        $(D numem.lifetime.autoreleasepool_scope), 
+        $(D numem.lifetime.autoreleasepool)
+*/
+void nu_autoreleasepool_pop(void* ctx) @system @nogc {
+    if (nu_arpool_stack.length > 0) {
+        assert(ctx == &nu_arpool_stack[$-1], "Misaligned auto release pool sequence!");
+
+        nu_arpool_stack.nu_resize(cast(ptrdiff_t)nu_arpool_stack.length-1);
+        if (nuopt_autoreleasepool_pop)
+            nuopt_autoreleasepool_pop(ctx);
+    }
+}
+
+
+//
+//          INTERNAL
+//
+
+private:
+import numem.object : NuRefCounted;
+
+// auto-release pool stack.
+__gshared nu_arpool_ctx[] nu_arpool_stack;
+
+// Handler function type.
+alias nu_arpool_handler_t = void function(void*) @nogc;
+
+// Handlers within an auto-release pool context.
+struct nu_arpool_element {
+    void* ptr;
+    nu_arpool_handler_t handler;
+}
+
+// An autorelease pool context.
+struct nu_arpool_ctx {
+@nogc:
+    nu_arpool_element[] queue;
+    void* fctx;
+
+    ~this() {
+        foreach_reverse(ref item; queue) {
+            item.handler(item.ptr);
+            nogc_initialize(item);
+        }
+        queue.nu_resize(0);
+    }
+
+    void push(nu_arpool_element element) {
+        queue.nu_resize(queue.length+1);
+        queue[$-1] = element;
+    }
+}
+
+// DESTROY UDA
+
+template nu_getdestroywith(T, A...) {
+    static if (A.length == 0) {
+        alias attrs = __traits(getAttributes, T);
+
+        static if (attrs.length > 0)
+            alias nu_getdestroywith = nu_getdestroywith!(T, attrs);
+        else
+            alias nu_getdestroywith = void;
+    } else static if (A.length == 1) {
+        static if (nu_isdestroywith!(T, A[0]))
+            alias nu_getdestroywith = A[0].Handler;
+        else
+            alias nu_getdestroywith = void;
+    } else static if (nu_isdestroywith!(T, A[0]))
+            alias nu_getdestroywith = A[0].Handler;
+        else
+            alias nu_getdestroywith = nu_getdestroywith!(T, A[1 .. $]);
+}
+
+enum nu_isdestroywith(T, alias H) = 
+    __traits(identifier, H) == __traits(identifier, nu_destroywith) &&
+    is(typeof(H.Handler)) && 
+    is(typeof((H.Handler(lvalueOf!T))));
+
+// AUTORELEASE UDA
+
+template nu_getautoreleasewith(T, A...) {
+    static if (A.length == 0) {
+        alias attrs = __traits(getAttributes, T);
+
+        static if (attrs.length > 0)
+            alias nu_getautoreleasewith = nu_getautoreleasewith!(T, attrs);
+        else
+            alias nu_getautoreleasewith = void;
+    } else static if (A.length == 1) {
+        static if (nu_isautoreleasewith!(T, A[0]))
+            alias nu_getautoreleasewith = A[0].Handler;
+        else
+            alias nu_getautoreleasewith = void;
+    } else static if (nu_isautoreleasewith!(T, A[0]))
+            alias nu_getautoreleasewith = A[0].Handler;
+        else
+            alias nu_getautoreleasewith = nu_getautoreleasewith!(T, A[1 .. $]);
+}
+
+enum nu_isautoreleasewith(T, alias H) = 
+    __traits(identifier, H) == __traits(identifier, nu_autoreleasewith) &&
+    is(typeof(H.Handler)) && 
+    is(typeof((H.Handler(lvalueOf!T))));

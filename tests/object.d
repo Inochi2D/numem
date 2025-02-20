@@ -20,11 +20,33 @@ public:
     }
 }
 
+class TrackedClass : NuRefCounted {
+@nogc:
+private:
+    __gshared uint rcClassCount;
+
+public:
+    ~this() { rcClassCount--; }
+    this() { rcClassCount++; }
+}
+
 @("refcounted create-destroy.")
 unittest {
     MyRCClass rcclass = nogc_new!MyRCClass(42);
     assert(rcclass.getSecret() == 42);
     assert(rcclass.release() is null);
+}
+
+@("refcounted pool")
+unittest {
+    autoreleasepool(() {
+        foreach(i; 0..100) {
+            nogc_new!TrackedClass().autoreleased();
+        }
+
+        assert(TrackedClass.rcClassCount == 100);
+    });
+    assert(TrackedClass.rcClassCount == 0);
 }
 
 @("numem nogc overloads")
