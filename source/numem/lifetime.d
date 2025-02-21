@@ -140,7 +140,9 @@ void nogc_delete(T, bool doFree=true)(NuHeap heap, ref T obj_) if (isHeapAllocat
         obj_ = Instance to destroy and deallocate.
 */
 void nogc_delete(T, bool doFree=true)(ref T obj_)  {
-    static if (isHeapAllocated!T) {
+    static if (isObjectiveC!T) {
+        // Do nothing.
+    } else static if (isHeapAllocated!T) {
 
         // Ensure type is not null.
         if (reinterpret_cast!(void*)(obj_) !is null) {

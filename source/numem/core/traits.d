@@ -263,6 +263,29 @@ template getUDAs(alias symbol, alias attrib) {
 }
 
 /**
+    Gets whether $(D T) is an Objective-C class or protocol.
+
+    Additionally, said class or protocol needs to have the
+    $(D retain) and $(D release) methods.
+*/
+enum isObjectiveC(T) =
+    isClasslike!T && __traits(getLinkage, T) == "Objective-C";
+
+/**
+    Gets whether $(D T) is a *valid* NSObject derived
+    Objective-C class or protocol.
+
+    Said class or protocol needs to have the
+    $(D retain), $(D release) and $(D autorelease) methods.
+
+    See_Also:
+        $(LINK2 https://github.com/Inochi2D/objective-d, Objective-D)
+*/
+enum isValidObjectiveC(T) =
+    isClasslike!T && __traits(getLinkage, T) == "Objective-C" &&
+    is(typeof(T.retain)) && is(typeof(T.release)) && is(typeof(T.autorelease));
+
+/**
     Gets whether T is an inner class in a nested class layout.
 */
 template isInnerClass(T) if(is(T == class)) {
@@ -282,7 +305,9 @@ template isInnerClass(T) if(is(T == class)) {
     Gets whether $(D T) or any of its children has an elaborate move.
 */
 template hasElaborateMove(T) {
-    static if (__traits(isStaticArray, T)) 
+    static if (isObjectiveC!T)
+        enum hasElaborateDestructor = false;
+    else static if (__traits(isStaticArray, T)) 
         enum bool hasElaborateMove = T.sizeof && hasElaborateMove!(BaseElemOf!T);
     else static if (is(T == struct))
         enum hasElaborateMove = (is(typeof(S.init.opPostMove(lvalueOf!T))) &&
@@ -298,7 +323,9 @@ template hasElaborateMove(T) {
     (i.e. is $(D opAssign) declared for the type)
 */
 template hasElaborateAssign(T) {
-    static if (__traits(isStaticArray, T)) 
+    static if (isObjectiveC!T)
+        enum hasElaborateDestructor = false;
+    else static if (__traits(isStaticArray, T)) 
         enum bool hasElaborateAssign = T.sizeof && hasElaborateAssign!(BaseElemOf!T);
     else static if (is(T == struct))
         enum hasElaborateAssign = (is(typeof(S.init.opPostMove(opAssign!T))) &&
@@ -314,7 +341,9 @@ template hasElaborateAssign(T) {
     (i.e. is a copy constructor or postblit constructor declared.)
 */
 template hasElaborateCopyConstructor(T) {
-    static if (__traits(isStaticArray, T)) 
+    static if (isObjectiveC!T)
+        enum hasElaborateDestructor = false;
+    else static if (__traits(isStaticArray, T)) 
         enum bool hasElaborateCopyConstructor = T.sizeof && hasElaborateCopyConstructor!(BaseElemOf!T);
     else static if (is(T == struct))
         enum hasElaborateCopyConstructor = __traits(hasCopyConstructor, T) || __traits(hasPostblit, T);
@@ -326,7 +355,9 @@ template hasElaborateCopyConstructor(T) {
     Gets whether type $(D T) has elaborate destructor semantics (is ~this() declared).
 */
 template hasElaborateDestructor(T) {
-    static if (__traits(isStaticArray, T)) 
+    static if (isObjectiveC!T)
+        enum hasElaborateDestructor = false;
+    else static if (__traits(isStaticArray, T)) 
         enum bool hasElaborateDestructor = T.sizeof && hasElaborateDestructor!(BaseElemOf!T);
     else static if (isAggregateType!T)
         enum hasElaborateDestructor = __traits(hasMember, T, "__dtor") ||

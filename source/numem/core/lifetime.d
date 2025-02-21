@@ -458,25 +458,29 @@ private:
         $(D false) otherwise.
 */
 bool nu_autorelease(T)(T item) @trusted @nogc {
-    alias autoreleaseWith = nu_getautoreleasewith!T;
-    
-    if (nu_arpool_stack.length > 0) {
-        nu_arpool_stack[$-1].push(
-            nu_arpool_element(
-                cast(void*)item,
-                (void* obj) {
-                    T obj_ = cast(T)obj;
-                    static if (is(typeof(autoreleaseWith))) {
-                        autoreleaseWith(obj_);
-                    } else {
-                        nogc_delete!(T)(obj_);
+    static if (isValidObjectiveC!T) {
+        item.autorelease();
+    } else {
+        alias autoreleaseWith = nu_getautoreleasewith!T;
+        
+        if (nu_arpool_stack.length > 0) {
+            nu_arpool_stack[$-1].push(
+                nu_arpool_element(
+                    cast(void*)item,
+                    (void* obj) {
+                        T obj_ = cast(T)obj;
+                        static if (is(typeof(autoreleaseWith))) {
+                            autoreleaseWith(obj_);
+                        } else {
+                            nogc_delete!(T)(obj_);
+                        }
                     }
-                }
-            )
-        );
-        return true;
+                )
+            );
+            return true;
+        }
+        return false;
     }
-    return false;
 }
 
 /**

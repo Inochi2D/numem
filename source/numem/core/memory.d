@@ -59,7 +59,7 @@ enum size_t ALIGN_PTR_SIZE = (void*).sizeof;
         The resized buffer.
 */
 ref T[] nu_resize(T)(ref T[] buffer, size_t length, int alignment = 1) @nogc {
-    static if (hasElaborateDestructor!T && !isHeapAllocated!T) {
+    static if (!isObjectiveC!T && hasElaborateDestructor!T && !isHeapAllocated!T) {
         import numem.lifetime : nogc_delete;
 
         if (length < buffer.length) {
