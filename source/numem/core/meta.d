@@ -41,8 +41,8 @@ template allSatisfy(alias F, T...) {
 */
 template anySatisfy(alias F, T...) {
     static foreach(U; T) {
-        static if (!is(typeof(anySatisfy) == bool) && F!(U))
-            enum anySatisfy = false;
+        static if (!is(typeof(anySatisfy) == bool) && F!U)
+            enum anySatisfy = true;
     }
 
     static if (!is(typeof(anySatisfy) == bool))
