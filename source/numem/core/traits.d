@@ -244,23 +244,56 @@ enum isAnyAssignable(Lhs, Rhs = Lhs) =
 enum isAnyCompatible(Lhs, Rhs) =
     is(Unqual!Lhs : Unqual!Rhs) || is(Unqual!Rhs : Unqual!Lhs);
 
+
 /**
     Gets whether $(D symbol) has the user defined attribute $(D attrib).
 */
 template hasUDA(alias symbol, alias attrib) {
-
-    enum isAttr(T) = is(T == attrib);
-    enum hasUDA = anySatisfy!(isAttr, __traits(getAttributes, symbol));
+    enum hasUDA = anySatisfy!(isDesiredAttr!attrib, __traits(getAttributes, symbol));
 }
 
 /**
     Gets a sequence of all of the attributes within attrib.
 */
 template getUDAs(alias symbol, alias attrib) {
-
-    enum isAttr(T) = is(T == attrib);
-    alias getUDAs = Filter!(isAttr, __traits(getAttributes, symbol));
+    alias getUDAs = Filter!(isDesiredAttr!attrib, __traits(getAttributes, symbol));
 }
+
+private
+template isDesiredAttr(alias attribute) {
+    // Taken from phobos.
+
+    template isDesiredAttr(alias toCheck) {
+        static if (is(typeof(attribute)) && !__traits(isTemplate, attribute)) {
+            static if (__traits(compiles, toCheck == attribute))
+                enum isDesiredAttr = toCheck == attribute;
+            else
+                enum isDesiredAttr = false;
+        } else static if (is(typeof(toCheck))) {
+            static if (__traits(isTemplate, attribute))
+                enum isDesiredAttr = isInstanceOf!(attribute, typeof(toCheck));
+            else
+                enum isDesiredAttr = is(typeof(toCheck) == attribute);
+        } else static if (__traits(isTemplate, attribute))
+            enum isDesiredAttr = isInstanceOf!(attribute, toCheck);
+        else
+            enum isDesiredAttr = is(toCheck == attribute);
+    }
+}
+
+/**
+    Gets whether $(D T) is an instance of template $(D S).
+
+    Returns:
+        $(D true) if $(D T) is an instance of template $(D S),
+        $(D false) otherwise.
+*/
+enum bool isInstanceOf(alias S, T) = is(T == S!Args, Args...);
+template isInstanceOf(alias S, alias T) {
+    enum impl(alias T : S!Args, Args...) = true;
+    enum impl(alias T) = false;
+    enum isInstanceOf = impl!T;
+} /// ditto
 
 /**
     Gets whether $(D T) is an Objective-C class or protocol.
