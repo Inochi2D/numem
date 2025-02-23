@@ -156,15 +156,21 @@ immutable(T)[] nu_idup(T)(inout(T)[] buffer) @nogc @trusted {
 inout(T)[] nu_terminate(T)(ref inout(T)[] text) @nogc @system
 if (is(T == char) || is(T == wchar) || is(T == dchar)) {
     
+    // Early escape, empty string.
+    if (text.length == 0)
+        return text;
+
     // Early escape out, already terminated.
     if (text[$-1] == '\0')
-        return text;
+        return text[0..$-1];
+
+    size_t termOffset = text.length;
 
     // Resize by 1, add null terminator.
     // Sometimes this won't be needed, if extra memory was
     // already allocated.
     text.nu_resize(text.length+1);
-    (cast(T*)text.ptr)[text.length] = '\0';
+    (cast(T*)text.ptr)[termOffset] = '\0';
     text = text[0..$-1];
 
     // Return length _without_ null terminator by slicing it out.
