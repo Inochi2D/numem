@@ -55,10 +55,12 @@ auto assumeNoThrowNoGC(T, Args...)(T expr, Args args) @nogc nothrow if (isSomeFu
         args =  Arguments to pass to the function.
 */
 auto assumeNoGC(T, Args...)(T expr, Args args) @nogc if (isSomeFunction!T) {
-    static if (is(T == function))
+    static if (is(T Fptr : Fptr*) && is(Fptr == function))
         alias ft = @nogc ReturnType!T function(Parameters!T);
-    else
+    else static if (is(T Fdlg == delegate))
         alias ft = @nogc ReturnType!T delegate(Parameters!T);
+    else
+        static assert(0);
     
     return (cast(ft)expr)(args);
 }
