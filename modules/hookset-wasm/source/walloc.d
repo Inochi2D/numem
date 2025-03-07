@@ -218,7 +218,7 @@ _page_t* allocate_pages(size_t payloadSize, size_t* allocated) {
                         PAGE_SIZE);
         
         assert(grow);
-        if (llvm_wasm_memory_grow(0, grow >> PAGE_SIZE_LOG_2) == -1) {
+        if (llvm_wasm_memory_grow(0, cast(int)(grow >> PAGE_SIZE_LOG_2)) == -1) {
             return null;
         }
 

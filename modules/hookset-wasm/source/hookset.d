@@ -30,3 +30,7 @@ void* nu_memset(void* dst, ubyte value, size_t bytes) {
     llvm_memset(dst, value, bytes);
     return dst;
 }
+
+void nu_fatal(const(char)[] msg) {
+    llvm_trap();
+}

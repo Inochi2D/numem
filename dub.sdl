@@ -6,8 +6,7 @@ license "BSL-1.0"
 targetPath "out/"
 
 subPackage "modules/hookset-libc"
-
-dependency "numem:hookset-libc" version="*" optional=true default=true
+subPackage "modules/hookset-wasm"
 
 // Needed for ddox.
 dflags "-oq" platform="ldc"

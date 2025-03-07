@@ -5,3 +5,4 @@ license "MIT"
 targetPath "out/"
 
 toolchainRequirements "ldc2"
+dflags "-mattr=+bulk-memory,+multivalue,+reference-types"
