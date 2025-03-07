@@ -37,12 +37,12 @@ void free(void *ptr) @nogc nothrow @system {
         _large_object_t* obj = get_large_object(ptr);
         obj.next = large_objects;
         large_objects = obj;
-        allocate_chunk(page, chunk, FREE_LARGE_OBJECT);
+        allocate_chunk(page, chunk, chunk_kind.FREE_LARGE_OBJECT);
         pending_large_object_compact = 1;
     } else {
         size_t granules = kind;
-        _freelist_t** loc = get_small_object_freelist(granules);
-        _freelist_t* obj = ptr;
+        _freelist_t** loc = get_small_object_freelist(cast(chunk_kind)granules);
+        _freelist_t* obj = cast(_freelist_t*)ptr;
         obj.next = *loc;
         *loc = obj;
     }
@@ -79,8 +79,11 @@ size_t get_alloc_size(void* ptr) {
     return kind;
 }
 
-extern __gshared void __heap_base;
+extern __gshared void* __heap_base;
 __gshared size_t walloc_heap_size;
+__gshared _freelist_t*[chunk_kind.SMALL_OBJECT_CHUNK_KINDS] small_object_freelists;
+__gshared _large_object_t* large_objects;
+
 
 pragma(inline, true)
 size_t _max(size_t a, size_t b) { return a < b ? b : a; }
@@ -137,10 +140,10 @@ __gshared const ubyte[] small_object_granule_sizes = [
 ];
 
 pragma(inline, true)
-chunk_kind granules_to_chunk_kind(ubyte granules) {
+chunk_kind granules_to_chunk_kind(size_t granules) {
     static foreach(gsize; small_object_granule_sizes) {
         if (granules <= gsize) 
-            return mixin(q{chunk_kind.GRANULES_}, gsize.stringof, ";");
+            return mixin(q{chunk_kind.GRANULES_}, cast(int)gsize);
     }
     return chunk_kind.LARGE_OBJECT;
 }
@@ -148,7 +151,7 @@ chunk_kind granules_to_chunk_kind(ubyte granules) {
 pragma(inline, true)
 ubyte chunk_kind_to_granules(chunk_kind kind) {
     static foreach(gsize; small_object_granule_sizes) {
-        if (kind == mixin(q{chunk_kind.GRANULES_}, gsize.stringof)) 
+        if (kind == mixin(q{chunk_kind.GRANULES_}, cast(int)gsize)) 
             return gsize;
     }
     return cast(ubyte)-1;
@@ -203,7 +206,7 @@ _page_t* allocate_pages(size_t payloadSize, size_t* allocated) {
     if (!walloc_heap_size) {
         // We are allocating the initial pages, if any.  We skip the first 64 kB,
         // then take any additional space up to the memory size.
-        size_t heap_base = _alignv((size_t)&__heap_base, PAGE_SIZE);
+        size_t heap_base = _alignv(cast(size_t)&__heap_base, PAGE_SIZE);
         preallocated = heap_size - heap_base; // Preallocated pages.
         walloc_heap_size = preallocated;
         base -= preallocated;
@@ -211,7 +214,7 @@ _page_t* allocate_pages(size_t payloadSize, size_t* allocated) {
 
     if (preallocated < needed) {
         // Always grow the walloc heap at least by 50%.
-        grow = _alignv(max(walloc_heap_size / 2, needed - preallocated),
+        grow = _alignv(_max(walloc_heap_size / 2, needed - preallocated),
                         PAGE_SIZE);
         
         assert(grow);
@@ -231,9 +234,9 @@ _page_t* allocate_pages(size_t payloadSize, size_t* allocated) {
     return ret;
 }
 
-void* allocate_chunk(_page_t* page, unsigned idx, chunk_kind kind) {
+void* allocate_chunk(_page_t* page, size_t idx, chunk_kind kind) {
     page.header.chunk_kinds[idx] = kind;
-    return page.chunks[idx].data;
+    return page.chunks[idx].data.ptr;
 }
 
 // It's possible for splitting to produce a large object of size 248 (256 minus
@@ -245,8 +248,8 @@ void maybe_repurpose_single_chunk_large_objects_head() {
         void* ptr = allocate_chunk(get_page(large_objects), idx, chunk_kind.GRANULES_32);
         large_objects = large_objects.next;
         _freelist_t* head = cast(_freelist_t*)ptr;
-        head.next = small_object_freelists[GRANULES_32];
-        small_object_freelists[GRANULES_32] = head;
+        head.next = small_object_freelists[chunk_kind.GRANULES_32];
+        small_object_freelists[chunk_kind.GRANULES_32] = head;
     }
 }
 
@@ -266,12 +269,13 @@ _large_object_t** maybe_merge_free_large_object(_large_object_t** prev) {
             return prev;
         }
         _page_t* page = get_page(end);
-        if (page.header.chunk_kinds[chunk] != FREE_LARGE_OBJECT) {
+        if (page.header.chunk_kinds[chunk] != chunk_kind.FREE_LARGE_OBJECT) {
             return prev;
         }
         _large_object_t* next = cast(_large_object_t*)end;
 
-        _large_object_t** prev_prev = &large_objects, *walk = large_objects;
+        _large_object_t** prev_prev = &large_objects;
+        _large_object_t* walk = large_objects;
         while(true) {
             assert(walk);
             if (walk == next) {
@@ -312,9 +316,13 @@ void maybe_compact_free_large_objects() {
 _large_object_t* allocate_large_object(size_t size) {
     maybe_compact_free_large_objects();
 
-    _large_object_t* best = NULL, **best_prev = &large_objects;
+    _large_object_t* best = null;
+    _large_object_t** best_prev = &large_objects;
     size_t best_size = -1;
-    for (_large_object_t** prev = &large_objects, *walk = large_objects; walk; prev = &walk.next, walk = walk.next) {
+
+    _large_object_t** prev = &large_objects;
+    _large_object_t* walk = large_objects;
+    while (walk) {
         if (walk.size >= size && walk.size < best_size) {
             best_size = walk.size;
             best = walk;
@@ -324,6 +332,9 @@ _large_object_t* allocate_large_object(size_t size) {
             if (best_size + LARGE_OBJECT_HEADER_SIZE == _alignv(size + LARGE_OBJECT_HEADER_SIZE, CHUNK_SIZE))
                 break;
         }
+
+        prev = &walk.next;
+        walk = walk.next;
     }
 
     if (!best) {
@@ -338,7 +349,7 @@ _large_object_t* allocate_large_object(size_t size) {
             return null;
         }
 
-        void* ptr = allocate_chunk(page, FIRST_ALLOCATABLE_CHUNK, LARGE_OBJECT);
+        void* ptr = allocate_chunk(page, FIRST_ALLOCATABLE_CHUNK, chunk_kind.LARGE_OBJECT);
         best = cast(_large_object_t*)ptr;
         size_t page_header = ptr - cast(void*)page;
 
@@ -347,7 +358,7 @@ _large_object_t* allocate_large_object(size_t size) {
         assert(best_size >= size_with_header);
     }
 
-    allocate_chunk(get_page(best), get_chunk_index(best), LARGE_OBJECT);
+    allocate_chunk(get_page(best), get_chunk_index(best), chunk_kind.LARGE_OBJECT);
 
     _large_object_t* next = best.next;
     *best_prev = next;
@@ -357,8 +368,8 @@ _large_object_t* allocate_large_object(size_t size) {
         // The best-fitting object has 1 or more aligned chunks free after the
         // requested allocation; split the tail off into a fresh aligned object.
         _page_t* start_page = get_page(best);
-        char *start = get_large_object_payload(best);
-        char *end = start + best_size;
+        void* start = get_large_object_payload(best);
+        void* end = start + best_size;
 
         if (start_page == get_page(end - tail_size - 1)) {
 
@@ -372,7 +383,7 @@ _large_object_t* allocate_large_object(size_t size) {
 
             size_t first_page_size = PAGE_SIZE - (cast(size_t)start & PAGE_MASK);
             _large_object_t* head = best;
-            allocate_chunk(start_page, get_chunk_index(start), FREE_LARGE_OBJECT);
+            allocate_chunk(start_page, get_chunk_index(start), chunk_kind.FREE_LARGE_OBJECT);
             head.size = first_page_size;
             head.next = large_objects;
             large_objects = head;
@@ -380,7 +391,7 @@ _large_object_t* allocate_large_object(size_t size) {
             maybe_repurpose_single_chunk_large_objects_head();
 
             _page_t* next_page = start_page + 1;
-            void* ptr = allocate_chunk(next_page, FIRST_ALLOCATABLE_CHUNK, LARGE_OBJECT);
+            void* ptr = allocate_chunk(next_page, FIRST_ALLOCATABLE_CHUNK, chunk_kind.LARGE_OBJECT);
             best = cast(_large_object_t*)ptr;
             best.size = best_size = best_size - first_page_size - CHUNK_SIZE - LARGE_OBJECT_HEADER_SIZE;
             assert(best_size >= size);
@@ -410,13 +421,13 @@ _large_object_t* allocate_large_object(size_t size) {
 
         if (tail_size) {
             _page_t *page = get_page(end - tail_size);
-            void* tail_ptr = allocate_chunk(page, tail_idx, FREE_LARGE_OBJECT);
+            void* tail_ptr = allocate_chunk(page, tail_idx, chunk_kind.FREE_LARGE_OBJECT);
             _large_object_t* tail = cast(_large_object_t*) tail_ptr;
             tail.next = large_objects;
             tail.size = tail_size - LARGE_OBJECT_HEADER_SIZE;
 
             debug {
-                size_t payloadsz = get_large_object_payload(tail) + tail.size;
+                size_t payloadsz = cast(size_t)get_large_object_payload(tail) + tail.size;
                 assert(payloadsz == _alignv(payloadsz, CHUNK_SIZE));
             }
 
@@ -426,7 +437,7 @@ _large_object_t* allocate_large_object(size_t size) {
     }
 
     debug {
-        size_t payloadsz = get_large_object_payload(best) + best.size;
+        size_t payloadsz = cast(size_t)get_large_object_payload(best) + best.size;
         assert(payloadsz == _alignv(payloadsz, CHUNK_SIZE));
     }
     return best;
