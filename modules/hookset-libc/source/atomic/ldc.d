@@ -9,9 +9,9 @@
     Authors:    Luna Nielsen
 */
 module atomic.ldc;
-import ldc.intrinsics;
-
 version(LDC):
+
+import ldc.intrinsics;
 
 //
 //  HOOK IMPLEMENTATION.
