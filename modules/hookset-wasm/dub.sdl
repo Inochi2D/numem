@@ -1,0 +1,7 @@
+name "hookset-wasm"
+description "wasm hookset for numem."
+authors "Kitsunebi Games" "Luna" "Inochi2D Project"
+license "MIT"
+targetPath "out/"
+
+toolchainRequirements "ldc2"
