@@ -6,3 +6,29 @@ targetPath "out/"
 
 toolchainRequirements "ldc2"
 dflags "-mattr=+bulk-memory,+multivalue,+reference-types"
+
+configuration "emscripten32" {
+    platforms "emscripten-wasm32"
+    dflags "--disable-linker-strip-dead"
+}
+
+configuration "emscripten64" {
+    platforms "emscripten-wasm64"
+    lflags "-mwasm64"
+    dflags "--disable-linker-strip-dead"
+}
+
+configuration "wasm32" {
+    platforms "wasm-wasm32"
+    targetType "staticLibrary"
+}
+
+configuration "wasm64" {
+    platforms "wasm-wasm64"
+    targetType "staticLibrary"
+    lflags "-mwasm64"
+}
+
+configuration "other" {
+    targetType "none"
+}
