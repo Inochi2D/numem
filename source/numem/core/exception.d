@@ -21,7 +21,7 @@ import numem.lifetime : nogc_delete, nogc_new;
         expr =  The expression to execute.
         args =  Arguments to pass to the function.
 */
-auto assumeNoThrow(T, Args...)(T expr, Args args) @nogc nothrow if (isSomeFunction!T)  {
+auto assumeNoThrow(T, Args...)(T expr, auto ref Args args) @nogc nothrow if (isSomeFunction!T)  {
     try {
         return expr(args);
     } catch (Exception ex) {
@@ -37,7 +37,7 @@ auto assumeNoThrow(T, Args...)(T expr, Args args) @nogc nothrow if (isSomeFuncti
         expr =  The expression to execute.
         args =  Arguments to pass to the function.
 */
-auto assumeNoThrowNoGC(T, Args...)(T expr, Args args) @nogc nothrow if (isSomeFunction!T)  {
+auto assumeNoThrowNoGC(T, Args...)(T expr, auto ref Args args) @nogc nothrow if (isSomeFunction!T)  {
     try {
         return assumeNoGC(expr, args);
     } catch (Exception ex) {
@@ -54,7 +54,7 @@ auto assumeNoThrowNoGC(T, Args...)(T expr, Args args) @nogc nothrow if (isSomeFu
         expr =  The expression to execute.
         args =  Arguments to pass to the function.
 */
-auto assumeNoGC(T, Args...)(T expr, Args args) @nogc if (isSomeFunction!T) {
+auto assumeNoGC(T, Args...)(T expr, auto ref Args args) @nogc if (isSomeFunction!T) {
     static if (is(T Fptr : Fptr*) && is(Fptr == function))
         alias ft = @nogc ReturnType!T function(Parameters!T);
     else static if (is(T Fdlg == delegate))
