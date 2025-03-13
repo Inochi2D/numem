@@ -75,8 +75,12 @@ size_t get_alloc_size(void* ptr) {
         _large_object_t* obj = get_large_object(ptr);
         return obj.size;
     }
-
-    return kind;
+    
+    ptrdiff_t granules = chunk_kind_to_granules(kind);
+    if (granules <= chunk_kind.SMALL_OBJECT_CHUNK_KINDS)
+        return granules * GRANULE_SIZE;
+    
+    return 0;
 }
 
 extern __gshared void* __heap_base;
