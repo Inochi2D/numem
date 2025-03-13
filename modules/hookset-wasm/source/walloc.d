@@ -69,7 +69,7 @@ private:
 size_t get_alloc_size(void* ptr) {
     _page_t* page = get_page(ptr);
     size_t chunk = get_chunk_index(ptr);
-    ubyte kind = page.header.chunk_kinds[chunk];
+    chunk_kind kind = cast(chunk_kind)page.header.chunk_kinds[chunk];
 
     if (kind == chunk_kind.LARGE_OBJECT) {
         _large_object_t* obj = get_large_object(ptr);
@@ -95,6 +95,11 @@ size_t _max(size_t a, size_t b) { return a < b ? b : a; }
 pragma(inline, true)
 size_t _alignv(size_t val, size_t alignment) { return (val + alignment - 1) & ~(alignment - 1); }
 
+pragma(inline, true)
+extern(D)
+void __assert_aligned(T, Y)(T x, Y y) {
+    assert(cast(size_t)x == _alignv(cast(size_t)x, cast(size_t)y));
+}
 
 enum size_t CHUNK_SIZE = 256;
 enum size_t CHUNK_SIZE_LOG_2 = 8;
@@ -262,9 +267,10 @@ void maybe_repurpose_single_chunk_large_objects_head() {
 __gshared int pending_large_object_compact = 0;
 _large_object_t** maybe_merge_free_large_object(_large_object_t** prev) {
     _large_object_t* obj = *prev;
+
     while(true) {
         void* end = get_large_object_payload(obj) + obj.size;
-        assert(cast(size_t)end == _alignv(cast(size_t)end, CHUNK_SIZE));
+        __assert_aligned(end, CHUNK_SIZE);
 
         size_t chunk = get_chunk_index(end);
         if (chunk < FIRST_ALLOCATABLE_CHUNK) {
@@ -378,7 +384,7 @@ _large_object_t* allocate_large_object(size_t size) {
         if (start_page == get_page(end - tail_size - 1)) {
 
             // The allocation does not span a page boundary; yay.
-            assert(cast(size_t)end == _alignv(cast(size_t)end, CHUNK_SIZE));
+            __assert_aligned(end, CHUNK_SIZE);
         } else if (size < PAGE_SIZE - LARGE_OBJECT_HEADER_SIZE - CHUNK_SIZE) {
 
             // If the allocation itself smaller than a page, split off the head, then
@@ -407,7 +413,7 @@ _large_object_t* allocate_large_object(size_t size) {
             // A large object that spans more than one page will consume all of its
             // tail pages.  Therefore if the split traverses a page boundary, round up
             // to page size.
-            assert(cast(size_t)end == _alignv(cast(size_t)end, PAGE_SIZE));
+            __assert_aligned(end, PAGE_SIZE);
             size_t first_page_size = PAGE_SIZE - (cast(size_t)start & PAGE_MASK);
             size_t tail_pages_size = _alignv(size - first_page_size, PAGE_SIZE);
             size = first_page_size + tail_pages_size;
