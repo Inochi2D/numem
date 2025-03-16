@@ -87,7 +87,7 @@ extern void nu_free(void* data) @nogc nothrow @system;
         bytes = The amount of bytes to copy.
 */
 extern(C)
-extern void* nu_memcpy(return scope void* dst, return scope void* src, size_t bytes) @nogc nothrow @system;
+extern void* nu_memcpy(return scope void* dst, scope const void* src, size_t bytes) @nogc nothrow @system pure;
 
 /**
     Moves $(D bytes) worth of data from $(D src) into $(D dst).
@@ -103,7 +103,7 @@ extern void* nu_memcpy(return scope void* dst, return scope void* src, size_t by
         Pointer to $(D dst)
 */
 extern(C)
-extern void* nu_memmove(void* dst, void* src, size_t bytes) @nogc nothrow @system;
+extern void* nu_memmove(return scope void* dst, scope const void* src, size_t bytes) @nogc nothrow @system pure;
 
 /**
     Fills $(D dst) with $(D bytes) amount of $(D value)s.
@@ -117,7 +117,7 @@ extern void* nu_memmove(void* dst, void* src, size_t bytes) @nogc nothrow @syste
         Pointer to $(D dst)
 */
 extern(C)
-extern void* nu_memset(void* dst, ubyte value, size_t bytes) @nogc nothrow @system;
+extern void* nu_memset(return scope void* dst, ubyte value, size_t bytes) @nogc nothrow @system pure;
 
 /**
     Called internally by numem if a fatal error occured.

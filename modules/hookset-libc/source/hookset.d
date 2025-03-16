@@ -14,9 +14,9 @@ private {
     extern(C) extern void* malloc(size_t) nothrow @nogc;
     extern(C) extern void* realloc(void*, size_t) nothrow @nogc;
     extern(C) extern void free(void*) nothrow @nogc;
-    extern(C) extern void* memcpy(return scope void*, return scope void*, size_t) nothrow @nogc;
-    extern(C) extern void* memmove(return scope void*, return scope void*, size_t) nothrow @nogc;
-    extern(C) extern void* memset(void*, int, size_t) nothrow @nogc;
+    extern(C) extern void* memcpy(return scope void*, scope const void*, size_t) nothrow @nogc pure;
+    extern(C) extern void* memmove(return scope void*, scope const void*, size_t) nothrow @nogc pure;
+    extern(C) extern void* memset(return scope void*, int, size_t) nothrow @nogc pure;
 
     extern(C) extern void abort() nothrow @nogc;
 }
@@ -35,15 +35,15 @@ void nu_free(void* data) {
     free(data);
 }
 
-void* nu_memcpy(return scope void* dst, return scope void* src, size_t bytes) {
+void* nu_memcpy(return scope void* dst, scope const void* src, size_t bytes) pure {
     return memcpy(dst, src, bytes);
 }
 
-void* nu_memmove(void* dst, void* src, size_t bytes) {
+void* nu_memmove(return scope void* dst, scope const void* src, size_t bytes) pure {
     return memmove(dst, src, bytes);
 }
 
-void* nu_memset(void* dst, ubyte value, size_t bytes) {
+void* nu_memset(return scope void* dst, ubyte value, size_t bytes) pure {
     return memset(dst, value, bytes);
 }
 

@@ -16,17 +16,17 @@ void nu_free(void* data) {
     free(data);
 }
 
-void* nu_memcpy(return scope void* dst, return scope void* src, size_t bytes) {
+void* nu_memcpy(return scope void* dst, scope const void* src, size_t bytes) pure {
     llvm_memcpy(dst, src, bytes);
     return dst;
 }
 
-void* nu_memmove(void* dst, void* src, size_t bytes) {
+void* nu_memmove(return scope void* dst, scope const void* src, size_t bytes) pure {
     llvm_memmove(dst, src, bytes);
     return dst;
 }
 
-void* nu_memset(void* dst, ubyte value, size_t bytes) {
+void* nu_memset(return scope void* dst, ubyte value, size_t bytes) pure {
     llvm_memset(dst, value, bytes);
     return dst;
 }
