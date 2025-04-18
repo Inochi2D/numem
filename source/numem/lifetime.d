@@ -257,7 +257,7 @@ void nogc_zeroinit(T)(T[] elements) {
     Allocates a new class on the heap.
     Immediately exits the application if out of memory.
 */
-void nogc_emplace(T, Args...)(ref auto T dest, Args args)  {
+void nogc_emplace(T, Args...)(auto ref T dest, Args args)  {
     emplace!(T, T, Args)(dest, args);
 }
 
