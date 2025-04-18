@@ -85,7 +85,12 @@ Ref!T nogc_new(T, Args...)(auto ref Args args) @nogc {
     if (!newobject)
         nu_fatal(null);
 
-    nogc_construct(newobject, args);
+    try {
+        nogc_construct(newobject, args);
+    } catch(Exception ex) {
+        nogc_delete(newobject);
+        throw ex;
+    }
     return newobject;
 }
 
@@ -101,7 +106,12 @@ Ref!T nogc_new(T, Args...)(auto ref Args args) @nogc {
 */
 Ref!T nogc_new(T, Args...)(NuHeap heap, auto ref Args args) {
     if (Ref!T newobject = cast(Ref!T)heap.alloc(AllocSize!T)) {
-        nogc_construct(newobject, args);
+        try {
+            nogc_construct(newobject, args);
+        } catch(Exception ex) {
+            nogc_delete(newobject);
+            throw ex;
+        }
     }
     return null;
 }
