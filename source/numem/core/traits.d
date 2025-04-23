@@ -103,6 +103,16 @@ template Ref(T) {
 }
 
 /**
+    Gets the reference type version of type $(D T).
+*/
+template Unref(T) {
+    static if (!isClasslike!T && isHeapAllocated!T)
+        alias Unref = typeof(*T.init);
+    else
+        alias Unref = T;
+}
+
+/**
     Gets the amount of bytes needed to allocate an instance of type $(D T).
 */
 template AllocSize(T) {

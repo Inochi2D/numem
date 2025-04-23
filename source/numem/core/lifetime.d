@@ -23,6 +23,14 @@ import numem.lifetime : nogc_construct, nogc_initialize, nogc_delete;
 // Deletion function signature.
 private extern (D) alias fp_t = void function (Object) @nogc nothrow;
 
+// Helper which creates a destructor function that
+// D likes.
+private template xdtor(T) {
+    void xdtor(ref T obj) {
+        obj.__xdtor();
+    }
+}
+
 /**
     Initializes the memory at the specified chunk.
 */
@@ -94,26 +102,36 @@ void destruct(T, bool reInit=true)(ref T obj_) @nogc {
     } else {
         static if (isHeapAllocated!T) {
             if (obj_ !is null) {
-                auto cInfo = cast(ClassInfo)typeid(obj_);
-                if (cInfo) {
-                    auto c = cInfo;
+                static if (__traits(getLinkage, Unref!T) == "D") {
+                    auto cInfo = cast(ClassInfo)typeid(obj_);
+                    if (cInfo) {
+                        auto c = cInfo;
 
-                    // Call destructors in order of most specific
-                    // to least-specific
-                    do {
-                        if (c.destructor)
-                            (cast(fp_t)c.destructor)(cast(Object)obj_);
-                    } while((c = c.base) !is null);
-                    
-                } else {
+                        // Call destructors in order of most specific
+                        // to least-specific
+                        do {
+                            if (c.destructor)
+                                (cast(fp_t)c.destructor)(cast(Object)obj_);
+                        } while((c = c.base) !is null);
+                        
+                    } else {
 
-                    // Item is a struct, we can destruct it directly.
-                    static if (__traits(hasMember, T, "__xdtor")) {
-                        assumeNoGC(&obj_.__xdtor);
-                    } else static if (__traits(hasMember, T, "__dtor")) {
-                        assumeNoGC(&obj_.__dtor);
+                        // Item is a struct, we can destruct it directly.
+                        static if (__traits(hasMember, T, "__xdtor")) {
+                            assumeNoGC(&obj_.__xdtor);
+                        } else static if (__traits(hasMember, T, "__dtor")) {
+                            assumeNoGC(&obj_.__dtor);
+                        }
                     }
-                }
+                } else static if (__traits(getLinkage, Unref!T) == "C++") {
+
+                    // C++ and Objective-C types may have D destructors declared
+                    // with extern(D), in that case, just call those.
+
+                    static if (__traits(hasMember, T, "__xdtor")) {
+                        assumeNoGC(&xdtor!T, obj_);
+                    }
+                } else static assert(0, "Don't know how to destruct "~T.stringof);
             }
         } else {
 

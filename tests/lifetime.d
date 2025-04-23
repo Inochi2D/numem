@@ -158,3 +158,20 @@ unittest {
     nogc_delete(myvalue);
     assert(myvalue.i == 42);
 }
+
+extern(C++)
+class TestCPPClass {
+@nogc:
+    int value;
+
+    this(int value) { this.value = value; }
+    ~this() { }
+}
+
+@("C++ ctor-dtor")
+unittest {
+    TestCPPClass myClass = nogc_new!TestCPPClass(42);
+
+    assert(myClass.value == 42);
+    nogc_delete(myClass);
+}
