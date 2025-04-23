@@ -31,6 +31,13 @@ Numem allows you to instantiate classes without the GC, it's highly recommended 
 
 Using `nogc_new` you can instantiate types on the heap, and `nogc_delete` can destruct and free types.
 
+## Hooksets
+
+Numem works on a concept of hooksets, all core functionality of numem is built on a small series of internal hook functions.  
+without said functions numem will not link, as a recommendation you can start with `numem:hookset-libc` to get going,
+if you have special requirements for your target platform you can implement your own hookset by implementing the functions
+in `numem.core.hooks` in a seperate package and adding it as a dependency.
+
 ## Using Classes
 
 ```d
