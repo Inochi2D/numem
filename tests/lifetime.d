@@ -34,6 +34,9 @@ struct TestStruct {
 unittest {
     TestClass a = nogc_new!TestClass(12);
     assert(a.func1() == 12);
+
+    // also free.
+    nogc_delete(a);
 }
 
 @("Construct subclass")
@@ -51,6 +54,9 @@ unittest {
 
     TestClass a = assumeNoThrow(() => nogc_new!TestClass(12));
     assert(a.value == 12);
+
+    // also free.
+    nogc_delete(a);
 }
 
 @("Construct struct")
@@ -58,6 +64,9 @@ unittest {
 unittest {
     TestStruct* a = nogc_new!TestStruct(12);
     assert(a.value == 12);
+
+    // also free.
+    nogc_delete(a);
 }
 
 @("Construct class (Slice list)")

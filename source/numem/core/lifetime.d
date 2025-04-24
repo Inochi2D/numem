@@ -131,7 +131,11 @@ void destruct(T, bool reInit=true)(ref T obj_) @nogc {
                     static if (__traits(hasMember, T, "__xdtor")) {
                         assumeNoGC(&xdtor!T, obj_);
                     }
-                } else static assert(0, "Don't know how to destruct "~T.stringof);
+                } else static if (__traits(hasMember, T, "__xdtor")) {
+                    
+                    // Item is liekly a struct, we can destruct it directly.
+                    assumeNoGC(&xdtor!T, obj_);
+                }
             }
         } else {
 
