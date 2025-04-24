@@ -69,6 +69,16 @@ unittest {
     nogc_delete(a);
 }
 
+@("Free struct")
+@nogc
+unittest {
+    TestStruct a = TestStruct(12);
+    assert(a.value == 12);
+
+    // also free.
+    nogc_delete(a);
+}
+
 @("Construct class (Slice list)")
 @nogc
 unittest {
