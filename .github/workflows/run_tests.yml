@@ -2,35 +2,38 @@
 # They are provided by a third-party and are governed by
 # separate terms of service, privacy policy, and support
 # documentation.
-name: Unit Tests
+name: Run Tests
 
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    types: [ "opened", "synchronize", "edited" ]
 
 permissions:
   contents: read
 
 jobs:
   test:
-    name: 'Build & Test'
+    name: 'Build and Test Library'
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
-        dc: [dmd-latest, ldc-latest]
+        os: [macOS-latest, ubuntu-latest, windows-latest]
+        arch: [x86_64, arm64]
+        dc: [ldc-beta, dmd-master, ldc-1.30.0]
         exclude:
-          - { os: macOS-latest, dc: dmd-latest }
+          - { dc: dmd-master, arch: arm64 }
 
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
 
     - name: Install compiler
-      uses: dlang-community/setup-dlang@v1.4.0
+      uses: dlang-community/setup-dlang@v2
       with:
         compiler: ${{ matrix.dc }}
 
-    - name: 'Build and test with ${{ matrix.os }} ${{ matrix.dc }}' 
+    - name: 'Build with ${{ matrix.os }} ${{ matrix.dc }} (${{ matrix.build }})' 
       run: |
         # Build and run tests, as defined by `unittest` configuration
         # In this mode, `mainSourceFile` is excluded and `version (unittest)` are included
