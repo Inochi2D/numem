@@ -26,4 +26,5 @@ configuration "unittest" {
     
     dependency "silly" version="~>1.1.1"
     sourcePaths "tests/"
+    importPaths "tests/"
 }
