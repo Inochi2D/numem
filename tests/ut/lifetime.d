@@ -194,3 +194,17 @@ unittest {
     assert(myClass.value == 42);
     nogc_delete(myClass);
 }
+
+extern(C++)
+struct TestCPPStruct {
+@nogc:
+    int value;
+}
+
+@("C++ ctor-dtor")
+unittest {
+    TestCPPStruct* myStruct = nogc_new!TestCPPStruct(42);
+
+    assert(myStruct.value == 42);
+    nogc_delete(myStruct);
+}

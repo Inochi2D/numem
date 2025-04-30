@@ -94,15 +94,16 @@ void initializeAtNoCtx(T)(scope ref T chunk) @nogc nothrow @trusted {
 */
 @trusted
 void destruct(T, bool reInit=true)(ref T obj_) @nogc {
+    alias RealT = Unref!T;
 
     // Handle custom destruction functions.
-    alias destroyWith = nu_getdestroywith!T;
+    alias destroyWith = nu_getdestroywith!RealT;
     static if (is(typeof(destroyWith))) {
         destroyWith(obj_);
     } else {
         static if (isHeapAllocated!T) {
             if (obj_ !is null) {
-                static if (__traits(getLinkage, Unref!T) == "D") {
+                static if (__traits(getLinkage, RealT) == "D") {
                     auto cInfo = cast(ClassInfo)typeid(obj_);
                     if (cInfo) {
                         auto c = cInfo;
@@ -117,9 +118,9 @@ void destruct(T, bool reInit=true)(ref T obj_) @nogc {
                     } else {
 
                         // Item is a struct, we can destruct it directly.
-                        static if (__traits(hasMember, T, "__xdtor")) {
+                        static if (__traits(hasMember, RealT, "__xdtor")) {
                             assumeNoGC(&obj_.__xdtor);
-                        } else static if (__traits(hasMember, T, "__dtor")) {
+                        } else static if (__traits(hasMember, RealT, "__dtor")) {
                             assumeNoGC(&obj_.__dtor);
                         }
                     }
@@ -128,10 +129,10 @@ void destruct(T, bool reInit=true)(ref T obj_) @nogc {
                     // C++ and Objective-C types may have D destructors declared
                     // with extern(D), in that case, just call those.
 
-                    static if (__traits(hasMember, T, "__xdtor")) {
+                    static if (__traits(hasMember, RealT, "__xdtor")) {
                         assumeNoGC(&xdtor!T, obj_);
                     }
-                } else static if (__traits(hasMember, T, "__xdtor")) {
+                } else static if (__traits(hasMember, RealT, "__xdtor")) {
                     
                     // Item is liekly a struct, we can destruct it directly.
                     assumeNoGC(&xdtor!T, obj_);
@@ -140,9 +141,9 @@ void destruct(T, bool reInit=true)(ref T obj_) @nogc {
         } else {
 
             // Item is a struct, we can destruct it directly.
-            static if (__traits(hasMember, T, "__xdtor")) {
+            static if (__traits(hasMember, RealT, "__xdtor")) {
                 assumeNoGC(&obj_.__xdtor);
-            } else static if (__traits(hasMember, T, "__dtor")) {
+            } else static if (__traits(hasMember, RealT, "__dtor")) {
                 assumeNoGC(&obj_.__dtor);
             }
         }
@@ -598,7 +599,7 @@ struct nu_arpool_ctx {
 
 template nu_getdestroywith(T, A...) {
     static if (A.length == 0) {
-        alias attrs = __traits(getAttributes, T);
+        alias attrs = __traits(getAttributes, Unref!T);
 
         static if (attrs.length > 0)
             alias nu_getdestroywith = nu_getdestroywith!(T, attrs);
