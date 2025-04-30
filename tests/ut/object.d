@@ -1,4 +1,4 @@
-module tests.object;
+module ut.object;
 import numem.object;
 import numem.lifetime;
 

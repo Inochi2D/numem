@@ -1,4 +1,4 @@
-module tests.core.memory;
+module ut.core.memory;
 import numem.core.memory;
 
 @("nu_resize")

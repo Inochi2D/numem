@@ -1,4 +1,4 @@
-module tests.core.exception;
+module ut.core.exception;
 import numem.core.exception;
 
 @("catch & free NuException")

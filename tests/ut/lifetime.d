@@ -1,4 +1,4 @@
-module tests.lifetime;
+module ut.lifetime;
 import numem.lifetime;
 
 class TestClass {

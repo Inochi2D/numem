@@ -1,4 +1,4 @@
-module tests.core.atomic;
+module ut.core.atomic;
 import numem.core.atomic;
 
 @("load: i32")

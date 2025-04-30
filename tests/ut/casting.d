@@ -1,4 +1,4 @@
-module tests.casting;
+module ut.casting;
 import numem.casting;
 
 private class Test {
