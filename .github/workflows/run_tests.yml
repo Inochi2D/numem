@@ -73,10 +73,12 @@ jobs:
             tag: main
             config: unittest
             version: "1.0.5"
+            may_fail: true
           - repo: Inochi2D/nulib
             tag: main
             config: unittest
             version: "99.0.0"
+            may_fail: false
     
     needs: [test, sanity_check]
     uses: ./.github/workflows/dub_test_build.yml
@@ -85,4 +87,5 @@ jobs:
       repo_tag: ${{ matrix.to_build.tag }}
       dep_config: ${{ matrix.to_build.config }}
       dep_version: ${{ matrix.to_build.version }}
+      may_fail: ${{ matrix.to_build.may_fail }}
 

@@ -17,14 +17,21 @@ on:
         description: 'The tag to attempt to build'
         required: true
         type: string
+      may_fail:
+        description: 'Whether it may fail'
+        default: false
+        required: false
+        type: boolean
 
 name: 'Dub dependant build-check'
 run-name: 'Build-check ${{ inputs.repo }} ${{ inputs.repo_tag }}'
 
 jobs:
   try_build:
-    name: 'Build check ${{ inputs.repo }}'
+    name: '${{ matrix.dc }} on ${{ matrix.os }}'
+    continue-on-error: ${{ inputs.may_fail }}
     strategy:
+      fail-fast: true
       matrix:
         os: [macOS-latest, ubuntu-latest, windows-latest]
         dc: [ldc, ldc-beta, dmd, dmd-beta]
