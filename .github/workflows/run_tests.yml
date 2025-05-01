@@ -72,7 +72,7 @@ jobs:
           - repo: Inochi2D/hairetsu
             tag: main
             config: unittest
-            version: "1.0.5"
+            version: "99.0.0"
             may_fail: true
           - repo: Inochi2D/nulib
             tag: main
