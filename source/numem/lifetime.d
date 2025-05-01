@@ -59,7 +59,7 @@ auto autoreleasepool_scope() {
     Params:
         scope_ = The scope in which the auto release pool acts.
 */
-void autoreleasepool(void delegate() scope @nogc scope_) {
+void autoreleasepool(void delegate() scope @nogc scope_) @trusted {
     void* ctx = nu_autoreleasepool_push();
     scope_();
     nu_autoreleasepool_pop(ctx);
@@ -70,7 +70,7 @@ void autoreleasepool(void delegate() scope @nogc scope_) {
 
     Attempting to construct a non-initialized $(D object) is undefined behaviour.
 */
-void nogc_construct(T, Args...)(ref T object, Args args) {
+void nogc_construct(T, Args...)(ref T object, Args args) @trusted {
     static if (isPointer!T)
         emplace(*object, args);
     else
@@ -80,7 +80,7 @@ void nogc_construct(T, Args...)(ref T object, Args args) {
 /**
     Allocates a new instance of $(D T).
 */
-Ref!T nogc_new(T, Args...)(auto ref Args args) {
+Ref!T nogc_new(T, Args...)(auto ref Args args) @trusted {
     if (Ref!T newobject = cast(Ref!T)nu_malloc(AllocSize!T)) {
         try {
             nogc_construct(newobject, args);
@@ -104,7 +104,7 @@ Ref!T nogc_new(T, Args...)(auto ref Args args) {
         A reference to the instantiated object or $(D null) if allocation
         failed.
 */
-Ref!T nogc_trynew(T, Args...)(auto ref Args args) nothrow {
+Ref!T nogc_trynew(T, Args...)(auto ref Args args) @trusted nothrow {
     if (Ref!T newobject = cast(Ref!T)nu_malloc(AllocSize!T)) {
         try {
             nogc_construct(newobject, args);
@@ -128,7 +128,7 @@ Ref!T nogc_trynew(T, Args...)(auto ref Args args) nothrow {
         heap = The heap to allocate the instance on.
         args = The arguments to pass to the type's constructor.
 */
-Ref!T nogc_new(T, Args...)(NuHeap heap, auto ref Args args) {
+Ref!T nogc_new(T, Args...)(NuHeap heap, auto ref Args args) @trusted {
     if (Ref!T newobject = cast(Ref!T)heap.alloc(AllocSize!T)) {
         try {
             nogc_construct(newobject, args);
@@ -151,7 +151,7 @@ Ref!T nogc_new(T, Args...)(NuHeap heap, auto ref Args args) {
         A reference to the instantiated object or $(D null) if allocation
         failed.
 */
-Ref!T nogc_trynew(T, Args...)(NuHeap heap, auto ref Args args) nothrow {
+Ref!T nogc_trynew(T, Args...)(NuHeap heap, auto ref Args args) @trusted nothrow {
     if (Ref!T newobject = cast(Ref!T)heap.alloc(AllocSize!T)) {
         try {
             nogc_construct(newobject, args);
@@ -177,7 +177,7 @@ Ref!T nogc_trynew(T, Args...)(NuHeap heap, auto ref Args args) nothrow {
     Params:
         obj_ = Instance to destroy and deallocate.
 */
-void nogc_delete(T, bool doFree=true)(ref T obj_)  {
+void nogc_delete(T, bool doFree=true)(ref T obj_) @trusted {
     static if (isObjectiveC!T) {
         // Do nothing.
     } else static if (isHeapAllocated!T) {
@@ -210,7 +210,7 @@ void nogc_delete(T, bool doFree=true)(ref T obj_)  {
     Returns:
         Whether the operation succeeded.
 */
-bool nogc_trydelete(T, bool doFree=true)(ref T obj_) nothrow {
+bool nogc_trydelete(T, bool doFree=true)(ref T obj_) @trusted nothrow {
     try {
         nogc_delete(obj_);
         return true;
@@ -234,7 +234,8 @@ bool nogc_trydelete(T, bool doFree=true)(ref T obj_) nothrow {
         heap = The heap to allocate the instance on.
         obj_ = Instance to destroy and deallocate.
 */
-void nogc_delete(T, bool doFree=true)(NuHeap heap, ref T obj_) if (isHeapAllocated!T) {
+void nogc_delete(T, bool doFree=true)(NuHeap heap, ref T obj_) @trusted
+if (isHeapAllocated!T) {
     if (reinterpret_cast!(void*)(obj_) !is null) {
 
         destruct!(T, !doFree)(obj_);
@@ -261,7 +262,8 @@ void nogc_delete(T, bool doFree=true)(NuHeap heap, ref T obj_) if (isHeapAllocat
     Returns:
         Whether the operation succeeded.
 */
-bool nogc_trydelete(T, bool doFree=true)(NuHeap heap, ref T obj_) nothrow if (isHeapAllocated!T) {
+bool nogc_trydelete(T, bool doFree=true)(NuHeap heap, ref T obj_) @trusted nothrow
+if (isHeapAllocated!T) {
     try {
 
         nogc_delete(heap, obj_);
@@ -282,7 +284,7 @@ bool nogc_trydelete(T, bool doFree=true)(NuHeap heap, ref T obj_) nothrow if (is
     will additionally be freed after finalizers have run; otherwise the object 
     is reset to its original state.
 */
-void nogc_delete(T, bool doFree=true)(T[] objects) {
+void nogc_delete(T, bool doFree=true)(T[] objects) @trusted {
     foreach(i; 0..objects.length)
         nogc_delete!(T, doFree)(objects[i]);
 }
@@ -301,7 +303,7 @@ void nogc_delete(T, bool doFree=true)(T[] objects) {
     Returns:
         Whether the operation succeeded.
 */
-bool nogc_trydelete(T, bool doFree=true)(T[] objects) {
+bool nogc_trydelete(T, bool doFree=true)(T[] objects) @trusted {
     size_t failed = 0;
     foreach(i; 0..objects.length)
         failed += nogc_trydelete!(T, doFree)(objects[i]);
@@ -324,7 +326,7 @@ bool nogc_trydelete(T, bool doFree=true)(T[] objects) {
     Returns:
         A reference to the initialized element, or $(D T.init) if it failed.
 */
-T nogc_initialize(T)(void[] dst) {
+T nogc_initialize(T)(void[] dst) @trusted {
     if (dst.length < AllocSize!T)
         return T.init;
 
@@ -343,7 +345,7 @@ T nogc_initialize(T)(void[] dst) {
     Returns:
         A reference to the initialized element.
 */
-ref T nogc_initialize(T)(ref T element) {
+ref T nogc_initialize(T)(ref T element) @trusted {
     initializeAtNoCtx(element);
     return element;
 }
@@ -358,7 +360,7 @@ ref T nogc_initialize(T)(ref T element) {
     Returns:
         The slice with now initialized contents.
 */
-T[] nogc_initialize(T)(T[] elements) {
+T[] nogc_initialize(T)(T[] elements) @trusted {
     foreach(i; 0..elements.length)
         initializeAtNoCtx(elements[i]);
     
@@ -368,14 +370,14 @@ T[] nogc_initialize(T)(T[] elements) {
 /**
     Zero-fills an object
 */
-void nogc_zeroinit(T)(ref T element) {
+void nogc_zeroinit(T)(ref T element) @trusted nothrow pure {
     nu_memset(&element, 0, element.sizeof);
 }
 
 /**
     Zero-fills an object
 */
-void nogc_zeroinit(T)(T[] elements) {
+void nogc_zeroinit(T)(T[] elements) @trusted nothrow pure {
     nu_memset(elements.ptr, 0, elements.length*T.sizeof);
 }
 
@@ -383,7 +385,7 @@ void nogc_zeroinit(T)(T[] elements) {
     Allocates a new class on the heap.
     Immediately exits the application if out of memory.
 */
-void nogc_emplace(T, Args...)(auto ref T dest, Args args) {
+void nogc_emplace(T, Args...)(auto ref T dest, Args args) @trusted {
     emplace!(T, T, Args)(dest, args);
 }
 
@@ -396,7 +398,7 @@ void nogc_emplace(T, Args...)(auto ref T dest, Args args) {
     After the move operation, the original memory locations in $(D from) will be
     reset to their base initialized state before any constructors are run.
 */
-void nogc_move(T)(T[] dst, T[] src) {
+void nogc_move(T)(T[] dst, T[] src) @trusted {
     foreach(i; 0..src.length)
         __move(src[i], dst[i]);
 }
@@ -406,7 +408,7 @@ void nogc_move(T)(T[] dst, T[] src) {
 
     Postblits and copy constructors will be called subsequently.
 */
-void nogc_copy(T)(T[] dst, T[] src) {
+void nogc_copy(T)(T[] dst, T[] src) @trusted {
     foreach(i; 0..src.length)
         __copy(src[i], dst[i]);
 }
@@ -424,7 +426,7 @@ void nogc_copy(T)(T[] dst, T[] src) {
         from = The source of the move operation.
         to = The destination of the move operation.
 */
-void moveTo(T)(ref T from, ref T to) {
+void moveTo(T)(ref T from, ref T to) @trusted {
     __move(from, to);
 }
 
@@ -439,7 +441,7 @@ void moveTo(T)(ref T from, ref T to) {
     Returns: 
         The moved value, $(D from) will be reset to its initial state.
 */
-T move(T)(scope ref return T from) {
+T move(T)(scope ref return T from) @trusted {
     return __move(from);
 }
 
@@ -452,6 +454,6 @@ T move(T)(scope ref return T from) {
         from = The source of the copy operation.
         to = The destination of the copy operation.
 */
-void copyTo(T)(ref T from, ref T to) {
+void copyTo(T)(ref T from, ref T to) @trusted {
     __copy(from, to);
 }
