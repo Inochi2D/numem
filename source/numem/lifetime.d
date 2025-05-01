@@ -17,6 +17,7 @@
         $(D numem.core.memory.nu_idup)
 */
 module numem.lifetime;
+import numem.core.exception;
 import numem.core.traits;
 import numem.core.lifetime;
 import numem.core.hooks;

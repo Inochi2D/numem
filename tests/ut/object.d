@@ -1,6 +1,7 @@
 module ut.object;
 import numem.object;
 import numem.lifetime;
+import numem.core.hooks;
 
 class MyRCClass : NuRefCounted {
 @nogc:
@@ -59,4 +60,22 @@ unittest {
     assert(rcclass.opCmp(rcclass) == 0);
     assert(rcclass.opEquals(rcclass)); // Just to ensure they are properly nogc.
     rcclass.release();
+}
+
+@nu_destroywith!((ref obj){ })
+class CDestroyWith : NuObject {
+private:
+@nogc:
+    __gshared uint fCount = 0;
+    
+public:
+    ~this() { fCount++; }
+}
+
+@("nu_destroywith")
+unittest {
+    auto dwith = nogc_new!CDestroyWith();
+
+    assert(nogc_trydelete(dwith));
+    assert(CDestroyWith.fCount == 0);
 }
