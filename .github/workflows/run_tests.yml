@@ -73,7 +73,7 @@ jobs:
             tag: main
             config: unittest
             version: "99.0.0"
-            may_fail: true
+            may_fail: false
           - repo: Inochi2D/nulib
             tag: main
             config: unittest
