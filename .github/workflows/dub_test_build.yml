@@ -39,25 +39,28 @@ jobs:
     - name: 'Checkout ${{ github.repository }}'
       uses: actions/checkout@v4
       with:
-        path: '../${{ github.repository }}'
+        path: '${{ github.repository }}'
       
     - name: 'Pin local package to ${{ inputs.dep_version }}'
       run: |
-        dub add-local ../${{ github.repository }} "${{ inputs.dep_version }}"
+        dub add-local ${{ github.repository }} "${{ inputs.dep_version }}"
     
     - name: 'Checkout ${{ inputs.repo }}'
       uses: actions/checkout@v4
       with:
         repository: '${{ inputs.repo }}'
         ref: '${{ inputs.repo_tag }}'
+        path: '${{ inputs.repo }}'
       
     - name: 'Attempt build with specified config'
+      working-directory: '${{ inputs.repo }}'
       if: ${{ inputs.dep_config != 'unittest' }}
       run: |
         dub build --config=${{ inputs.dep_config }} --build=debug
         dub build --config=${{ inputs.dep_config }} --build=release
       
     - name: 'Attempt unittest'
+      working-directory: '${{ inputs.repo }}'
       if: ${{ inputs.dep_config == 'unittest' }}
       run: |
         dub test --build=debug
