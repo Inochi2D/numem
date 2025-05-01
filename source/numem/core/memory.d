@@ -34,14 +34,21 @@ enum size_t ALIGN_PTR_SIZE = (void*).sizeof;
         independent of the libc allocator, memory allocated with
         $(D nu_malloc) should $(B always) be freed with $(D nu_free)!
 */
-ref void[AllocSize!T] nu_mallocT(T)() @nogc nothrow @system {
+ref void[AllocSize!T] nu_mallocT(T)() @nogc nothrow @trusted {
     return nu_malloc(AllocSize!T)[0..AllocSize!T];
 }
 
 /**
-    Gets the storage space within $(D data) 
+    Gets the storage space used by $(D object).
+
+    Params:
+        object = The object to get the storage space of.
+    
+    Returns:
+        The storage of the provided object; cast to a static
+        void array reference.
 */
-ref void[AllocSize!T] nu_storageT(T)(ref T object) @nogc nothrow @system {
+ref void[AllocSize!T] nu_storageT(T)(ref T object) @nogc nothrow @trusted {
     static if (AllocSize!T == T.sizeof)
         return object;
     else {
