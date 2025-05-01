@@ -100,10 +100,19 @@ public:
     /**
         Helper function to free this exception
     */
-    @trusted
-    void free() {
+    void free() @trusted {
         NuException ex = this;
         nogc_delete(ex);
+    }
+
+    /**
+        Helper function to free this exception
+    */
+    final
+    void freeNoThrow() @trusted nothrow {
+        assumeNoThrowNoGC((NuException self) {
+            nogc_delete(self);
+        }, this);
     }
 }
 

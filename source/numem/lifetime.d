@@ -80,18 +80,45 @@ void nogc_construct(T, Args...)(ref T object, Args args) {
 /**
     Allocates a new instance of $(D T).
 */
-Ref!T nogc_new(T, Args...)(auto ref Args args) @nogc {
-    Ref!T newobject = cast(Ref!T)nu_malloc(AllocSize!T);
-    if (!newobject)
-        nu_fatal(null);
+Ref!T nogc_new(T, Args...)(auto ref Args args) {
+    if (Ref!T newobject = cast(Ref!T)nu_malloc(AllocSize!T)) {
+        try {
+            nogc_construct(newobject, args);
+            return newobject;
 
-    try {
-        nogc_construct(newobject, args);
-    } catch(Exception ex) {
-        nogc_delete(newobject);
-        throw ex;
+        } catch(Exception ex) {
+            nu_free(cast(void*)newobject);
+            throw ex;
+        }
     }
-    return newobject;
+    return null;
+}
+
+/**
+    Attempts to allocate a new instance of $(D T).
+
+    Params:
+        args = The arguments to pass to the type's constructor.
+    
+    Returns: 
+        A reference to the instantiated object or $(D null) if allocation
+        failed.
+*/
+Ref!T nogc_trynew(T, Args...)(auto ref Args args) nothrow {
+    if (Ref!T newobject = cast(Ref!T)nu_malloc(AllocSize!T)) {
+        try {
+            nogc_construct(newobject, args);
+            return newobject;
+
+        } catch(Exception ex) {
+
+            nu_free(cast(void*)newobject);
+            if (ex) 
+                assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
+            return null;
+        }
+    }
+    return null;
 }
 
 /** 
@@ -100,16 +127,13 @@ Ref!T nogc_new(T, Args...)(auto ref Args args) @nogc {
     Params:
         heap = The heap to allocate the instance on.
         args = The arguments to pass to the type's constructor.
-    Returns: 
-        A reference to the instantiated object or $(D null) if allocation
-        failed.
 */
 Ref!T nogc_new(T, Args...)(NuHeap heap, auto ref Args args) {
     if (Ref!T newobject = cast(Ref!T)heap.alloc(AllocSize!T)) {
         try {
             nogc_construct(newobject, args);
         } catch(Exception ex) {
-            nogc_delete(newobject);
+            nu_free(cast(void*)newobject);
             throw ex;
         }
     }
@@ -117,27 +141,31 @@ Ref!T nogc_new(T, Args...)(NuHeap heap, auto ref Args args) {
 }
 
 /**
-    Deallocates the specified instance of $(D T) from the specified heap.
-    Finalizes $(D obj_) by calling its destructor (if any).
-
-    If $(D doFree) is $(D true), memory associated with obj_ will additionally be freed 
-    after finalizers have run; otherwise the object is reset to its original state.
+    Attempts to allocate a new instance of $(D T) on the specified heap.
 
     Params:
         heap = The heap to allocate the instance on.
-        obj_ = Instance to destroy and deallocate.
+        args = The arguments to pass to the type's constructor.
+    
+    Returns: 
+        A reference to the instantiated object or $(D null) if allocation
+        failed.
 */
-void nogc_delete(T, bool doFree=true)(NuHeap heap, ref T obj_) if (isHeapAllocated!T) {
-    if (reinterpret_cast!(void*)(obj_) !is null) {
+Ref!T nogc_trynew(T, Args...)(NuHeap heap, auto ref Args args) nothrow {
+    if (Ref!T newobject = cast(Ref!T)heap.alloc(AllocSize!T)) {
+        try {
+            nogc_construct(newobject, args);
+            return newobject;
 
-        destruct!(T, !doFree)(obj_);
-
-        // Free memory if need be.
-        static if (doFree)
-            heap.free(cast(void*)obj_);
-
-        obj_ = null;
+        } catch(Exception ex) {
+            
+            nu_free(cast(void*)newobject);
+            if (ex) 
+                assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
+            return null;
+        }
     }
+    return null;
 }
 
 /**
@@ -171,6 +199,82 @@ void nogc_delete(T, bool doFree=true)(ref T obj_)  {
 }
 
 /**
+    Attempts to finalize $(D obj_) by calling its destructor (if any).
+
+    If $(D doFree) is $(D true), memory associated with obj_ will additionally be freed 
+    after finalizers have run; otherwise the object is reset to its original state.
+
+    Params:
+        obj_ = Instance to destroy and deallocate.
+
+    Returns:
+        Whether the operation succeeded.
+*/
+bool nogc_trydelete(T, bool doFree=true)(ref T obj_) nothrow {
+    try {
+        nogc_delete(obj_);
+        return true;
+    
+    } catch (Exception ex) {
+        if (ex) 
+            assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
+        return false;
+        
+    }
+}
+
+/**
+    Deallocates the specified instance of $(D T) from the specified heap.
+    Finalizes $(D obj_) by calling its destructor (if any).
+
+    If $(D doFree) is $(D true), memory associated with obj_ will additionally be freed 
+    after finalizers have run; otherwise the object is reset to its original state.
+
+    Params:
+        heap = The heap to allocate the instance on.
+        obj_ = Instance to destroy and deallocate.
+*/
+void nogc_delete(T, bool doFree=true)(NuHeap heap, ref T obj_) if (isHeapAllocated!T) {
+    if (reinterpret_cast!(void*)(obj_) !is null) {
+
+        destruct!(T, !doFree)(obj_);
+
+        // Free memory if need be.
+        static if (doFree)
+            heap.free(cast(void*)obj_);
+
+        obj_ = null;
+    }
+}
+
+/**
+    Attempts to deallocate the specified instance of $(D T) from the specified heap.
+    Finalizes $(D obj_) by calling its destructor (if any).
+
+    If $(D doFree) is $(D true), memory associated with obj_ will additionally be freed 
+    after finalizers have run; otherwise the object is reset to its original state.
+
+    Params:
+        heap = The heap to allocate the instance on.
+        obj_ = Instance to destroy and deallocate.
+
+    Returns:
+        Whether the operation succeeded.
+*/
+bool nogc_trydelete(T, bool doFree=true)(NuHeap heap, ref T obj_) nothrow if (isHeapAllocated!T) {
+    try {
+
+        nogc_delete(heap, obj_);
+        return true;
+    } catch (Exception ex) {
+
+        if (ex)
+            assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
+        return false;
+    }
+}
+
+/**
     Finalizes the objects referenced by $(D objects) by calling the
     destructors of its members (if any).
 
@@ -181,6 +285,28 @@ void nogc_delete(T, bool doFree=true)(ref T obj_)  {
 void nogc_delete(T, bool doFree=true)(T[] objects) {
     foreach(i; 0..objects.length)
         nogc_delete!(T, doFree)(objects[i]);
+}
+
+/**
+    Attempts to finalize the objects referenced by $(D objects) by calling the
+    destructors of its members (if any).
+
+    If $(D doFree) is $(D true), memory associated with each object
+    will additionally be freed after finalizers have run; otherwise the object 
+    is reset to its original state.
+
+    Params:
+        objects = The objects to try to delete.
+
+    Returns:
+        Whether the operation succeeded.
+*/
+bool nogc_trydelete(T, bool doFree=true)(T[] objects) {
+    size_t failed = 0;
+    foreach(i; 0..objects.length)
+        failed += nogc_trydelete!(T, doFree)(objects[i]);
+    
+    return failed != 0;
 }
 
 /**
@@ -257,7 +383,7 @@ void nogc_zeroinit(T)(T[] elements) {
     Allocates a new class on the heap.
     Immediately exits the application if out of memory.
 */
-void nogc_emplace(T, Args...)(auto ref T dest, Args args)  {
+void nogc_emplace(T, Args...)(auto ref T dest, Args args) {
     emplace!(T, T, Args)(dest, args);
 }
 

@@ -15,11 +15,39 @@ module numem.core.memory;
 import numem.core.hooks;
 import numem.core.traits;
 import numem.core.atomic;
+import numem.core.traits : AllocSize, isPointer;
 
 /**
     System pointer size.
 */
 enum size_t ALIGN_PTR_SIZE = (void*).sizeof;
+
+/**
+    Allocates enough memory to contain Type T.
+    
+    Returns:
+        Newly allocated memory or $(D null) on failure.
+        To avoid a memory leak, free the memory with $(D nu_free).
+    
+    Notes:
+        Given the implementation of $(D nu_malloc) and $(D nu_free) may be
+        independent of the libc allocator, memory allocated with
+        $(D nu_malloc) should $(B always) be freed with $(D nu_free)!
+*/
+ref void[AllocSize!T] nu_mallocT(T)() @nogc nothrow @system {
+    return nu_malloc(AllocSize!T)[0..AllocSize!T];
+}
+
+/**
+    Gets the storage space within $(D data) 
+*/
+ref void[AllocSize!T] nu_storageT(T)(ref T object) @nogc nothrow @system {
+    static if (AllocSize!T == T.sizeof)
+        return object;
+    else {
+        return (cast(void*)object)[0..AllocSize!T];
+    }
+}
 
 /**
     Resizes a slice to be of the given size and alignment.

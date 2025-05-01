@@ -116,7 +116,7 @@ template Unref(T) {
     Gets the amount of bytes needed to allocate an instance of type $(D T).
 */
 template AllocSize(T) {
-    static if (is(T == class))
+    static if (is(T == class) || is(T == interface))
         enum AllocSize = __traits(classInstanceSize, T);
     else 
         enum AllocSize = T.sizeof;

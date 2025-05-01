@@ -19,10 +19,7 @@ jobs:
     strategy:
       matrix:
         os: [macOS-latest, ubuntu-latest, windows-latest]
-        arch: [x86_64, arm64]
-        dc: [ldc-beta, dmd-master, ldc-1.30.0]
-        exclude:
-          - { dc: dmd-master, arch: arm64 }
+        dc: [ldc-beta, ldc-1.30.0, dmd]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -33,7 +30,7 @@ jobs:
       with:
         compiler: ${{ matrix.dc }}
 
-    - name: 'Build with ${{ matrix.dc }} (on ${{ matrix.os }}-${{ matrix.arch }})' 
+    - name: 'Build with ${{ matrix.dc }} (on ${{ matrix.os }})' 
       run: |
         # Build and run tests, as defined by `unittest` configuration
         # In this mode, `mainSourceFile` is excluded and `version (unittest)` are included
@@ -48,10 +45,8 @@ jobs:
     name: 'Run a sanity check'
     strategy:
       matrix:
-        arch: [x86_64, arm64]
-        dc: [ldc-beta, dmd-master, ldc-1.30.0]
+        dc: [ldc-beta, ldc-1.30.0, dmd]
     
-    needs: test
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -61,10 +56,35 @@ jobs:
       with:
         compiler: ${{ matrix.dc }}
       
-    - name: 'Run tests 50 times (${{ matrix.dc }} on ${{ matrix.arch }})' 
+    - name: 'Run tests 50 times (${{ matrix.dc }})' 
       run: |
         for i in `seq 1 50`
         do
           dub test --config=unittest
           dub test --config=unittest --build=release
         done
+  
+  test_build:
+    name: 'Do buildchecks'
+    strategy:
+      matrix:
+        to_build:
+          - repo: Inochi2D/hairetsu
+            tag: main
+            config: unittest
+            version: "1.0.5"
+          - repo: Inochi2D/nulib
+            tag: main
+            config: unittest
+            version: "99.0.0"
+    
+    needs: [test, sanity_check]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: ./.github/workflows/dub_test-build.yml
+      with:
+        repo: ${{ matrix.to_build.repo }}
+        repo_tag: ${{ matrix.to_build.tag }}
+        dep_config: ${{ matrix.to_build.config }}
+        dep_version: ${{ matrix.to_build.version }}
+

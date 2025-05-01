@@ -1,0 +1,64 @@
+on:
+  workflow_call:
+    inputs:
+      dep_config:
+        description: 'Config to build'
+        required: true
+        type: string
+      dep_version:
+        description: 'Pinned dependency version'
+        required: true
+        type: string
+      repo:
+        description: 'The repository containing the code to build'
+        required: true
+        type: string
+      repo_tag:
+        description: 'The tag to attempt to build'
+        required: true
+        type: string
+
+name: 'Dub dependant build-check'
+run-name: 'Build-check ${{ inputs.repo }} ${{ inputs.repo_tag }}'
+
+jobs:
+  try_build:
+    name: 'Build check ${{ inputs.repo }}'
+    strategy:
+      matrix:
+        os: [macOS-latest, ubuntu-latest, windows-latest]
+        dc: [ldc, ldc-beta, dmd, dmd-beta]
+    
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: 'Install ${{ matrix.dc }}'
+      uses: dlang-community/setup-dlang@v2
+      with:
+        compiler: ${{ matrix.dc }}
+    
+    - name: 'Checkout ${{ github.repository }}'
+      uses: actions/checkout@v4
+      with:
+        path: '../${{ github.repository }}'
+      
+    - name: 'Pin local package to ${{ inputs.dep_version }}'
+      run: |
+        dub add-local ../${{ github.repository }} "${{ inputs.dep_version }}"
+    
+    - name: 'Checkout ${{ inputs.repo }}'
+      uses: actions/checkout@v4
+      with:
+        repository: '${{ inputs.repo }}'
+        ref: '${{ inputs.repo_tag }}'
+      
+    - name: 'Attempt build with specified config'
+      if: ${{ inputs.dep_config != 'unittest' }}
+      run: |
+        dub build --config=${{ inputs.dep_config }} --build=debug
+        dub build --config=${{ inputs.dep_config }} --build=release
+      
+    - name: 'Attempt unittest'
+      if: ${{ inputs.dep_config == 'unittest' }}
+      run: |
+        dub test --build=debug
+        dub test --build=release

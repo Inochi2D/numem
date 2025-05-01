@@ -157,86 +157,108 @@ void destruct(T, bool reInit=true)(ref T obj_) @nogc {
     Runs constructor for the memory at dst
 */
 void emplace(T, UT, Args...)(ref UT dst, auto ref Args args) @nogc {
-    enum isConstructibleOther =
-        (!is(T == struct) && Args.length == 1) ||                        // Primitives, enums, arrays.
-        (Args.length == 1 && is(typeof({T t = forward!(args[0]); }))) || // Conversions
-        is(typeof(T(forward!args)));                                     // General constructors.
+    static if(__VERSION__ >= 2111) {
+        static if (is(T == class)) {
 
-    static if (is(T == class)) {
+            // NOTE: Since we need to handle inner-classes
+            // we need to initialize here instead of next to the ctor.
+            initializeAt(dst);
 
-        static assert(!__traits(isAbstractClass, T), 
-            T.stringof ~ " is abstract and can't be emplaced.");
-
-        // NOTE: Since we need to handle inner-classes
-        // we need to initialize here instead of next to the ctor.
-        initializeAt(dst);
-        
-        static if (isInnerClass!T) {
-            static assert(Args.length > 0,
-                "Initializing an inner class requires a pointer to the outer class");
+            // Shove it in a mixin, that more or less prevents the compiler
+            // complaining.
+            mixin(q{ dst = new(nu_storageT(dst)) T(args); });
+        }  else static if (args.length == 0) {
+            static assert(is(typeof({static T i;})),
+                "Cannot emplace a " ~ T.stringof ~ ", its constructor is marked with @disable.");
             
-            static assert(is(Args[0] : typeof(T.outer)),
-                "The first argument must be a pointer to the outer class");
+            initializeAt(dst);
+        } else {
             
-            chunk.outer = args[0];
-            alias fargs = args[1..$];
-            alias fargsT = Args[1..$];
-
-        } else {
-            alias fargs = args;
-            alias fargsT = Args;
+            T tmp;
+            mixin(q{ dst = *(new(tmp) T(args)); });
         }
-
-        static if (is(typeof(dst.__ctor(forward!fargs)))) {
-            dst.__ctor(forward!args);
-        } else {
-            static assert(fargs.length == 0 && !is(typeof(&T.__ctor)),
-                "No constructor for " ~ T.stringof ~ " found matching arguments "~fargsT.stringof~"!");
-        }
-
-    } else static if (args.length == 0) {
-
-        static assert(is(typeof({static T i;})),
-            "Cannot emplace a " ~ T.stringof ~ ", its constructor is marked with @disable.");
-        initializeAt(dst);
-    } else static if (isConstructibleOther) {
-
-        // Handler struct which forwards construction
-        // to the payload.
-        static struct S {
-            T payload;
-            this()(auto ref Args args) {
-                static if (__traits(compiles, payload = forward!args))
-                    payload = forward!args;
-                else
-                    payload = T(forward!args);
-            }
-        }
-
-        if (__ctfe) {
-            static if (__traits(compiles, dst = T(forward!args)))
-                dst = T(forward!args);
-            else static if(args.length == 1 && __traits(compiles, dst = forward!(args[0])))
-                dst = forward!(args[0]);
-            else static assert(0,
-                "Can't emplace " ~ T.stringof ~ " at compile-time using " ~ Args.stringof ~ ".");
-        } else {
-            S* p = cast(S*)cast(void*)&dst;
-            static if (UT.sizeof > 0)
-                initializeAt(*p);
-            
-            p.__ctor(forward!args);
-        }
-    } else static if (is(typeof(dst.__ctor(forward!args)))) {
-        
-        initializeAt(dst);
-        chunk.__ctor(forward!args);
     } else {
-        static assert(!(Args.length == 1 && is(Args[0] : T)),
-            "Can't emplace a " ~ T.stringof ~ " because the postblit is disabled.");
+        enum isConstructibleOther =
+            (!is(T == struct) && Args.length == 1) ||                        // Primitives, enums, arrays.
+            (Args.length == 1 && is(typeof({T t = forward!(args[0]); }))) || // Conversions
+            is(typeof(T(forward!args)));                                     // General constructors.
 
-        static assert(0, 
-            "No constructor for " ~ T.stringof ~ " found matching arguments "~fargs.stringof~"!");
+        static if (is(T == class)) {
+
+            static assert(!__traits(isAbstractClass, T), 
+                T.stringof ~ " is abstract and can't be emplaced.");
+
+            // NOTE: Since we need to handle inner-classes
+            // we need to initialize here instead of next to the ctor.
+            initializeAt(dst);
+            
+            static if (isInnerClass!T) {
+                static assert(Args.length > 0,
+                    "Initializing an inner class requires a pointer to the outer class");
+                
+                static assert(is(Args[0] : typeof(T.outer)),
+                    "The first argument must be a pointer to the outer class");
+                
+                chunk.outer = args[0];
+                alias fargs = args[1..$];
+                alias fargsT = Args[1..$];
+
+            } else {
+                alias fargs = args;
+                alias fargsT = Args;
+            }
+
+            static if (is(typeof(dst.__ctor(forward!fargs)))) {
+                dst.__ctor(forward!args);
+            } else {
+                static assert(fargs.length == 0 && !is(typeof(&T.__ctor)),
+                    "No constructor for " ~ T.stringof ~ " found matching arguments "~fargsT.stringof~"!");
+            }
+
+        } else static if (args.length == 0) {
+
+            static assert(is(typeof({static T i;})),
+                "Cannot emplace a " ~ T.stringof ~ ", its constructor is marked with @disable.");
+            initializeAt(dst);
+        } else static if (isConstructibleOther) {
+
+            // Handler struct which forwards construction
+            // to the payload.
+            static struct S {
+                T payload;
+                this()(auto ref Args args) {
+                    static if (__traits(compiles, payload = forward!args))
+                        payload = forward!args;
+                    else
+                        payload = T(forward!args);
+                }
+            }
+
+            if (__ctfe) {
+                static if (__traits(compiles, dst = T(forward!args)))
+                    dst = T(forward!args);
+                else static if(args.length == 1 && __traits(compiles, dst = forward!(args[0])))
+                    dst = forward!(args[0]);
+                else static assert(0,
+                    "Can't emplace " ~ T.stringof ~ " at compile-time using " ~ Args.stringof ~ ".");
+            } else {
+                S* p = cast(S*)cast(void*)&dst;
+                static if (UT.sizeof > 0)
+                    initializeAt(*p);
+                
+                p.__ctor(forward!args);
+            }
+        } else static if (is(typeof(dst.__ctor(forward!args)))) {
+            
+            initializeAt(dst);
+            chunk.__ctor(forward!args);
+        } else {
+            static assert(!(Args.length == 1 && is(Args[0] : T)),
+                "Can't emplace a " ~ T.stringof ~ " because the postblit is disabled.");
+
+            static assert(0, 
+                "No constructor for " ~ T.stringof ~ " found matching arguments "~fargs.stringof~"!");
+        }
     }
 }
 

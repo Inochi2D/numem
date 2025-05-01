@@ -36,7 +36,7 @@ module numem.core.hooks;
         $(D nu_malloc) should $(B always) be freed with $(D nu_free)!
 */
 extern(C)
-extern void* nu_malloc(size_t bytes) @nogc nothrow @system;
+extern void* nu_malloc(size_t bytes) @nogc nothrow @system pure;
 
 /**
     Reallocates memory prior allocated with $(D nu_malloc) or
@@ -59,7 +59,7 @@ extern void* nu_malloc(size_t bytes) @nogc nothrow @system;
         $(D nu_realloc) should $(B always) be freed with $(D nu_free)!
 */
 extern(C)
-extern void* nu_realloc(void* data, size_t newSize) @nogc nothrow @system;
+extern void* nu_realloc(void* data, size_t newSize) @nogc nothrow @system pure;
 
 /**
     Frees allocated memory.
@@ -73,7 +73,7 @@ extern void* nu_realloc(void* data, size_t newSize) @nogc nothrow @system;
         numem functions should $(B always) be freed with $(D nu_free)!
 */
 extern(C)
-extern void nu_free(void* data) @nogc nothrow @system;
+extern void nu_free(void* data) @nogc nothrow @system pure;
 
 /**
     Copies $(D bytes) worth of data from $(D src) into $(D dst).
