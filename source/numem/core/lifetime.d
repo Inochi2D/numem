@@ -620,22 +620,26 @@ struct nu_arpool_ctx {
 // DESTROY UDA
 
 template nu_getdestroywith(T, A...) {
-    static if (A.length == 0) {
-        alias attrs = __traits(getAttributes, Unref!T);
+    static if (is(typeof(__traits(getAttributes, Unref!T)))) {
+        static if (A.length == 0) {
+            alias attrs = __traits(getAttributes, Unref!T);
 
-        static if (attrs.length > 0)
-            alias nu_getdestroywith = nu_getdestroywith!(Unref!T, attrs);
-        else
-            alias nu_getdestroywith = void;
-    } else static if (A.length == 1) {
-        static if (nu_isdestroywith!(T, A[0]))
-            alias nu_getdestroywith = A[0].Handler;
-        else
-            alias nu_getdestroywith = void;
-    } else static if (nu_isdestroywith!(T, A[0]))
-            alias nu_getdestroywith = A[0].Handler;
-        else
-            alias nu_getdestroywith = nu_getdestroywith!(T, A[1 .. $]);
+            static if (attrs.length > 0)
+                alias nu_getdestroywith = nu_getdestroywith!(Unref!T, attrs);
+            else
+                alias nu_getdestroywith = void;
+        } else static if (A.length == 1) {
+            static if (nu_isdestroywith!(T, A[0]))
+                alias nu_getdestroywith = A[0].Handler;
+            else
+                alias nu_getdestroywith = void;
+        } else static if (nu_isdestroywith!(T, A[0]))
+                alias nu_getdestroywith = A[0].Handler;
+            else
+                alias nu_getdestroywith = nu_getdestroywith!(T, A[1 .. $]);
+    } else {
+        alias nu_getdestroywith = void;
+    }
 }
 
 enum nu_isdestroywith(T, alias H) = 
@@ -646,22 +650,26 @@ enum nu_isdestroywith(T, alias H) =
 // AUTORELEASE UDA
 
 template nu_getautoreleasewith(T, A...) {
-    static if (A.length == 0) {
-        alias attrs = __traits(getAttributes, Unref!T);
+    static if (is(typeof(__traits(getAttributes, Unref!T)))) {
+        static if (A.length == 0) {
+            alias attrs = __traits(getAttributes, Unref!T);
 
-        static if (attrs.length > 0)
-            alias nu_getautoreleasewith = nu_getautoreleasewith!(Unref!T, attrs);
-        else
-            alias nu_getautoreleasewith = void;
-    } else static if (A.length == 1) {
-        static if (nu_isautoreleasewith!(T, A[0]))
-            alias nu_getautoreleasewith = A[0].Handler;
-        else
-            alias nu_getautoreleasewith = void;
-    } else static if (nu_isautoreleasewith!(T, A[0]))
-            alias nu_getautoreleasewith = A[0].Handler;
-        else
-            alias nu_getautoreleasewith = nu_getautoreleasewith!(T, A[1 .. $]);
+            static if (attrs.length > 0)
+                alias nu_getautoreleasewith = nu_getautoreleasewith!(Unref!T, attrs);
+            else
+                alias nu_getautoreleasewith = void;
+        } else static if (A.length == 1) {
+            static if (nu_isautoreleasewith!(T, A[0]))
+                alias nu_getautoreleasewith = A[0].Handler;
+            else
+                alias nu_getautoreleasewith = void;
+        } else static if (nu_isautoreleasewith!(T, A[0]))
+                alias nu_getautoreleasewith = A[0].Handler;
+            else
+                alias nu_getautoreleasewith = nu_getautoreleasewith!(T, A[1 .. $]);
+    } else {
+        alias nu_getautoreleasewith = void;
+    }
 }
 
 enum nu_isautoreleasewith(T, alias H) = 

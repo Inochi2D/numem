@@ -208,3 +208,11 @@ unittest {
     assert(myStruct.value == 42);
     nogc_delete(myStruct);
 }
+
+@("basic types")
+unittest {
+    import numem.core.memory : nu_dup;
+
+    string myString = "Hello, world!".nu_dup();
+    nogc_delete(myString);
+}
