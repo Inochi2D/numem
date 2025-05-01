@@ -624,7 +624,7 @@ template nu_getdestroywith(T, A...) {
         alias attrs = __traits(getAttributes, Unref!T);
 
         static if (attrs.length > 0)
-            alias nu_getdestroywith = nu_getdestroywith!(T, attrs);
+            alias nu_getdestroywith = nu_getdestroywith!(Unref!T, attrs);
         else
             alias nu_getdestroywith = void;
     } else static if (A.length == 1) {
@@ -647,10 +647,10 @@ enum nu_isdestroywith(T, alias H) =
 
 template nu_getautoreleasewith(T, A...) {
     static if (A.length == 0) {
-        alias attrs = __traits(getAttributes, T);
+        alias attrs = __traits(getAttributes, Unref!T);
 
         static if (attrs.length > 0)
-            alias nu_getautoreleasewith = nu_getautoreleasewith!(T, attrs);
+            alias nu_getautoreleasewith = nu_getautoreleasewith!(Unref!T, attrs);
         else
             alias nu_getautoreleasewith = void;
     } else static if (A.length == 1) {
