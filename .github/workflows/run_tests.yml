@@ -79,12 +79,10 @@ jobs:
             version: "99.0.0"
     
     needs: [test, sanity_check]
-    runs-on: ubuntu-latest
-    steps:
-    - uses: ./.github/workflows/dub_test_build.yml
-      with:
-        repo: ${{ matrix.to_build.repo }}
-        repo_tag: ${{ matrix.to_build.tag }}
-        dep_config: ${{ matrix.to_build.config }}
-        dep_version: ${{ matrix.to_build.version }}
+    uses: ./.github/workflows/dub_test_build.yml
+    with:
+      repo: ${{ matrix.to_build.repo }}
+      repo_tag: ${{ matrix.to_build.tag }}
+      dep_config: ${{ matrix.to_build.config }}
+      dep_version: ${{ matrix.to_build.version }}
 
