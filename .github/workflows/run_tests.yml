@@ -33,7 +33,7 @@ jobs:
       with:
         compiler: ${{ matrix.dc }}
 
-    - name: 'Build with ${{ matrix.os }} ${{ matrix.dc }} (${{ matrix.build }})' 
+    - name: 'Build with ${{ matrix.dc }} (on ${{ matrix.os }}-${{ matrix.arch }})' 
       run: |
         # Build and run tests, as defined by `unittest` configuration
         # In this mode, `mainSourceFile` is excluded and `version (unittest)` are included
@@ -43,3 +43,28 @@ jobs:
         # Ditto, in release mode.
         # Sometimes D packages break in release mode, so this is important to test.
         dub test --config=unittest --build=release
+        
+  sanity_check:
+    name: 'Run a sanity check'
+    strategy:
+      matrix:
+        arch: [x86_64, arm64]
+        dc: [ldc-beta, dmd-master, ldc-1.30.0]
+    
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install compiler
+      uses: dlang-community/setup-dlang@v2
+      with:
+        compiler: ${{ matrix.dc }}
+      
+    - name: 'Run tests 50 times (${{ matrix.dc }} on ${{ matrix.arch }})' 
+      run: |
+        for i in `seq 1 50`
+        do
+          dub test --config=unittest
+          dub test --config=unittest --build=release
+        done
