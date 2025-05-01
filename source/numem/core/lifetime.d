@@ -173,7 +173,7 @@ void emplace(T, UT, Args...)(ref UT dst, auto ref Args args) @nogc {
             
             initializeAt(dst);
         } else {
-            
+
             T tmp;
             mixin(q{ dst = *(new(tmp) T(args)); });
         }
@@ -270,7 +270,7 @@ void emplace(UT, Args...)(auto ref UT dst, auto ref Args args) @nogc {
 /**
     Copies source to target.
 */
-void __copy(S, T)(ref S source, ref T target) @nogc {
+void __copy(S, T)(ref S source, ref T target) @nogc @system {
     static if (is(T == struct)) {
         static if (!__traits(hasCopyConstructor, T))
             __blit(target, source);
@@ -325,7 +325,7 @@ T __move(T)(ref return scope T source) @nogc @trusted {
 
 private
 pragma(inline, true)
-void __moveImpl(S, T)(ref S source, ref T target) @nogc @trusted {
+void __moveImpl(S, T)(ref S source, ref T target) @nogc @system {
     static if(is(T == struct)) {
         assert(&source !is &target, "Source and target must not be identical");
         __blit(target, source);
@@ -364,7 +364,7 @@ void __moveImpl(S, T)(ref S source, ref T target) @nogc @trusted {
     a postblit needs to be run after to finalize the object.
 */
 pragma(inline, true)
-void __blit(T)(ref T to, ref T from) @nogc nothrow {
+void __blit(T)(ref T to, ref T from) @nogc @system nothrow {
     nu_memcpy(const_cast!(Unqual!T*)(&to), const_cast!(Unqual!T*)(&from), AllocSize!T);
 }
 
@@ -372,7 +372,7 @@ void __blit(T)(ref T to, ref T from) @nogc nothrow {
     Runs postblit operations for a copy operation.
 */
 pragma(inline, true)
-void __copy_postblit(S, T)(ref S source, ref T target) @nogc nothrow {
+void __copy_postblit(S, T)(ref S source, ref T target) @nogc @system {
     static if (__traits(hasPostblit, T)) {
         dst.__xpostblit();
     } else static if (__traits(hasCopyConstructor, T)) {
@@ -407,10 +407,10 @@ void __copy_postblit(S, T)(ref S source, ref T target) @nogc nothrow {
         $(D __move_postblit) will do nothing if the type does not support elaborate moves.
 */
 pragma(inline, true)
-void __move_postblit(T)(ref T newLocation, ref T oldLocation) {
+void __move_postblit(T)(ref T newLocation, ref T oldLocation) @nogc @system {
     static if (is(T == struct)) {
 
-        // Call __most_postblit for all members which have move semantics.
+        // Call __move_postblit for all members which have move semantics.
         static foreach(i, M; typeof(T.tupleof)) {
             static if (hasElaborateMove!T) {
                 __move_postblit(newLocation.tupleof[i], oldLocation.tupleof[i]);
