@@ -24,7 +24,7 @@ version(D_Ddoc) {
         using libdruntime or libphobos definitions for things like
         C symbols.
     */
-    enum NU_COMPILER_STRICT_TYPES;
+    enum bool NU_COMPILER_STRICT_TYPES = false;
 
 } else version(LDC) { 
     import ldc.intrinsics;
@@ -34,19 +34,19 @@ version(D_Ddoc) {
     //          as nulib and other libraries may end up redefining symbols
     //          workarounds may need to be employed. This enum helps dependents
     //          detect this case.
-    enum NU_COMPILER_STRICT_TYPES = LLVM_version < 1700;
+    enum bool NU_COMPILER_STRICT_TYPES = LLVM_version < 1700;
 } else version(GNU) {
 
     // NOTE:    GDC is *always* strict about type matches, so this should always
     //          be enabled there.
-    enum NU_COMPILER_STRICT_TYPES = true; 
+    enum bool NU_COMPILER_STRICT_TYPES = true; 
 } else version(DMD) {
     
     // NOTE:    DMD, to my understanding hasn't been too strict about types.
-    enum NU_COMPILER_STRICT_TYPES = __VERSION__ < 2100; 
+    enum bool NU_COMPILER_STRICT_TYPES = __VERSION__ < 2100; 
 } else {
     
     // NOTE:    For any other compiler it's better to be on the safe side.
-    enum NU_COMPILER_STRICT_TYPES = true; 
+    enum bool NU_COMPILER_STRICT_TYPES = true; 
 }
 
