@@ -349,7 +349,7 @@ template isInnerClass(T) if(is(T == class)) {
 */
 template hasElaborateMove(T) {
     static if (isObjectiveC!T)
-        enum hasElaborateDestructor = false;
+        enum bool hasElaborateMove = false;
     else static if (__traits(isStaticArray, T)) 
         enum bool hasElaborateMove = T.sizeof && hasElaborateMove!(BaseElemOf!T);
     else static if (is(T == struct))
@@ -367,7 +367,7 @@ template hasElaborateMove(T) {
 */
 template hasElaborateAssign(T) {
     static if (isObjectiveC!T)
-        enum hasElaborateDestructor = false;
+        enum bool hasElaborateAssign = false;
     else static if (__traits(isStaticArray, T)) 
         enum bool hasElaborateAssign = T.sizeof && hasElaborateAssign!(BaseElemOf!T);
     else static if (is(T == struct))
@@ -385,7 +385,7 @@ template hasElaborateAssign(T) {
 */
 template hasElaborateCopyConstructor(T) {
     static if (isObjectiveC!T)
-        enum hasElaborateDestructor = false;
+        enum bool hasElaborateCopyConstructor = false;
     else static if (__traits(isStaticArray, T)) 
         enum bool hasElaborateCopyConstructor = T.sizeof && hasElaborateCopyConstructor!(BaseElemOf!T);
     else static if (is(T == struct))
