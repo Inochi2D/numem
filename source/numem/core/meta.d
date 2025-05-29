@@ -83,30 +83,9 @@ template staticMap(alias F, T...) {
     Returns a sequence containing the provided sequence after filtering by $(D F).
 */
 template Filter(alias F, T...) {
-    static if (T.length == 0)
-        alias Filter = AliasSeq!();
-    else static if (T.length == 1) {
-
-        // LHS
-        static if (F!(T[0]))
-            alias Filter = AliasSeq!(T[0]);
-        else
-            alias Filter = AliasSeq!();
-    } else static if (T.length == 2) {
-
-        // LHS
-        static if (F!(T[0]))
-            alias Filter = AliasSeq!(T[0]);
-        else
-            alias Filter = AliasSeq!();
-
-        // RHS
-        static if (F!(T[1]))
-            alias Filter = AliasSeq!(T[1]);
-        else
-            alias Filter = AliasSeq!();
-    } else alias Filter = AliasSeq!(
-        Filter!(F, T[0 .. $/2]),
-        Filter!(F, T[$/2..$])
-    );
+    alias Filter = AliasSeq!();
+    static foreach(Arg; T) {
+        static if (F!Arg)
+            Filter = AliasSeq!(Filter, Arg);
+    }
 }
