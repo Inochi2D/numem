@@ -83,6 +83,11 @@ ref void[AllocSize!T] nu_storageT(T)(ref T object) @nogc nothrow @trusted {
                 Class pointers will NOT be deleted, this must be done
                 manually.
             )
+            $(LI
+                The memory allocated by nu_resize will NOT be initialized,
+                you must chain it with $(D numem.lifetime.nogc_initialize)
+                if the types rely on interior pointers.
+            )
         )
 
     Threadsafety:
