@@ -16,6 +16,7 @@ import numem.core.hooks;
 import numem.core.traits;
 import numem.core.atomic;
 import numem.core.traits : AllocSize, isPointer;
+import numem.lifetime;
 
 /**
     System pointer size.
@@ -127,6 +128,33 @@ ref T[] nu_resize(T)(ref T[] buffer, size_t length, int alignment = 1) @nogc {
     T* ptr = cast(T*)nu_aligned_realloc(cast(void*)buffer.ptr, T.sizeof * length, alignment);
     buffer = ptr !is null ? ptr[0..length] : null;
     return buffer;
+}
+
+/**
+    Allocates and initializes a new slice.
+
+    Params:
+        count = The number of elements to allocate.
+
+    Returns:
+        The allocated array or a zero-length array on
+        error.
+*/
+inout(T)[] nu_malloca(T)(size_t count) {
+    inout(T)[] tmp;
+    tmp = tmp.nu_resize(count);
+    nogc_initialize(tmp);
+    return tmp;
+}
+
+/**
+    Frees a slice.
+
+    Params:
+        slice = The slice to free.
+*/
+void nu_freea(T)(ref T[] slice) {
+    slice = slice.nu_resize(0);
 }
 
 /**
