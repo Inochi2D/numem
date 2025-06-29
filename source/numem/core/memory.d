@@ -145,8 +145,8 @@ ref T[] nu_resize(T)(ref T[] buffer, size_t length, int alignment = 1) @nogc {
         The allocated array or a zero-length array on
         error.
 */
-inout(T)[] nu_malloca(T)(size_t count) {
-    inout(T)[] tmp;
+T[] nu_malloca(T)(size_t count) {
+    T[] tmp;
     tmp = tmp.nu_resize(count);
     nogc_initialize(tmp);
     return tmp;
