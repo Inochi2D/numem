@@ -27,7 +27,7 @@ alias AliasSeq(AliasList...) = AliasList;
 */
 template allSatisfy(alias F, T...) {
     static foreach(U; T) {
-        static if (!is(typeof(allSatisfy) == bool) && is(F!U) && !F!(U))
+        static if (!is(typeof(allSatisfy) == bool) && is(typeof(F!U)) && !F!(U))
             enum allSatisfy = false;
     }
 
@@ -41,7 +41,7 @@ template allSatisfy(alias F, T...) {
 */
 template anySatisfy(alias F, T...) {
     static foreach(U; T) {
-        static if (!is(typeof(anySatisfy) == bool) && is(F!U) && F!U)
+        static if (!is(typeof(anySatisfy) == bool) && is(typeof(F!U)) && F!U)
             enum anySatisfy = true;
     }
 
