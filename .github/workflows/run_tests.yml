@@ -73,6 +73,7 @@ jobs:
             tag: main
             config: unittest
             version: "99.0.0"
+            linux_deps: "libfontconfig-dev"
             may_fail: false
           - repo: Inochi2D/nulib
             tag: main
@@ -87,5 +88,6 @@ jobs:
       repo_tag: ${{ matrix.to_build.tag }}
       dep_config: ${{ matrix.to_build.config }}
       dep_version: ${{ matrix.to_build.version }}
+      linux_deps: ${{ matrix.to_build.linux_deps }}
       may_fail: ${{ matrix.to_build.may_fail }}
 
