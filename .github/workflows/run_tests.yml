@@ -18,6 +18,7 @@ jobs:
     name: 'Build and Test Library'
     strategy:
       matrix:
+        variant: [unittest, unittest-gc]
         os: [macOS-latest, ubuntu-latest, windows-latest]
         dc: [ldc-beta, ldc-1.30.0, dmd]
 
@@ -30,16 +31,16 @@ jobs:
       with:
         compiler: ${{ matrix.dc }}
 
-    - name: 'Build with ${{ matrix.dc }} (on ${{ matrix.os }})' 
+    - name: 'Build and Test ${{ matrix.variant }} with ${{ matrix.dc }} (on ${{ matrix.os }})' 
       run: |
         # Build and run tests, as defined by `unittest` configuration
         # In this mode, `mainSourceFile` is excluded and `version (unittest)` are included
         # See https://dub.pm/package-format-json.html#configurations
-        dub test --config=unittest
+        dub test --config=${{ matrix.variant }}
 
         # Ditto, in release mode.
         # Sometimes D packages break in release mode, so this is important to test.
-        dub test --config=unittest --build=release
+        dub test --config=${{ matrix.variant }} --build=release
         
   sanity_check:
     name: 'Run a sanity check'
