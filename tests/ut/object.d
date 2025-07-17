@@ -54,7 +54,7 @@ unittest {
 @nogc
 unittest {
     MyRCClass rcclass = nogc_new!MyRCClass(42);
-
+    
     assert(rcclass.toString() == typeid(MyRCClass).name);
     assert(rcclass.toHash() == rcclass.toHash()); // Just to ensure they are properly nogc.
     assert(rcclass.opCmp(rcclass) == 0);

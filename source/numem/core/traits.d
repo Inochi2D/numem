@@ -326,7 +326,90 @@ enum isObjectiveC(T) =
 */
 enum isValidObjectiveC(T) =
     isClasslike!T && __traits(getLinkage, T) == "Objective-C" &&
-    is(typeof(T.retain)) && is(typeof(T.release)) && is(typeof(T.autorelease));
+    is(typeof(T.retain)) && is(typeof(T.release));
+
+
+/**
+    Gets whether $(D T) is an COM class or interface.
+
+    Additionally, said class or interface needs to have the
+    $(D retain) and $(D release) methods.
+*/
+enum isCOMClass(T) =
+    (is(T == class) || is(T == interface)) &&
+    __traits(isCOMClass, T);
+
+/**
+    Valid function names for `retain` type functions.
+*/
+enum rcRetainNames = AliasSeq!("retain", "Retain", "addRef", "AddRef");
+
+/**
+    Gets whether $(D T) has a `retain` style function.
+
+    Params:
+        T = The type to check
+    
+    Returns:
+        $(D true) if $(D T) is a type with a retain function,
+        $(D false) otherwise.
+
+    See_Also:
+        $(D rcRetainNames)
+*/
+template hasRCRetainFunction(T) {
+    static if (isCOMClass!T || isValidObjectiveC!T) {
+        enum hasRCRetainFunction = true;
+    } else {
+        enum hasRCFunc(string name) = __traits(hasMember, T, name) && is(typeof((ref T obj) { mixin("obj.", name, "();"); }));
+        enum hasRCRetainFunction = anySatisfy!(hasRCFunc, rcRetainNames);
+    }
+}
+
+/**
+    Valid function names for `release` type functions.
+*/
+enum rcReleaseNames = AliasSeq!("release", "Release");
+
+/**
+    Gets whether $(D T) has a `retain` style function.
+
+    Params:
+        T = The type to check
+    
+    Returns:
+        $(D true) if $(D T) is a type with a retain function,
+        $(D false) otherwise.
+
+    See_Also:
+        $(D rcRetainNames)
+*/
+template hasRCReleaseFunction(T) {
+    static if (isCOMClass!T || isValidObjectiveC!T) {
+        enum hasRCRetainFunction = true;
+    } else {
+        enum hasRCFunc(string name) = __traits(hasMember, T, name) && is(typeof((ref T obj) { __traits(getMember, obj, name)(); }));
+        enum hasRCReleaseFunction = anySatisfy!(hasRCFunc, rcReleaseNames);
+    }
+}
+
+/**
+    Gets whether $(D T) is refcounted.
+
+    Params:
+        T = The type to query.
+
+    Returns:
+        $(D true) if $(D T) is a refcounted type,
+        $(D false) otherwise.
+*/
+template isRefcounted(T) {
+    static if (isCOMClass!T || isValidObjectiveC!T) {
+        enum isRefcounted = true;
+    } else {
+        enum isRefcounted = hasRCRetainFunction!T && hasRCReleaseFunction!T;
+    }
+}
 
 /**
     Gets whether T is an inner class in a nested class layout.

@@ -100,13 +100,20 @@ ref void[AllocSize!T] nu_storageT(T)(ref T object) @nogc nothrow @trusted {
         The resized buffer.
 */
 ref T[] nu_resize(T)(ref T[] buffer, size_t length, int alignment = 1) @nogc {
-    static if (!isObjectiveC!T && hasElaborateDestructor!T && !isHeapAllocated!T) {
+    static if (hasElaborateDestructor!T && !isHeapAllocated!T) {
         import numem.lifetime : nogc_delete;
 
         if (length < buffer.length) {
 
-            // Handle destructor invocation.
-            nogc_delete!(T, false)(buffer[length..buffer.length]);
+            static if (isRefcounted!T) {
+                foreach(i; length..buffer.length) {
+                    buffer[i].nu_release();
+                }
+            } else {
+
+                // Handle destructor invocation.
+                nogc_delete!(T, false)(buffer[length..buffer.length]);
+            }
 
             // Handle buffer deletion.
             if (length == 0) {
@@ -159,7 +166,16 @@ T[] nu_malloca(T)(size_t count) {
         slice = The slice to free.
 */
 void nu_freea(T)(ref T[] slice) {
-    slice = slice.nu_resize(0);
+    static if (isRefcounted!T) {
+        foreach(i; 0..slice.length) {
+            nu_release(slice[i]);
+        }
+    } else {
+        nogc_delete(slice[0..$]);
+    }
+
+    nu_free(slice.ptr);
+    slice = null;
 }
 
 /**
@@ -202,6 +218,65 @@ inout(T)[] nu_dup(T)(inout(T)[] buffer) @nogc @trusted {
 */
 immutable(T)[] nu_idup(T)(inout(T)[] buffer) @nogc @trusted {
     return cast(immutable(T)[])nu_dup(buffer);
+}
+
+/**
+    Gets the retain function for type T and calls it.
+*/
+T nu_retain(T)(auto ref T value) @nogc @trusted
+if (isRefcounted!T) {
+    static if (isObjectiveC!T) {
+        return cast(T)value.retain();
+    } else static if(isCOMClass!T) {
+        value.AddRef();
+        return cast(T)value;
+    } else {
+        static foreach(rcName; rcRetainNames) {
+            static if (!is(__found) && __traits(hasMember, T, rcName)) {
+                static if (is(ReturnType!(typeof(__traits(getMember, value, rcName))) : T))
+                    return __traits(getMember, value, rcName)();
+                else {
+                    __traits(getMember, value, rcName)();
+                    return cast(T)value;
+                }
+
+                enum __found = true;
+            }
+        }
+    }
+}
+
+/**
+    Calls the $(D release) function of reference counted type
+    $(D T).
+
+    Params:
+        value = The value to reduce the reference count of.
+    
+    Returns:
+        If possible, the new state of $(D value).
+*/
+T nu_release(T)(auto ref T value) @nogc @trusted
+if (isRefcounted!T) {
+    static if (isObjectiveC!T) {
+        return cast(T)value.release();
+    } else static if(isCOMClass!T) {
+        value.Release();
+        return cast(T)value;
+    } else {
+        static foreach(rcName; rcReleaseNames) {
+            static if (!is(__found) && __traits(hasMember, T, rcName)) {
+                static if (is(ReturnType!(typeof(__traits(getMember, value, rcName))) : T))
+                    return __traits(getMember, value, rcName)();
+                else {
+                    __traits(getMember, value, rcName)();
+                    return cast(T)value;
+                }
+
+                enum __found = true;
+            }
+        }
+    }
 }
 
 /**

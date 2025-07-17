@@ -26,7 +26,7 @@ import numem.casting;
 import numem.heap;
 
 // Utilities that are useful in the same regard from core.
-public import numem.core.memory : nu_dup, nu_idup, nu_resize;
+public import numem.core.memory : nu_dup, nu_idup, nu_resize, nu_malloca, nu_freea;
 public import numem.core.lifetime : nu_destroywith, nu_autoreleasewith;
 
 @nogc:
@@ -179,9 +179,7 @@ Ref!T nogc_trynew(T, Args...)(NuHeap heap, auto ref Args args) @trusted nothrow 
         obj_ = Instance to destroy and deallocate.
 */
 void nogc_delete(T, bool doFree=true)(ref T obj_) @trusted {
-    static if (isObjectiveC!T) {
-        // Do nothing.
-    } else static if (isHeapAllocated!T) {
+    static if (isHeapAllocated!T) {
 
         // Ensure type is not null.
         if (reinterpret_cast!(void*)(obj_) !is null) {
@@ -235,17 +233,18 @@ bool nogc_trydelete(T, bool doFree=true)(ref T obj_) @trusted nothrow {
         heap = The heap to allocate the instance on.
         obj_ = Instance to destroy and deallocate.
 */
-void nogc_delete(T, bool doFree=true)(NuHeap heap, ref T obj_) @trusted
-if (isHeapAllocated!T) {
-    if (reinterpret_cast!(void*)(obj_) !is null) {
+void nogc_delete(T, bool doFree=true)(NuHeap heap, ref T obj_) @trusted {
+    static if (isHeapAllocated!T) {
+        if (reinterpret_cast!(void*)(obj_) !is null) {
 
-        destruct!(T, !doFree)(obj_);
+            destruct!(T, !doFree)(obj_);
 
-        // Free memory if need be.
-        static if (doFree)
-            heap.free(cast(void*)obj_);
+            // Free memory if need be.
+            static if (doFree)
+                heap.free(cast(void*)obj_);
 
-        obj_ = null;
+            obj_ = null;
+        }
     }
 }
 
@@ -263,17 +262,18 @@ if (isHeapAllocated!T) {
     Returns:
         Whether the operation succeeded.
 */
-bool nogc_trydelete(T, bool doFree=true)(NuHeap heap, ref T obj_) @trusted nothrow
-if (isHeapAllocated!T) {
-    try {
+bool nogc_trydelete(T, bool doFree=true)(NuHeap heap, ref T obj_) @trusted nothrow {
+    static if (isHeapAllocated!T) {
+        try {
 
-        nogc_delete(heap, obj_);
-        return true;
-    } catch (Exception ex) {
+            nogc_delete(heap, obj_);
+            return true;
+        } catch (Exception ex) {
 
-        if (ex)
-            assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
-        return false;
+            if (ex)
+                assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
+            return false;
+        }
     }
 }
 

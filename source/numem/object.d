@@ -19,6 +19,7 @@ import numem.core.atomic;
 import numem.lifetime;
 import numem.core.exception;
 import numem.core.lifetime : nu_autorelease;
+import numem.core.traits;
 
 /**
     Numem base-class which allows using basic class functions without a garbage
@@ -218,13 +219,15 @@ public:
         The element or $(D null) if it was freed as a result
         of the operation.
 */
-T retained(T)(T elem) @nogc @trusted if (is(T : NuRefCounted)) {
-    return cast(T)elem.retain();
+T retained(T)(T elem) @nogc @trusted if (isRefcounted!T) {
+    import numem.core.memory : nu_retain;
+    return cast(T)elem.nu_retain();
 }
 
 /// ditto
-T released(T)(T elem) @nogc @trusted if (is(T : NuRefCounted)) {
-    return cast(T)elem.release();
+T released(T)(T elem) @nogc @trusted if (isRefcounted!T) {
+    import numem.core.memory : nu_release;
+    return cast(T)elem.nu_release();
 }
 
 /// ditto
