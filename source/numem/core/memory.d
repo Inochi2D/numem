@@ -174,7 +174,7 @@ void nu_freea(T)(ref T[] slice) {
         nogc_delete(slice[0..$]);
     }
 
-    nu_free(slice.ptr);
+    nu_free(cast(void*)slice.ptr);
     slice = null;
 }
 
