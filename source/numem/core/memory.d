@@ -155,7 +155,7 @@ ref T[] nu_resize(T)(ref T[] buffer, size_t length, int alignment = 1) @nogc {
 T[] nu_malloca(T)(size_t count) {
     T[] tmp;
     tmp = tmp.nu_resize(count);
-    nogc_initialize(tmp);
+    nogc_initialize(tmp[0..count]);
     return tmp;
 }
 
