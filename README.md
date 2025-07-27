@@ -17,7 +17,7 @@ while allowing more seamless integration with other programming languages.
 &nbsp;
 
 # Using numem
-Numem allows you to instantiate classes without the GC, it's highly recommended that you mark all functions in classes as @nogc to avoid GC conflicts.  
+Numem allows you to instantiate classes without the GC, it's highly recommended that you mark all functions in classes as `@nogc` to avoid GC conflicts.  
 
 Using `nogc_new` you can instantiate types on the heap, and `nogc_delete` can destruct and free types.
 
