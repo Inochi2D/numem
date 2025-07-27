@@ -1,5 +1,5 @@
 module ut.core.atomic;
-import numem.core.atomic;
+import numem.core.hooks;
 
 @("load: i32")
 unittest {

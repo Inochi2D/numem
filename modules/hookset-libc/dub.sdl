@@ -1,15 +1,6 @@
 name "hookset-libc"
-description "libc based hookset for numem."
+description "DEPRECATED: This is now the default for numem."
 authors "Kitsunebi Games" "Luna" "Inochi2D Project"
 license "BSL-1.0"
-targetPath "out/"
 
-configuration "emscripten" {
-    platforms "emscripten"
-    targetType "staticLibrary"
-    dflags "-mattr=+bulk-memory,+multivalue,+reference-types"
-}
-
-configuration "others" {
-    targetType "staticLibrary"
-}
+targetType "none"

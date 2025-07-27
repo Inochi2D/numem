@@ -14,7 +14,6 @@
 module numem.core.memory;
 import numem.core.hooks;
 import numem.core.traits;
-import numem.core.atomic;
 import numem.core.traits : AllocSize, isPointer;
 import numem.lifetime;
 

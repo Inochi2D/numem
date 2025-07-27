@@ -3,3 +3,10 @@ description "D GC based hookset for numem."
 authors "Kitsunebi Games" "Luna" "Inochi2D Project"
 license "BSL-1.0"
 targetPath "out/"
+
+// -all_load needed on mach-o platforms.
+lflags "-all_load" platform="osx"
+lflags "-all_load" platform="ios"
+lflags "-all_load" platform="watchos"
+lflags "-all_load" platform="tvos"
+lflags "-all_load" platform="visionos"

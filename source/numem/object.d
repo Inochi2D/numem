@@ -15,11 +15,11 @@
         $(D numem.core.memory.nu_idup)
 */
 module numem.object;
-import numem.core.atomic;
 import numem.lifetime;
 import numem.core.exception;
 import numem.core.lifetime : nu_autorelease;
 import numem.core.traits;
+import numem.core.hooks;
 
 /**
     Numem base-class which allows using basic class functions without a garbage
