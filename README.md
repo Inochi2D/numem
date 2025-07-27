@@ -12,16 +12,6 @@ while allowing more seamless integration with other programming languages.
 &nbsp;
 &nbsp;
 
-# Configuration
-
-Numem provides a couple of version flags for configuring some base features of numem.
-Packages which intend to extend numem should appropriately implement these flags to handle
-parts of numem being non-functional.
-
-| Flag               | Description                                                                          |
-| :----------------- | ------------------------------------------------------------------------------------ |
-| `NUMEM_NO_ATOMICS` | Disables atomic operations, all atomic operations are replaced with dummy functions. |
-
 &nbsp;
 &nbsp;
 &nbsp;
@@ -31,12 +21,24 @@ Numem allows you to instantiate classes without the GC, it's highly recommended 
 
 Using `nogc_new` you can instantiate types on the heap, and `nogc_delete` can destruct and free types.
 
+### Note
+
+As of numem 1.3.0, a D Compiler with frontend version 2.106 or newer is required.  
+For macOS builds, LDC 1.41.0 or newer is required.
+
 ## Hooksets
 
 Numem works on a concept of hooksets, all core functionality of numem is built on a small series of internal hook functions.  
-without said functions numem will not link, as a recommendation you can start with `numem:hookset-libc` to get going,
-if you have special requirements for your target platform you can implement your own hookset by implementing the functions
-in `numem.core.hooks` in a seperate package and adding it as a dependency.
+By default, numem provides an internal hookset that uses the system's C library and compiler intrinsics to provide the given
+functionality. If you have special requirements you can implement your own, overwriting the function calls as needed.
+
+The following hooksets are provided as subpackages that you can include.
+
+| Name           |                                                                                 Comments |
+| :------------- | ---------------------------------------------------------------------------------------: |
+| `hookset-libc` |                                                                Deprecated, does nothing. |
+| `hookset-dgc`  |           Forwards all allocation and deallocation to the D Runtime's garbage collector. |
+| `hookset-wasm` | Implements a very simple allocator called "walloc", not recommended for production, yet. |
 
 ## Using Classes
 
@@ -119,13 +121,21 @@ Numem allows creating slice buffers, however these buffers are less safe than hi
 alternatives available in [nulib](https://github.com/Inochi2D/nulib).
 
 ```d
-float[] myFloatSlice;
-myFloatSlice.nu_resize(42);
-foreach(i; 0..myFloatSlice.length)
-    myFloatSlice[i] = 0.0;
+// Allocate a new float slice, then set all values to 0.
+float[] myFloatSlice = nu_malloca!float(42);
+myFloatSlice[0..$] = 0.0;
 
-// Slices MUST be freed by resizing the slice to 0,
-// other functions will either fail or cause memory corruption.
-// as slices are using the aligned allocation functions.
-myFloatSlice.nu_resize(0);
+// Resize slice, and add -1 to the end of it.
+myFloatSlice = myFloatSlice.nu_resize(43);
+myFloatSlice[$-1] = -1; 
+
+// Slices must be freed by you, you can either resize the slice to a length
+// of 0, or use nu_freea
+nu_freea(myFloatSlice);
+
+// Is equivalent to nu_freea(myFloatSlice);
+myFloatSlice = myFloatSlice.nu_resize(0);
 ```
+
+These slice handling functions are marked `@system` due to their memory unsafe nature.  
+As such you may not use them in `@safe` code.
