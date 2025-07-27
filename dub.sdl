@@ -14,18 +14,12 @@ subPackage "modules/hookset-dgc"
 // Needed for ddox.
 dflags "-oq" platform="ldc"
 
-configuration "static" {
+configuration "library" {
     targetType "staticLibrary"
-}
-
-configuration "dynamic" {
-    targetType "dynamicLibrary"
 }
 
 configuration "unittest" {
     targetType "autodetect"
-
-    dependency "numem:hookset-libc" version="*"
     
     dependency "silly" version="~>1.1.1"
     sourcePaths "source/" "tests/"
