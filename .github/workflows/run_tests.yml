@@ -46,7 +46,7 @@ jobs:
     name: 'Run a sanity check'
     strategy:
       matrix:
-        dc: [ldc-beta, ldc-1.30.0, dmd]
+        dc: [ldc-beta, ldc-1.40.0, dmd]
     
     runs-on: ubuntu-latest
     steps:
