@@ -5,6 +5,8 @@ authors "Kitsunebi Games" "Luna" "Inochi2D Project"
 license "BSL-1.0"
 targetPath "out/"
 
+toolchainRequirements ldc=">=1.40.0" frontend=">=2.106"
+
 subPackage "modules/hookset-libc"
 subPackage "modules/hookset-wasm"
 subPackage "modules/hookset-dgc"
