@@ -53,7 +53,7 @@ public:
         memory address.
     */
     override
-    bool opEquals(const Object other) const {
+    bool opEquals(const Object other) nothrow const {
         return this is other;
     }
 
@@ -72,7 +72,7 @@ public:
             it will prevent it from functioning properly.
     */
     override
-    int opCmp(const Object other) const {
+    int opCmp(const Object other) nothrow const {
         return cast(int)cast(void*)this - cast(int)cast(void*)other;
     }
 

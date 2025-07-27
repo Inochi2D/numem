@@ -444,7 +444,7 @@ bool nu_is_aligned(void* ptr, size_t alignment) nothrow @nogc @trusted pure {
 */
 export
 extern(C)
-void* nu_aligned_alloc(size_t size, size_t alignment) nothrow @nogc {
+void* nu_aligned_alloc(size_t size, size_t alignment) nothrow @nogc pure {
     assert(alignment != 0);
 
     // Shortcut for tight alignment.
@@ -477,7 +477,7 @@ void* nu_aligned_alloc(size_t size, size_t alignment) nothrow @nogc {
 */
 export
 extern(C)
-void* nu_aligned_realloc(void* ptr, size_t size, size_t alignment) nothrow @nogc {
+void* nu_aligned_realloc(void* ptr, size_t size, size_t alignment) nothrow @nogc pure {
     return __nu_aligned_realloc!true(ptr, size, alignment);
 }
 
@@ -501,7 +501,7 @@ void* nu_aligned_realloc(void* ptr, size_t size, size_t alignment) nothrow @nogc
 */
 export
 extern(C)
-void* nu_aligned_realloc_destructive(void* ptr, size_t size, size_t alignment) nothrow @nogc {
+void* nu_aligned_realloc_destructive(void* ptr, size_t size, size_t alignment) nothrow @nogc pure {
     return __nu_aligned_realloc!false(ptr, size, alignment);
 }
 
@@ -518,7 +518,7 @@ void* nu_aligned_realloc_destructive(void* ptr, size_t size, size_t alignment) n
 */
 export
 extern(C)
-void nu_aligned_free(void* ptr, size_t alignment) nothrow @nogc {
+void nu_aligned_free(void* ptr, size_t alignment) nothrow @nogc pure {
     
     // Handle null case.
     if (!ptr)
@@ -536,7 +536,7 @@ void nu_aligned_free(void* ptr, size_t alignment) nothrow @nogc {
 }
 
 private
-void* __nu_store_aligned_ptr(void* ptr, size_t size, size_t alignment) nothrow @nogc {
+void* __nu_store_aligned_ptr(void* ptr, size_t size, size_t alignment) nothrow @nogc pure {
     
     // Handle null case.
     if (!ptr)
@@ -558,7 +558,7 @@ void* __nu_store_aligned_ptr(void* ptr, size_t size, size_t alignment) nothrow @
 }
 
 private
-void* __nu_aligned_realloc(bool preserveIfResized)(void* aligned, size_t size, size_t alignment) nothrow @nogc {
+void* __nu_aligned_realloc(bool preserveIfResized)(void* aligned, size_t size, size_t alignment) nothrow @nogc pure {
 
     // Use normal realloc if there's no alignment.
     if (alignment == 1)
