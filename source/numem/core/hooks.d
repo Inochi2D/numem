@@ -40,7 +40,7 @@ export
 extern(C)
 void* nu_malloc(size_t bytes) @nogc nothrow @system pure @weak {
     pragma(mangle, "malloc")
-    static extern extern(C) void* malloc(size_t) @nogc nothrow @system pure;
+    extern extern(C) void* malloc(size_t) @nogc nothrow @system pure;
 
     return malloc(bytes);
 }
@@ -69,7 +69,7 @@ export
 extern(C)
 void* nu_realloc(void* data, size_t newSize) @nogc nothrow @system pure @weak {
     pragma(mangle, "realloc")
-    static extern extern(C) void* realloc(void*, size_t) @nogc nothrow @system pure;
+    extern extern(C) void* realloc(void*, size_t) @nogc nothrow @system pure;
 
     return realloc(data, newSize);
 }
@@ -89,7 +89,7 @@ export
 extern(C)
 void nu_free(void* data) @nogc nothrow @system pure @weak {
     pragma(mangle, "free")
-    static extern extern(C) void free(void*) @nogc nothrow @system pure;
+    extern extern(C) void free(void*) @nogc nothrow @system pure;
 
     return free(data);
 }
@@ -109,7 +109,7 @@ export
 extern(C)
 void* nu_memcpy(return scope void* dst, scope const void* src, size_t bytes) @nogc nothrow @system pure @weak {
     pragma(mangle, "memcpy")
-    static extern extern(C) void* memcpy(return scope void*, scope const void*, size_t) @nogc nothrow @system pure;
+    extern extern(C) void* memcpy(return scope void*, scope const void*, size_t) @nogc nothrow @system pure;
 
     return memcpy(dst, src, bytes);
 }
@@ -131,7 +131,7 @@ export
 extern(C)
 void* nu_memmove(return scope void* dst, scope const void* src, size_t bytes) @nogc nothrow @system pure @weak {
     pragma(mangle, "memmove")
-    static extern extern(C) void* memmove(return scope void*, scope const void*, size_t) @nogc nothrow @system pure;
+    extern extern(C) void* memmove(return scope void*, scope const void*, size_t) @nogc nothrow @system pure;
 
     return memmove(dst, src, bytes);
 }
@@ -151,7 +151,7 @@ export
 extern(C)
 void* nu_memset(return scope void* dst, ubyte value, size_t bytes) @nogc nothrow @system pure @weak {
     pragma(mangle, "memset")
-    static extern extern(C) void* memset(return scope void*, int, size_t) @nogc nothrow @system pure;
+    extern extern(C) void* memset(return scope void*, int, size_t) @nogc nothrow @system pure;
 
     return memset(dst, value, bytes);
 }
@@ -172,9 +172,9 @@ export
 extern(C)
 void nu_fatal(const(char)[] errMsg) @nogc nothrow @system pure @weak {
     pragma(mangle, "printf")
-    static extern extern(C) void printf(const(char)*, ...) @nogc nothrow @system pure;
+    extern extern(C) void printf(const(char)*, ...) @nogc nothrow @system pure;
     pragma(mangle, "abort")
-    static extern extern(C) void abort() @nogc nothrow @system pure;
+    extern extern(C) void abort() @nogc nothrow @system pure;
 
     printf("%.*s", cast(int)errMsg.length, errMsg.ptr);
     abort();
