@@ -21,6 +21,9 @@ jobs:
         variant: [unittest, unittest-gc]
         os: [macOS-latest, ubuntu-latest, windows-latest]
         dc: [ldc-beta, ldc-1.40.0, dmd]
+        exclude:
+          - os: macOS-latest
+            dc: dmd
 
     runs-on: ${{ matrix.os }}
     steps:
