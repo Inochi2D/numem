@@ -169,7 +169,7 @@ void nu_freea(T)(ref T[] slice) {
         foreach(i; 0..slice.length) {
             nu_release(slice[i]);
         }
-    } else {
+    } else static if (hasElaborateDestructor!T) {
         nogc_delete(slice[0..$]);
     }
 
