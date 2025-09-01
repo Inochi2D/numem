@@ -24,8 +24,10 @@ Ref!T cpp_new(T, Args...)(auto ref Args args) if (isCPP!T) {
 }
 
 /**
-    Helper function which allocates a C++ object of
-    a given size.
+    Deletes a C++ object on the heap.
+
+    Params:
+        ptr = The object to delete.
 */
 void cpp_delete(T)(Ref!T ptr) if (isCPP!T) {
     if (ptr is null)
