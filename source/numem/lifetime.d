@@ -22,6 +22,7 @@ import numem.core.traits;
 import numem.core.lifetime;
 import numem.core.hooks;
 import numem.core.memory;
+import numem.core.cpp;
 import numem.casting;
 import numem.heap;
 
@@ -82,17 +83,21 @@ void nogc_construct(T, Args...)(ref T object, Args args) @trusted {
     Allocates a new instance of $(D T).
 */
 Ref!T nogc_new(T, Args...)(auto ref Args args) @trusted {
-    if (Ref!T newobject = cast(Ref!T)nu_malloc(AllocSize!T)) {
-        try {
-            nogc_construct(newobject, args);
-            return newobject;
+    static if (isCPP!T) {
+        return cpp_new!(T, Args)(args);
+    } else {
+        if (Ref!T newobject = cast(Ref!T)nu_malloc(AllocSize!T)) {
+            try {
+                nogc_construct(newobject, args);
+                return newobject;
 
-        } catch(Exception ex) {
-            nu_free(cast(void*)newobject);
-            throw ex;
+            } catch(Exception ex) {
+                nu_free(cast(void*)newobject);
+                throw ex;
+            }
         }
+        return null;
     }
-    return null;
 }
 
 /**
@@ -106,20 +111,24 @@ Ref!T nogc_new(T, Args...)(auto ref Args args) @trusted {
         failed.
 */
 Ref!T nogc_trynew(T, Args...)(auto ref Args args) @trusted nothrow {
-    if (Ref!T newobject = cast(Ref!T)nu_malloc(AllocSize!T)) {
-        try {
-            nogc_construct(newobject, args);
-            return newobject;
+    static if (isCPP!T) {
+        return assumeNoThrowNoGC((Args args) => cpp_new!(T, Args)(args), args);
+    } else {
+        if (Ref!T newobject = cast(Ref!T)nu_malloc(AllocSize!T)) {
+            try {
+                nogc_construct(newobject, args);
+                return newobject;
 
-        } catch(Exception ex) {
+            } catch(Exception ex) {
 
-            nu_free(cast(void*)newobject);
-            if (ex) 
-                assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
-            return null;
+                nu_free(cast(void*)newobject);
+                if (ex) 
+                    assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
+                return null;
+            }
         }
+        return null;
     }
-    return null;
 }
 
 /** 
@@ -130,15 +139,19 @@ Ref!T nogc_trynew(T, Args...)(auto ref Args args) @trusted nothrow {
         args = The arguments to pass to the type's constructor.
 */
 Ref!T nogc_new(T, Args...)(NuHeap heap, auto ref Args args) @trusted {
-    if (Ref!T newobject = cast(Ref!T)heap.alloc(AllocSize!T)) {
-        try {
-            nogc_construct(newobject, args);
-        } catch(Exception ex) {
-            nu_free(cast(void*)newobject);
-            throw ex;
+    static if (isCPP!T) {
+        static assert(0, "Can't custom-heap allocate C++ Objects.");
+    } else {
+        if (Ref!T newobject = cast(Ref!T)heap.alloc(AllocSize!T)) {
+            try {
+                nogc_construct(newobject, args);
+            } catch(Exception ex) {
+                nu_free(cast(void*)newobject);
+                throw ex;
+            }
         }
+        return null;
     }
-    return null;
 }
 
 /**
@@ -153,20 +166,24 @@ Ref!T nogc_new(T, Args...)(NuHeap heap, auto ref Args args) @trusted {
         failed.
 */
 Ref!T nogc_trynew(T, Args...)(NuHeap heap, auto ref Args args) @trusted nothrow {
-    if (Ref!T newobject = cast(Ref!T)heap.alloc(AllocSize!T)) {
-        try {
-            nogc_construct(newobject, args);
-            return newobject;
+    static if (isCPP!T) {
+        static assert(0, "Can't custom-heap allocate C++ Objects.");
+    } else {
+        if (Ref!T newobject = cast(Ref!T)heap.alloc(AllocSize!T)) {
+            try {
+                nogc_construct(newobject, args);
+                return newobject;
 
-        } catch(Exception ex) {
-            
-            nu_free(cast(void*)newobject);
-            if (ex) 
-                assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
-            return null;
+            } catch(Exception ex) {
+                
+                nu_free(cast(void*)newobject);
+                if (ex) 
+                    assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
+                return null;
+            }
         }
+        return null;
     }
-    return null;
 }
 
 /**
@@ -179,21 +196,25 @@ Ref!T nogc_trynew(T, Args...)(NuHeap heap, auto ref Args args) @trusted nothrow 
         obj_ = Instance to destroy and deallocate.
 */
 void nogc_delete(T, bool doFree=true)(ref T obj_) @trusted {
-    static if (isHeapAllocated!T) {
-
-        // Ensure type is not null.
-        if (reinterpret_cast!(void*)(obj_) !is null) {
-
-            destruct!(T, !doFree)(obj_);
-
-            // Free memory if need be.
-            static if (doFree)
-                nu_free(cast(void*)obj_);
-
-            obj_ = null;
-        }
+    static if (isCPP!T) {
+        cpp_delete!T(obj_);
     } else {
-        destruct!(T, !doFree)(obj_);
+        static if (isHeapAllocated!T) {
+
+            // Ensure type is not null.
+            if (reinterpret_cast!(void*)(obj_) !is null) {
+
+                destruct!(T, !doFree)(obj_);
+
+                // Free memory if need be.
+                static if (doFree)
+                    nu_free(cast(void*)obj_);
+
+                obj_ = null;
+            }
+        } else {
+            destruct!(T, !doFree)(obj_);
+        }
     }
 }
 
@@ -210,15 +231,19 @@ void nogc_delete(T, bool doFree=true)(ref T obj_) @trusted {
         Whether the operation succeeded.
 */
 bool nogc_trydelete(T, bool doFree=true)(ref T obj_) @trusted nothrow {
-    try {
-        nogc_delete(obj_);
-        return true;
-    
-    } catch (Exception ex) {
-        if (ex) 
-            assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
-        return false;
+    static if (isCPP!T) {
+        assumeNoThrowNoGC((ref T obj_) => cpp_delete(obj_), obj_);
+    } else {
+        try {
+            nogc_delete(obj_);
+            return true;
         
+        } catch (Exception ex) {
+            if (ex) 
+                assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
+            return false;
+            
+        }
     }
 }
 
@@ -234,16 +259,20 @@ bool nogc_trydelete(T, bool doFree=true)(ref T obj_) @trusted nothrow {
         obj_ = Instance to destroy and deallocate.
 */
 void nogc_delete(T, bool doFree=true)(NuHeap heap, ref T obj_) @trusted {
-    static if (isHeapAllocated!T) {
-        if (reinterpret_cast!(void*)(obj_) !is null) {
+    static if (isCPP!T) {
+        static assert(0, "Can't custom-heap allocate C++ Objects.");
+    } else {
+        static if (isHeapAllocated!T) {
+            if (reinterpret_cast!(void*)(obj_) !is null) {
 
-            destruct!(T, !doFree)(obj_);
+                destruct!(T, !doFree)(obj_);
 
-            // Free memory if need be.
-            static if (doFree)
-                heap.free(cast(void*)obj_);
+                // Free memory if need be.
+                static if (doFree)
+                    heap.free(cast(void*)obj_);
 
-            obj_ = null;
+                obj_ = null;
+            }
         }
     }
 }
@@ -263,16 +292,20 @@ void nogc_delete(T, bool doFree=true)(NuHeap heap, ref T obj_) @trusted {
         Whether the operation succeeded.
 */
 bool nogc_trydelete(T, bool doFree=true)(NuHeap heap, ref T obj_) @trusted nothrow {
-    static if (isHeapAllocated!T) {
-        try {
+    static if (isCPP!T) {
+        static assert(0, "Can't custom-heap allocate C++ Objects.");
+    } else {
+        static if (isHeapAllocated!T) {
+            try {
 
-            nogc_delete(heap, obj_);
-            return true;
-        } catch (Exception ex) {
+                nogc_delete(heap, obj_);
+                return true;
+            } catch (Exception ex) {
 
-            if (ex)
-                assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
-            return false;
+                if (ex)
+                    assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
+                return false;
+            }
         }
     }
 }

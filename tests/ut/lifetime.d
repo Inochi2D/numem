@@ -187,14 +187,6 @@ class TestCPPClass {
     ~this() { }
 }
 
-@("C++ ctor-dtor")
-unittest {
-    TestCPPClass myClass = nogc_new!TestCPPClass(42);
-
-    assert(myClass.value == 42);
-    nogc_delete(myClass);
-}
-
 extern(C++)
 struct TestCPPStruct {
 @nogc:
@@ -203,8 +195,11 @@ struct TestCPPStruct {
 
 @("C++ ctor-dtor")
 unittest {
-    TestCPPStruct* myStruct = nogc_new!TestCPPStruct(42);
+    TestCPPClass myClass = nogc_new!TestCPPClass(42);
+    assert(myClass.value == 42);
+    nogc_delete(myClass);
 
+    TestCPPStruct* myStruct = nogc_new!TestCPPStruct(42);
     assert(myStruct.value == 42);
     nogc_delete(myStruct);
 }

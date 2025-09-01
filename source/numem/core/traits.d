@@ -306,6 +306,12 @@ template isInstanceOf(alias S, alias T) {
 } /// ditto
 
 /**
+    Gets whether $(D T) is a C++ aggregate type
+*/
+enum isCPP(T) =
+    isAggregateType!(Unref!T) && __traits(getLinkage, Unref!T) == "C++";
+
+/**
     Gets whether $(D T) is an Objective-C class or protocol.
 
     Additionally, said class or protocol needs to have the
