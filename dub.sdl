@@ -20,6 +20,8 @@ configuration "library" {
 
 configuration "unittest" {
     targetType "autodetect"
+    libs "stdc++" platform="linux"
+    libs "c++" platform="osx"
     
     dependency "silly" version="~>1.1.1"
     sourcePaths "source/" "tests/"
@@ -28,10 +30,12 @@ configuration "unittest" {
 
 configuration "unittest-gc" {
     targetType "autodetect"
+    libs "stdc++" platform="linux"
+    libs "c++" platform="osx"
 
     dependency "numem:hookset-dgc" version="*"
-    
     dependency "silly" version="~>1.1.1"
+
     sourcePaths "source/" "tests/"
     importPaths "source/" "tests/"
 }
