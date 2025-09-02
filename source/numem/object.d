@@ -126,6 +126,11 @@ private:
 public:
 
     /**
+        The current reference count of the object.
+    */
+    final @property uint refs() => nu_atomic_load_32(refcount);
+
+    /**
         Base constructor, all subclasses *have* to invoke this constructor.
         Otherwise the instance will be invalid on instantiation.
     */
