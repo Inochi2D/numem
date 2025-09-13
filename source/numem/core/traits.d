@@ -254,6 +254,11 @@ enum isAnyAssignable(Lhs, Rhs = Lhs) =
 enum isAnyCompatible(Lhs, Rhs) =
     is(Unqual!Lhs : Unqual!Rhs) || is(Unqual!Rhs : Unqual!Lhs);
 
+/**
+    Gets whether unqualified type $(D TValue) is compatible with the unqualified 
+    range element type of $(D TRange).
+*/
+enum isAnyCompatibleRange(TRange, TValue) = is(TRange == U[], U) && isAnyCompatible!(typeof(TRange.init[0]), TValue);
 
 /**
     Gets whether $(D symbol) has the user defined attribute $(D attrib).
