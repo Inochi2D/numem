@@ -321,6 +321,29 @@ if (is(T == char) || is(T == wchar) || is(T == dchar)) {
 }
 
 /**
+    Swaps around 2 values of the same type.
+
+    The swap will be performed either by using move constructors,
+    or by direct memory blitting, bypassing copy construction.
+
+    Params:
+        a = First item to swap
+        b = Second item to swap.
+*/
+void swap(T)(ref T a, ref T b) {
+    static if (is(typeof((ref T a, ref T b) { a.moveTo(b); b.moveTo(a); }))) {
+        auto tmp = a.move;
+        b.moveTo(a);
+        tmp.moveTo(a);
+    } else {
+        T tmp;
+        nu_memmove(&tmp, &a, T.sizeof);
+        nu_memmove(&a, &b, T.sizeof);
+        nu_memmove(&b, &tmp, T.sizeof);
+    }
+}
+
+/**
     Gets whether 2 memory ranges are overlapping.
 
     Params:
