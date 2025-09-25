@@ -27,7 +27,7 @@ import numem.casting;
 import numem.heap;
 
 // Utilities that are useful in the same regard from core.
-public import numem.core.memory : nu_dup, nu_idup, nu_resize, nu_malloca, nu_freea;
+public import numem.core.memory : nu_dup, nu_idup, nu_resize, nu_malloca, nu_freea, nu_terminate, nu_swap;
 public import numem.core.lifetime : nu_destroywith, nu_autoreleasewith;
 
 @nogc:

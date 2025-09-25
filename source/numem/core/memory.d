@@ -330,7 +330,7 @@ if (is(T == char) || is(T == wchar) || is(T == dchar)) {
         a = First item to swap
         b = Second item to swap.
 */
-void swap(T)(ref T a, ref T b) {
+void nu_swap(T)(ref T a, ref T b) {
     static if (is(typeof((ref T a, ref T b) { a.moveTo(b); b.moveTo(a); }))) {
         auto tmp = a.move;
         b.moveTo(a);
