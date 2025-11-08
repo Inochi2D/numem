@@ -12,6 +12,7 @@ module numem;
 
 public import numem.core.exception;
 public import numem.core.hooks;
+public import numem.core.math;
 public import numem.casting;
 public import numem.lifetime;
 public import numem.object;

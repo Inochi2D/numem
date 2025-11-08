@@ -14,7 +14,7 @@
 module numem.core.memory;
 import numem.core.hooks;
 import numem.core.traits;
-import numem.core.traits : AllocSize, isPointer;
+import numem.core.math;
 import numem.lifetime;
 
 /**
@@ -416,7 +416,7 @@ bool nu_is_overlapping(void* a, size_t aLength, void* b, size_t bLength) @nogc n
 export
 extern(C)
 size_t nu_aligned_size(size_t request, size_t alignment) nothrow @nogc @safe pure {
-    return request + alignment - 1 + ALIGN_PTR_SIZE * 2;
+    return nu_alignup(request, nu_alignup(alignment, ALIGN_PTR_SIZE * 2));
 }
 
 /**
@@ -432,23 +432,7 @@ size_t nu_aligned_size(size_t request, size_t alignment) nothrow @nogc @safe pur
 export
 extern(C)
 void* nu_realign(void* ptr, size_t alignment) nothrow @nogc @trusted pure {
-    return ptr+(cast(size_t)ptr % alignment);
-}
-
-/**
-    Gets whether $(D ptr) is aligned to $(D alignment)
-
-    Params:
-        ptr =       A pointer
-        alignment = The alignment to compare the pointer to.
-
-    Returns:
-        Whether $(D ptr) is aligned to $(D alignment) 
-*/
-export
-extern(C)
-bool nu_is_aligned(void* ptr, size_t alignment) nothrow @nogc @trusted pure {
-    return (cast(size_t)ptr & (alignment-1)) == 0;
+    return cast(void*)nu_alignup!size_t(cast(size_t)ptr, alignment);
 }
 
 /**
