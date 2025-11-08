@@ -2,22 +2,19 @@
 docs.json
 __dummy.html
 docs/
-__dummy_docs/
-/numem
-numem.so
-numem.dylib
-numem.dll
-numem.a
-numem.lib
-numem-test-*
 *.exe
+*.pdb
 *.o
 *.obj
 *.lst
-.DS_Store
 
-dub.selections.json
 out/
-source/app.d
+dub.selections.json
+__dummy_docs/
 
-.vscode
+# Redub Junk
+.ldc2_cache
+
+# Other Junk
+.DS_Store
+.vscode/
