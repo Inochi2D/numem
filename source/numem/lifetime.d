@@ -232,7 +232,8 @@ void nogc_delete(T, bool doFree=true)(ref T obj_) @trusted {
 */
 bool nogc_trydelete(T, bool doFree=true)(ref T obj_) @trusted nothrow {
     static if (isCPP!T) {
-        assumeNoThrowNoGC((ref T obj_) => cpp_delete(obj_), obj_);
+        assumeNoThrowNoGC((ref T obj_) => cpp_delete!T(obj_), obj_);
+        return true;
     } else {
         try {
             nogc_delete(obj_);
