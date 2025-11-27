@@ -172,7 +172,7 @@ export
 extern(C)
 void nu_fatal(const(char)[] errMsg) @nogc nothrow @system pure @weak {
     pragma(mangle, "printf")
-    extern extern(C) void printf(const(char)*, ...) @nogc nothrow @system pure;
+    extern extern(C) int printf(const(char)*, ...) @nogc nothrow @system pure;
     pragma(mangle, "abort")
     extern extern(C) void abort() @nogc nothrow @system pure;
 
