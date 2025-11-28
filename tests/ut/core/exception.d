@@ -11,3 +11,16 @@ unittest {
         ex.free();
     }
 }
+
+@("assuming pure")
+unittest {
+    static int notPure(int a) {
+        __gshared int illegal;
+        illegal = 4;
+        return a;
+    }
+
+    pure int identity(int a) {
+        return assumePure(&notPure, a);
+    }
+}

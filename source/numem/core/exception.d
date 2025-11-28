@@ -66,6 +66,24 @@ auto assumeNoGC(T, Args...)(T expr, auto ref Args args) @nogc if (isSomeFunction
 }
 
 /**
+    Assumes that the provided function is pure.
+
+    Params:
+        expr =  The expression to execute.
+        args =  Arguments to pass to the function.
+*/
+auto assumePure(T, Args...)(T expr, auto ref Args args) pure if (isSomeFunction!T) {
+    static if (is(T Fptr : Fptr*) && is(Fptr == function))
+        alias ft = pure ReturnType!T function(Parameters!T);
+    else static if (is(T Fdlg == delegate))
+        alias ft = pure ReturnType!T delegate(Parameters!T);
+    else
+        static assert(0);
+
+    return (cast(ft)expr)(args);
+}
+
+/**
     An exception which can be thrown from numem
 */
 class NuException : Exception {
