@@ -211,3 +211,20 @@ unittest {
     string myString = "Hello, world!".nu_dup();
     nogc_delete(myString);
 }
+
+@("emplace disabled-postblit struct")
+unittest {
+    __gshared N = 0;
+    static struct DisabledPostblit {
+    @nogc:
+        this(int a) { N += 1; }
+        ~this() { N += 2; }
+        @disable this(this);
+    }
+
+    {
+        DisabledPostblit s;
+        nogc_construct(s, 1);
+    }
+    assert(N == 3);
+}

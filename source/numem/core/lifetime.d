@@ -174,8 +174,12 @@ void emplace(T, UT, Args...)(ref UT dst, auto ref Args args) @nogc {
             initializeAt(dst);
         } else {
 
-            T tmp;
-            mixin(q{ dst = *(new(tmp) T(args)); });
+            // Note: nogc_construct is used on uninitialized memory in practice,
+            // however in my tests placement new does NOT initialize before calling
+            // constructor.
+            initializeAt(dst);
+
+            new(dst) T(args);
         }
     } else {
         enum isConstructibleOther =
