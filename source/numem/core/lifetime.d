@@ -157,7 +157,11 @@ void destruct(T, bool reInit=true)(ref T obj_) @nogc {
     Runs constructor for the memory at dst
 */
 void emplace(T, UT, Args...)(ref UT dst, auto ref Args args) @nogc {
-    static if(__VERSION__ >= 2111) {
+
+    enum bool usePlacementNew = (__VERSION__ >= 2111) 
+        && (is(T == class) || (args.length == 0));
+
+    static if(usePlacementNew) {
         static if (is(T == class)) {
 
             // NOTE: Since we need to handle inner-classes
@@ -172,15 +176,10 @@ void emplace(T, UT, Args...)(ref UT dst, auto ref Args args) @nogc {
                 "Cannot emplace a " ~ T.stringof ~ ", its constructor is marked with @disable.");
             
             initializeAt(dst);
-        } else {
-
-            // Note: nogc_construct is used on uninitialized memory in practice,
-            // however in my tests placement new does NOT initialize before calling
-            // constructor.
-            initializeAt(dst);
-
-            new(dst) T(args);
         }
+        else 
+            static assert(false);
+
     } else {
         enum isConstructibleOther =
             (!is(T == struct) && Args.length == 1) ||                        // Primitives, enums, arrays.
