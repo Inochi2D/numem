@@ -22,6 +22,7 @@ import numem.core.traits;
 import numem.core.lifetime;
 import numem.core.hooks;
 import numem.core.memory;
+import numem.core.math;
 import numem.core.cpp;
 import numem.casting;
 import numem.heap;
@@ -541,7 +542,7 @@ void nogc_emplace(T, Args...)(auto ref T dest, Args args) @trusted {
     reset to their base initialized state before any constructors are run.
 */
 void nogc_move(T)(T[] dst, T[] src) @trusted {
-    size_t toTx = dst.length < src.length ? dst.length : src.length;
+    size_t toTx = nu_min(dst.length, src.length);
 
     foreach(i; 0..toTx)
         __move(src[i], dst[i]);
@@ -553,7 +554,7 @@ void nogc_move(T)(T[] dst, T[] src) @trusted {
     Postblits and copy constructors will be called subsequently.
 */
 void nogc_copy(T)(T[] dst, T[] src) @trusted {
-    size_t toTx = dst.length < src.length ? dst.length : src.length;
+    size_t toTx = nu_min(dst.length, src.length);
 
     foreach(i; 0..toTx)
         __copy(src[i], dst[i]);

@@ -53,3 +53,31 @@ T nu_aligndown(T)(T value, T alignment) @nogc if (__traits(isIntegral, T)) {
 bool nu_is_aligned(T)(T value, size_t alignment) nothrow @nogc @trusted pure {
     return (cast(size_t)value & (alignment-1)) == 0;
 }
+
+/**
+    Gets the lowest value between $(D a) and $(D b)
+
+    Params:
+        a = The first parameter
+        b = The second parameter
+
+    Returns:
+        The lowest value of the 2 given.
+*/
+auto ref T nu_min(T)(auto ref T a, auto ref T b) @nogc nothrow @trusted pure if (is(typeof(() => T.init < T.init))) {
+    return (a < b) ? a : b;
+}
+
+/**
+    Gets the largest value between $(D a) and $(D b)
+
+    Params:
+        a = The first parameter
+        b = The second parameter
+
+    Returns:
+        The largest value of the 2 given.
+*/
+auto ref T nu_max(T)(auto ref T a, auto ref T b) @nogc nothrow @trusted pure if (is(typeof(() => T.init > T.init))) {
+    return (a > b) ? a : b;
+}

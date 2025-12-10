@@ -597,7 +597,7 @@ void* __nu_aligned_realloc(bool preserveIfResized)(void* aligned, size_t size, s
     void* newAligned = __nu_store_aligned_ptr(newptr, size, alignment);
     
     static if (preserveIfResized) {
-        size_t minSize = size < prevSize ? size : prevSize;
+        size_t minSize = nu_min(size, prevSize);
         nu_memcpy(newAligned, aligned, minSize);
     }
     nu_aligned_free(aligned, alignment);
