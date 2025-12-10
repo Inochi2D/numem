@@ -139,3 +139,45 @@ myFloatSlice = myFloatSlice.nu_resize(0);
 
 These slice handling functions are marked `@system` due to their memory unsafe nature.  
 As such you may not use them in `@safe` code.
+
+## Option types
+
+Numem features optional and result types for more safely handling application state.
+
+`Option!T` wraps a value that either exists or does not exist.
+```d
+/// Somewhere else
+Option!MyClass getGlobalInstance() {
+    return __globalClassInstance ? none!MyClass() : some(__globalClassInstance);
+}
+
+/// In your code
+if (auto instance = getGlobalInstance()) {
+    // Instance is valid
+    instance.get().doSomething();
+}
+```
+
+`Result!T` wraps a value and error state together.
+```d
+/// In some class
+static Result!File open(string file) @nogc nothrow {
+    if (!exists(file))
+        return error!File("File does not exist!");
+    
+    return ok!File(nogc_new!File(file));
+}
+
+/// In your code
+auto file = File.open("myfile.txt");
+if (!file) {
+
+    // file is closed, crash with fatal error.
+    nu_fatal(file.error);
+}
+
+// File is open, unwrap it
+File unwrapped = file.get();
+```
+
+These 2 constructs are marked as `@trusted @nogc nothrow`, allowing you to use them within code that should not throw exceptions. `get` will fatally crash if the state of the container is invalid, so make sure to check the validity before calling `get`.
