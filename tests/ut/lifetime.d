@@ -195,13 +195,33 @@ struct TestCPPStruct {
 
 @("C++ ctor-dtor")
 unittest {
-    TestCPPClass myClass = nogc_new!TestCPPClass(42);
+    
+    // throwing
+    TestCPPClass myClass = cpp_new!TestCPPClass(42);
+    assert(myClass !is null);
     assert(myClass.value == 42);
-    nogc_delete(myClass);
+    cpp_delete(myClass);
+    assert(myClass is null);
 
-    TestCPPStruct* myStruct = nogc_new!TestCPPStruct(42);
+    TestCPPStruct* myStruct = cpp_new!TestCPPStruct(42);
+    assert(myStruct !is null);
     assert(myStruct.value == 42);
-    nogc_delete(myStruct);
+    cpp_delete(myStruct);
+    assert(myStruct is null);
+
+    // nothrow
+    myClass = cpp_trynew!TestCPPClass(42);
+    assert(myClass !is null);
+    assert(myClass.value == 42);
+    cpp_trydelete(myClass);
+    assert(myClass is null);
+
+    myStruct = cpp_trynew!TestCPPStruct(42);
+    assert(myStruct !is null);
+    assert(myStruct.value == 42);
+    cpp_trydelete(myStruct);
+    assert(myStruct is null);
+
 }
 
 @("basic types")

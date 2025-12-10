@@ -3,7 +3,11 @@ import numem.core.traits;
 import numem.core.lifetime;
 
 /**
-    Allocates a new C++ type on the heap.
+    Allocates a new C++ type on the heap using its default constructor.
+
+    Notes:
+        $(D doXCtor) is used to specify whether to also call any D mangled
+        constructors defined for the C++ type.
 
     Params:
         args = The arguments to pass to the type's constructor.
@@ -12,13 +16,17 @@ import numem.core.lifetime;
         A newly allocated and instantiated C++ object using the
         C++ Runtime.
 */
-Ref!T cpp_new(T, Args...)(auto ref Args args) if (isCPP!T) {
+Ref!T _nu_cpp_new(T, bool doXCtor, Args...)(auto ref Args args) @nogc if (isCPP!T) {
     static if (isClasslike!T) {
         Ref!T result = cast(Ref!T)__cpp_new(__traits(classInstanceSize, T));
-        emplace(result, forward!args);
+
+        static if (doXCtor)
+            emplace(result, forward!args);
     } else {
         Ref!T result = cast(Ref!T)__cpp_new(T.sizeof);
-        emplace(*result, forward!args);
+
+        static if (doXCtor)
+            emplace(*result, forward!args);
     }
     return result;
 }
@@ -26,15 +34,22 @@ Ref!T cpp_new(T, Args...)(auto ref Args args) if (isCPP!T) {
 /**
     Deletes a C++ object on the heap.
 
+    Notes:
+        $(D doXDtor) is used to specify whether to also call any D mangled
+        destructors defined for the C++ type.
+
     Params:
         ptr = The object to delete.
 */
-void cpp_delete(T)(Ref!T ptr) if (isCPP!T) {
+void _nu_cpp_delete(T, bool doXDtor)(ref T ptr) @nogc if (isCPP!T) {
     if (ptr is null)
         return;
     
-    destruct!(T, false)(ptr);
+    static if (doXDtor)
+        destruct!(T, false)(ptr);
+    
     __cpp_delete(cast(void*)ptr);
+    ptr = null;
 }
 
 private extern(C++) @nogc:

@@ -80,28 +80,52 @@ void nogc_construct(T, Args...)(ref T object, Args args) @trusted {
 }
 
 /**
-    Allocates a new instance of $(D T).
+    Allocates a new instance of $(D T) using the DLang allocation
+    strategy.
+
+    See_Also:
+        $(D nogc_trynew), $(D cpp_new)
 */
 Ref!T nogc_new(T, Args...)(auto ref Args args) @trusted {
-    static if (isCPP!T) {
-        return cpp_new!(T, Args)(args);
-    } else {
-        if (Ref!T newobject = cast(Ref!T)nu_malloc(AllocSize!T)) {
-            try {
-                nogc_construct(newobject, args);
-                return newobject;
+    if (Ref!T newobject = cast(Ref!T)nu_malloc(AllocSize!T)) {
+        try {
+            nogc_construct(newobject, args);
+            return newobject;
 
-            } catch(Exception ex) {
-                nu_free(cast(void*)newobject);
-                throw ex;
-            }
+        } catch(Exception ex) {
+            nu_free(cast(void*)newobject);
+            throw ex;
         }
-        return null;
     }
+    return null;
+}
+
+/** 
+    Allocates a new instance of $(D T) using the DLang allocation
+    strategy on the specified heap.
+
+    Params:
+        heap = The heap to allocate the instance on.
+        args = The arguments to pass to the type's constructor.
+
+    See_Also:
+        $(D nogc_trynew), $(D cpp_new)
+*/
+Ref!T nogc_new(T, Args...)(NuHeap heap, auto ref Args args) @trusted {
+    if (Ref!T newobject = cast(Ref!T)heap.alloc(AllocSize!T)) {
+        try {
+            nogc_construct(newobject, args);
+        } catch(Exception ex) {
+            nu_free(cast(void*)newobject);
+            throw ex;
+        }
+    }
+    return null;
 }
 
 /**
-    Attempts to allocate a new instance of $(D T).
+    Attempts to allocate a new instance of $(D T) using the DLang allocation
+    strategy.
 
     Params:
         args = The arguments to pass to the type's constructor.
@@ -109,49 +133,25 @@ Ref!T nogc_new(T, Args...)(auto ref Args args) @trusted {
     Returns: 
         A reference to the instantiated object or $(D null) if allocation
         failed.
+
+    See_Also:
+        $(D nogc_new), $(D cpp_new), $(D cpp_trynew)
 */
 Ref!T nogc_trynew(T, Args...)(auto ref Args args) @trusted nothrow {
-    static if (isCPP!T) {
-        return assumeNoThrowNoGC((Args args) => cpp_new!(T, Args)(args), args);
-    } else {
-        if (Ref!T newobject = cast(Ref!T)nu_malloc(AllocSize!T)) {
-            try {
-                nogc_construct(newobject, args);
-                return newobject;
+    if (Ref!T newobject = cast(Ref!T)nu_malloc(AllocSize!T)) {
+        try {
+            nogc_construct(newobject, args);
+            return newobject;
 
-            } catch(Exception ex) {
+        } catch(Exception ex) {
 
-                nu_free(cast(void*)newobject);
-                if (ex) 
-                    assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
-                return null;
-            }
+            nu_free(cast(void*)newobject);
+            if (ex) 
+                assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
+            return null;
         }
-        return null;
     }
-}
-
-/** 
-    Allocates a new instance of $(D T) on the specified heap.
-
-    Params:
-        heap = The heap to allocate the instance on.
-        args = The arguments to pass to the type's constructor.
-*/
-Ref!T nogc_new(T, Args...)(NuHeap heap, auto ref Args args) @trusted {
-    static if (isCPP!T) {
-        static assert(0, "Can't custom-heap allocate C++ Objects.");
-    } else {
-        if (Ref!T newobject = cast(Ref!T)heap.alloc(AllocSize!T)) {
-            try {
-                nogc_construct(newobject, args);
-            } catch(Exception ex) {
-                nu_free(cast(void*)newobject);
-                throw ex;
-            }
-        }
-        return null;
-    }
+    return null;
 }
 
 /**
@@ -166,56 +166,93 @@ Ref!T nogc_new(T, Args...)(NuHeap heap, auto ref Args args) @trusted {
         failed.
 */
 Ref!T nogc_trynew(T, Args...)(NuHeap heap, auto ref Args args) @trusted nothrow {
-    static if (isCPP!T) {
-        static assert(0, "Can't custom-heap allocate C++ Objects.");
-    } else {
-        if (Ref!T newobject = cast(Ref!T)heap.alloc(AllocSize!T)) {
-            try {
-                nogc_construct(newobject, args);
-                return newobject;
+    if (Ref!T newobject = cast(Ref!T)heap.alloc(AllocSize!T)) {
+        try {
+            nogc_construct(newobject, args);
+            return newobject;
 
-            } catch(Exception ex) {
-                
-                nu_free(cast(void*)newobject);
-                if (ex) 
-                    assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
-                return null;
-            }
+        } catch(Exception ex) {
+            
+            nu_free(cast(void*)newobject);
+            if (ex) 
+                assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
+            return null;
         }
-        return null;
     }
+    return null;
 }
 
 /**
     Finalizes $(D obj_) by calling its destructor (if any).
 
-    If $(D doFree) is $(D true), memory associated with obj_ will additionally be freed 
-    after finalizers have run; otherwise the object is reset to its original state.
+    Notes:
+        If $(D doFree) is $(D true), memory associated with obj_ will additionally be freed 
+        after finalizers have run; otherwise the object is reset to its original state.
 
     Params:
         obj_ = Instance to destroy and deallocate.
 */
 void nogc_delete(T, bool doFree=true)(ref T obj_) @trusted {
-    static if (isCPP!T) {
-        cpp_delete!T(obj_);
-    } else {
-        static if (isHeapAllocated!T) {
+    static if (isHeapAllocated!T) {
 
-            // Ensure type is not null.
-            if (reinterpret_cast!(void*)(obj_) !is null) {
+        // Ensure type is not null.
+        if (reinterpret_cast!(void*)(obj_) !is null) {
 
-                destruct!(T, !doFree)(obj_);
-
-                // Free memory if need be.
-                static if (doFree)
-                    nu_free(cast(void*)obj_);
-
-                obj_ = null;
-            }
-        } else {
             destruct!(T, !doFree)(obj_);
+
+            // Free memory if need be.
+            static if (doFree)
+                nu_free(cast(void*)obj_);
+
+            obj_ = null;
+        }
+    } else {
+        destruct!(T, !doFree)(obj_);
+    }
+}
+
+/**
+    Deallocates the specified instance of $(D T) from the specified heap.
+    Finalizes $(D obj_) by calling its destructor (if any).
+
+    Notes:
+        If $(D doFree) is $(D true), memory associated with obj_ will additionally be freed 
+        after finalizers have run; otherwise the object is reset to its original state.
+
+    Params:
+        heap = The heap to allocate the instance on.
+        obj_ = Instance to destroy and deallocate.
+*/
+void nogc_delete(T, bool doFree=true)(NuHeap heap, ref T obj_) @trusted {
+    static if (isHeapAllocated!T) {
+        if (reinterpret_cast!(void*)(obj_) !is null) {
+
+            destruct!(T, !doFree)(obj_);
+
+            // Free memory if need be.
+            static if (doFree)
+                heap.free(cast(void*)obj_);
+
+            obj_ = null;
         }
     }
+}
+
+/**
+    Finalizes the objects referenced by $(D objects) by calling the
+    destructors of its members (if any).
+
+    Notes:
+        If $(D doFree) is $(D true), memory associated with each object
+        will additionally be freed after finalizers have run; otherwise the object 
+        is reset to its original state.
+
+    Params:
+        objects = The objects to delete.
+*/
+void nogc_delete(T, bool doFree=true)(T[] objects) @trusted {
+    foreach(i; 0..objects.length)
+        nogc_delete!(T, doFree)(objects[i]);
 }
 
 /**
@@ -231,50 +268,15 @@ void nogc_delete(T, bool doFree=true)(ref T obj_) @trusted {
         Whether the operation succeeded.
 */
 bool nogc_trydelete(T, bool doFree=true)(ref T obj_) @trusted nothrow {
-    static if (isCPP!T) {
-        assumeNoThrowNoGC((ref T obj_) => cpp_delete!T(obj_), obj_);
+    try {
+        nogc_delete(obj_);
         return true;
-    } else {
-        try {
-            nogc_delete(obj_);
-            return true;
-        
-        } catch (Exception ex) {
-            if (ex) 
-                assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
-            return false;
-            
-        }
-    }
-}
+    
+    } catch (Exception ex) {
+        if (ex) 
+            assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
 
-/**
-    Deallocates the specified instance of $(D T) from the specified heap.
-    Finalizes $(D obj_) by calling its destructor (if any).
-
-    If $(D doFree) is $(D true), memory associated with obj_ will additionally be freed 
-    after finalizers have run; otherwise the object is reset to its original state.
-
-    Params:
-        heap = The heap to allocate the instance on.
-        obj_ = Instance to destroy and deallocate.
-*/
-void nogc_delete(T, bool doFree=true)(NuHeap heap, ref T obj_) @trusted {
-    static if (isCPP!T) {
-        static assert(0, "Can't custom-heap allocate C++ Objects.");
-    } else {
-        static if (isHeapAllocated!T) {
-            if (reinterpret_cast!(void*)(obj_) !is null) {
-
-                destruct!(T, !doFree)(obj_);
-
-                // Free memory if need be.
-                static if (doFree)
-                    heap.free(cast(void*)obj_);
-
-                obj_ = null;
-            }
-        }
+        return false;
     }
 }
 
@@ -282,8 +284,9 @@ void nogc_delete(T, bool doFree=true)(NuHeap heap, ref T obj_) @trusted {
     Attempts to deallocate the specified instance of $(D T) from the specified heap.
     Finalizes $(D obj_) by calling its destructor (if any).
 
-    If $(D doFree) is $(D true), memory associated with obj_ will additionally be freed 
-    after finalizers have run; otherwise the object is reset to its original state.
+    Notes:
+        If $(D doFree) is $(D true), memory associated with obj_ will additionally be freed 
+        after finalizers have run; otherwise the object is reset to its original state.
 
     Params:
         heap = The heap to allocate the instance on.
@@ -293,44 +296,28 @@ void nogc_delete(T, bool doFree=true)(NuHeap heap, ref T obj_) @trusted {
         Whether the operation succeeded.
 */
 bool nogc_trydelete(T, bool doFree=true)(NuHeap heap, ref T obj_) @trusted nothrow {
-    static if (isCPP!T) {
-        static assert(0, "Can't custom-heap allocate C++ Objects.");
-    } else {
-        static if (isHeapAllocated!T) {
-            try {
+    static if (isHeapAllocated!T) {
+        try {
 
-                nogc_delete(heap, obj_);
-                return true;
-            } catch (Exception ex) {
+            nogc_delete(heap, obj_);
+            return true;
+        } catch (Exception ex) {
 
-                if (ex)
-                    assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
-                return false;
-            }
+            if (ex)
+                assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
+            return false;
         }
     }
-}
-
-/**
-    Finalizes the objects referenced by $(D objects) by calling the
-    destructors of its members (if any).
-
-    If $(D doFree) is $(D true), memory associated with each object
-    will additionally be freed after finalizers have run; otherwise the object 
-    is reset to its original state.
-*/
-void nogc_delete(T, bool doFree=true)(T[] objects) @trusted {
-    foreach(i; 0..objects.length)
-        nogc_delete!(T, doFree)(objects[i]);
 }
 
 /**
     Attempts to finalize the objects referenced by $(D objects) by calling the
     destructors of its members (if any).
 
-    If $(D doFree) is $(D true), memory associated with each object
-    will additionally be freed after finalizers have run; otherwise the object 
-    is reset to its original state.
+    Notes:
+        If $(D doFree) is $(D true), memory associated with each object
+        will additionally be freed after finalizers have run; otherwise the object 
+        is reset to its original state.
 
     Params:
         objects = The objects to try to delete.
@@ -344,6 +331,126 @@ bool nogc_trydelete(T, bool doFree=true)(T[] objects) @trusted {
         failed += nogc_trydelete!(T, doFree)(objects[i]);
     
     return failed != 0;
+}
+
+/**
+    Allocates a new instance of $(D T) using the C++ allocation
+    strategy.
+
+    Notes:
+        $(D doXCtor) is used to specify whether to also call any D mangled
+        constructors defined for the C++ type.
+
+    See_Also:
+        @(D nogc_new), $(D nogc_trynew), $(D cpp_trynew), 
+*/
+Ref!T cpp_new(T, bool doXCtor=true, Args...)(auto ref Args args) @trusted {
+    return _nu_cpp_new!(T, doXCtor, Args)(forward!args);
+}
+
+/**
+    Attempts to allocate a new instance of $(D T) using the C++ allocation
+    strategy.
+
+    Notes:
+        $(D doXCtor) is used to specify whether to also call any D mangled
+        constructors defined for the C++ type.
+
+    See_Also:
+        @(D nogc_new), $(D nogc_trynew), $(D cpp_new)
+*/
+Ref!T cpp_trynew(T, bool doXCtor=true, Args...)(auto ref Args args) @trusted nothrow {
+    return assumeNoThrowNoGC((Args args) => _nu_cpp_new!(T, doXCtor, Args)(forward!args), args);
+}
+
+/**
+    Finalizes $(D obj_) by calling its destructor (if any).
+
+    Notes:
+        $(D doXDtor) is used to specify whether to also call any D mangled
+        destructors defined for the C++ type.
+
+    Params:
+        obj_ = Instance to destroy and deallocate.
+
+    See_Also:
+        @(D nogc_delete), $(D nogc_trydelete), $(D cpp_trydelete)
+*/
+void cpp_delete(T, bool doXDtor=true)(ref T obj_) @trusted if (isCPP!T)  {
+    _nu_cpp_delete!(T, doXDtor)(obj_);
+}
+
+/**
+    Finalizes the objects referenced by $(D objects) by calling the
+    destructors of its members (if any).
+
+    Notes:
+        $(D doXDtor) is used to specify whether to also call any D mangled
+        destructors defined for the C++ type.
+
+    Params:
+        objects = The objects to delete.
+    
+    See_Also:
+        @(D nogc_delete), $(D nogc_trydelete), $(D cpp_trydelete)
+*/
+void cpp_delete(T, bool doXDtor=true)(T[] objects) @trusted if (isCPP!T)  {
+    foreach(i; 0..objects.length)
+        _nu_cpp_delete!(T, doXDtor)(objects[i]);
+}
+
+/**
+    Attempts to finalize the objects referenced by $(D objects) by calling the
+    destructors of its members (if any).
+
+    Notes:
+        $(D doXDtor) is used to specify whether to also call any D mangled
+        destructors defined for the C++ type.
+
+    Params:
+        objects = The objects to try to delete.
+
+    Returns:
+        Whether the operation succeeded.
+    
+    See_Also:
+        @(D nogc_delete), $(D nogc_trydelete), $(D cpp_delete)
+*/
+bool cpp_trydelete(T, bool doFree=true)(T[] objects) @trusted {
+    size_t failed = 0;
+    foreach(i; 0..objects.length)
+        failed += cpp_trydelete!(T, doFree)(objects[i]);
+    
+    return failed != 0;
+}
+
+/**
+    Attempts to finalize $(D obj_) by calling its C++ destructor.
+
+    Notes:
+        $(D doXDtor) is used to specify whether to also call any D mangled
+        destructors defined for the C++ type.
+
+    Params:
+        obj_ = Instance to destroy and deallocate.
+
+    Returns:
+        Whether the operation succeeded.
+
+    See_Also:
+        @(D nogc_delete), $(D nogc_trydelete), $(D cpp_delete)
+*/
+bool cpp_trydelete(T, bool doXDtor=true)(ref T obj_) @trusted nothrow if (isCPP!T)  {
+    try {
+
+        _nu_cpp_delete!(T, doXDtor)(obj_);
+        return true;
+    } catch (Exception ex) {
+        if (ex)
+            assumeNoThrowNoGC((Exception ex) { nogc_delete(ex); }, ex);
+        
+        return false;
+    }
 }
 
 /**
