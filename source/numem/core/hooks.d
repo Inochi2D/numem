@@ -162,6 +162,10 @@ void* nu_memset(return scope void* dst, ubyte value, size_t bytes) @nogc nothrow
     This function $(B should) exit the application and if possible,
     print an error. But it $(B may) not print an error.
 
+    Notes:
+        This function may trigger a trap to alert a debugger to
+        create a breakpoint.
+
     Params:
         errMsg = A D string containing the error in question.
     
@@ -171,6 +175,28 @@ void* nu_memset(return scope void* dst, ubyte value, size_t bytes) @nogc nothrow
 export
 extern(C)
 void nu_fatal(const(char)[] errMsg) @nogc nothrow @system pure @weak {
+    debug {
+        version(LDC) {
+            import ldc.intrinsics : llvm_debugtrap;    
+
+            llvm_debugtrap();
+        } else version(DigitalMars) {
+            version(X86) {
+                asm @nogc pure nothrow {
+                    int 0x03;
+                }
+            } else version(X86_64) {
+                asm @nogc pure nothrow {
+                    int 0x03;
+                }
+            } else version(AArch64) {
+                asm @nogc pure nothrow {
+                    inst 0xd4200000;
+                }
+            }
+        }
+    }
+
     pragma(mangle, "printf")
     extern extern(C) int printf(const(char)*, ...) @nogc nothrow @system pure;
     pragma(mangle, "abort")
