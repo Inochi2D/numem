@@ -270,7 +270,7 @@ void nogc_delete(T, bool doFree=true)(T[] objects) @trusted {
 */
 bool nogc_trydelete(T, bool doFree=true)(ref T obj_) @trusted nothrow {
     try {
-        nogc_delete(obj_);
+        nogc_delete!(T, doFree)(obj_);
         return true;
     
     } catch (Exception ex) {
@@ -300,7 +300,7 @@ bool nogc_trydelete(T, bool doFree=true)(NuHeap heap, ref T obj_) @trusted nothr
     static if (isHeapAllocated!T) {
         try {
 
-            nogc_delete(heap, obj_);
+            nogc_delete!(T, doFree)(heap, obj_);
             return true;
         } catch (Exception ex) {
 

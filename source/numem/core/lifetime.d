@@ -103,39 +103,41 @@ void destruct(T, bool reInit=true)(ref T obj_) @nogc {
     } else {
         static if (isHeapAllocated!T) {
             if (obj_ !is null) {
-                static if (__traits(getLinkage, RealT) == "D") {
-                    auto cInfo = cast(ClassInfo)typeid(obj_);
-                    if (cInfo) {
-                        auto c = cInfo;
+                static if (hasAnyDestructor!RealT) {
+                    static if (__traits(getLinkage, RealT) == "D") {
+                        auto cInfo = cast(ClassInfo)typeid(obj_);
+                        if (cInfo) {
+                            auto c = cInfo;
 
-                        // Call destructors in order of most specific
-                        // to least-specific
-                        do {
-                            if (c.destructor)
-                                (cast(fp_t)c.destructor)(cast(Object)obj_);
-                        } while((c = c.base) !is null);
-                        
-                    } else {
+                            // Call destructors in order of most specific
+                            // to least-specific
+                            do {
+                                if (c.destructor)
+                                    (cast(fp_t)c.destructor)(cast(Object)obj_);
+                            } while((c = c.base) !is null);
+                            
+                        } else {
 
-                        // Item is a struct, we can destruct it directly.
-                        static if (__traits(hasMember, RealT, "__xdtor")) {
-                            assumeNoGC(&obj_.__xdtor);
-                        } else static if (__traits(hasMember, RealT, "__dtor")) {
-                            assumeNoGC(&obj_.__dtor);
+                            // Item is a struct, we can destruct it directly.
+                            static if (__traits(hasMember, RealT, "__xdtor")) {
+                                assumeNoGC(&obj_.__xdtor);
+                            } else static if (__traits(hasMember, RealT, "__dtor")) {
+                                assumeNoGC(&obj_.__dtor);
+                            }
                         }
-                    }
-                } else static if (__traits(getLinkage, Unref!T) == "C++") {
+                    } else static if (__traits(getLinkage, RealT) == "C++") {
 
-                    // C++ and Objective-C types may have D destructors declared
-                    // with extern(D), in that case, just call those.
+                        // C++ and Objective-C types may have D destructors declared
+                        // with extern(D), in that case, just call those.
 
-                    static if (__traits(hasMember, RealT, "__xdtor")) {
+                        static if (__traits(hasMember, RealT, "__xdtor")) {
+                            assumeNoGC(&xdtor!T, obj_);
+                        }
+                    } else static if (__traits(hasMember, RealT, "__xdtor")) {
+                        
+                        // Item is liekly a struct, we can destruct it directly.
                         assumeNoGC(&xdtor!T, obj_);
                     }
-                } else static if (__traits(hasMember, RealT, "__xdtor")) {
-                    
-                    // Item is liekly a struct, we can destruct it directly.
-                    assumeNoGC(&xdtor!T, obj_);
                 }
             }
         } else {

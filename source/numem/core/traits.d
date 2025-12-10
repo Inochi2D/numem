@@ -103,7 +103,7 @@ template Ref(T) {
 }
 
 /**
-    Gets the reference type version of type $(D T).
+    Gets the value type version of type $(D T).
 */
 template Unref(T) {
     static if (!isClasslike!T && isHeapAllocated!T)
@@ -178,6 +178,11 @@ enum isClasslike(T) =
 */
 enum isStructLike(T) =
     is(T == struct) || is(T == union);
+
+/**
+    Gets whether $(D T) is a type.
+*/
+enum isType(T) = !is(typeof(T)) || is(T == void);
 
 /**
     Gets whether the provided type is a scalar type.
@@ -397,7 +402,7 @@ enum rcReleaseNames = AliasSeq!("release", "Release");
 */
 template hasRCReleaseFunction(T) {
     static if (isCOMClass!T || isValidObjectiveC!T) {
-        enum hasRCRetainFunction = true;
+        enum hasRCReleaseFunction = true;
     } else {
         enum hasRCFunc(string name) = __traits(hasMember, T, name) && is(typeof((ref T obj) { __traits(getMember, obj, name)(); }));
         enum hasRCReleaseFunction = anySatisfy!(hasRCFunc, rcReleaseNames);
@@ -493,14 +498,34 @@ template hasElaborateCopyConstructor(T) {
 */
 template hasElaborateDestructor(T) {
     static if (isObjectiveC!T)
-        enum hasElaborateDestructor = false;
+        enum bool hasElaborateDestructor = false;
     else static if (__traits(isStaticArray, T)) 
         enum bool hasElaborateDestructor = T.sizeof && hasElaborateDestructor!(BaseElemOf!T);
     else static if (isAggregateType!T)
-        enum hasElaborateDestructor = __traits(hasMember, T, "__dtor") ||
+        enum bool hasElaborateDestructor = __traits(hasMember, T, "__dtor") ||
                                       anySatisfy!(.hasElaborateDestructor, Fields!T);
     else
-        enum hasElaborateDestructor = false;
+        enum bool hasElaborateDestructor = false;
+}
+
+/**
+    Gets whether type $(D T) has any destructor semantics, whether explicit
+    or implicit.
+*/
+template hasAnyDestructor(T) {
+    static if (isObjectiveC!T)
+        enum bool hasAnyDestructor = false;
+    else static if (__traits(isStaticArray, T)) 
+        enum bool hasAnyDestructor = T.sizeof && hasAnyDestructor!(BaseElemOf!T);
+    else static if (isAggregateType!T)
+        enum bool hasAnyDestructor =
+            is(T == class) ||                       // Classes have implicit destructors 
+            is(T == interface) ||                   // Interfaces have implicit destructors
+            __traits(hasMember, T, "__xdtor") ||
+            __traits(hasMember, T, "__dtor") ||
+            anySatisfy!(.hasAnyDestructor, Fields!T);
+    else
+        enum bool hasAnyDestructor = false;
 }
 
 /**

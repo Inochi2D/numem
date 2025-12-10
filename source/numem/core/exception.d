@@ -84,6 +84,24 @@ auto assumePure(T, Args...)(T expr, auto ref Args args) pure if (isSomeFunction!
 }
 
 /**
+    Assumes that the provided function is @nogc, nothrow and pure.
+
+    Params:
+        expr =  The expression to execute.
+        args =  Arguments to pass to the function.
+*/
+auto assumeNoThrowNoGCPure(T, Args...)(T expr, auto ref Args args) pure if (isSomeFunction!T) {
+    static if (is(T Fptr : Fptr*) && is(Fptr == function))
+        alias ft = @nogc nothrow pure ReturnType!T function(Parameters!T);
+    else static if (is(T Fdlg == delegate))
+        alias ft = @nogc nothrow pure ReturnType!T delegate(Parameters!T);
+    else
+        static assert(0);
+
+    return (cast(ft)expr)(args);
+}
+
+/**
     An exception which can be thrown from numem
 */
 class NuException : Exception {
@@ -105,6 +123,13 @@ public:
     */
     this(const(char)[] msg, Throwable nextInChain = null, string file = __FILE__, size_t line = __LINE__) {
         super(cast(string)msg.nu_dup(), nextInChain, file, line);
+    }
+
+    /**
+        Helper that creates a new exception.
+    */
+    static NuException create(const(char)[] msg, Throwable nextInChain = null, string file = __FILE__, size_t line = __LINE__) {
+        return nogc_new!NuException(msg, nextInChain, file, line);
     }
 
     /**
