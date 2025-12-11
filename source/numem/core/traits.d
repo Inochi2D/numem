@@ -510,6 +510,12 @@ template hasElaborateDestructor(T) {
     or implicit.
 */
 template hasAnyDestructor(T) {
+
+    // NOTE: To handle self-referential structs we need this layer of indirection.
+    template isNotSelf(U) {
+        enum isNotSelf = !is(Unref!U == Unref!T);
+    }
+
     static if (isObjectiveC!T)
         enum bool hasAnyDestructor = false;
     else static if (__traits(isStaticArray, T)) 
@@ -518,14 +524,10 @@ template hasAnyDestructor(T) {
         enum bool hasAnyDestructor = true; 
     else static if (is(T == interface))         // Interfaces have implicit destructors 
         enum bool hasAnyDestructor = true;
-    else static if (is(T == struct)) {
-
-        // NOTE: Some types should always report as true, especially if said types
-        //       can be self-referential.
-        static if (is(typeof(() { T.init.__xdtor(); })))
+    else static if (is(Unref!T == struct)) {
+        static if (is(typeof(() { Unref!T.init.__xdtor(); })))
             enum bool hasAnyDestructor = true;
-        else
-            enum bool hasAnyDestructor = anySatisfy!(.hasAnyDestructor, Fields!T);
+        else enum bool hasAnyDestructor = anySatisfy!(.hasAnyDestructor, Filter!(isNotSelf, Fields!(Unref!T)));
     } else
         enum bool hasAnyDestructor = false;
 }
