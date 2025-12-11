@@ -161,6 +161,11 @@ T[] nu_malloca(T)(size_t count) {
 /**
     Frees a slice.
 
+    Notes:
+        This function will call destructors for types that have destructors
+        (implicit or otherwise). you may use $(D nogc_zeroinit) to zero fill the
+        slice before freeing if need be.
+
     Params:
         slice = The slice to free.
 */
@@ -169,7 +174,7 @@ void nu_freea(T)(ref T[] slice) {
         foreach(i; 0..slice.length) {
             nu_release(slice[i]);
         }
-    } else static if (hasElaborateDestructor!T) {
+    } else static if (hasAnyDestructor!T) {
         nogc_delete(slice[0..$]);
     }
 

@@ -497,13 +497,10 @@ template hasElaborateCopyConstructor(T) {
     Gets whether type $(D T) has elaborate destructor semantics (is ~this() declared).
 */
 template hasElaborateDestructor(T) {
-    static if (isObjectiveC!T)
-        enum bool hasElaborateDestructor = false;
-    else static if (__traits(isStaticArray, T)) 
+    static if (__traits(isStaticArray, T)) 
         enum bool hasElaborateDestructor = T.sizeof && hasElaborateDestructor!(BaseElemOf!T);
-    else static if (isAggregateType!T)
-        enum bool hasElaborateDestructor = __traits(hasMember, T, "__dtor") ||
-                                      anySatisfy!(.hasElaborateDestructor, Fields!T);
+    else static if (is(T == struct))
+        enum bool hasElaborateDestructor = is(typeof(() { T.init.__xdtor(); }));
     else
         enum bool hasElaborateDestructor = false;
 }
@@ -517,14 +514,19 @@ template hasAnyDestructor(T) {
         enum bool hasAnyDestructor = false;
     else static if (__traits(isStaticArray, T)) 
         enum bool hasAnyDestructor = T.sizeof && hasAnyDestructor!(BaseElemOf!T);
-    else static if (isAggregateType!T)
-        enum bool hasAnyDestructor =
-            is(T == class) ||                       // Classes have implicit destructors 
-            is(T == interface) ||                   // Interfaces have implicit destructors
-            __traits(hasMember, T, "__xdtor") ||
-            __traits(hasMember, T, "__dtor") ||
-            anySatisfy!(.hasAnyDestructor, Fields!T);
-    else
+    else static if (is(T == class))             // Classes have implicit destructors 
+        enum bool hasAnyDestructor = true; 
+    else static if (is(T == interface))         // Interfaces have implicit destructors 
+        enum bool hasAnyDestructor = true;
+    else static if (is(T == struct)) {
+
+        // NOTE: Some types should always report as true, especially if said types
+        //       can be self-referential.
+        static if (is(typeof(() { T.init.__xdtor(); })))
+            enum bool hasAnyDestructor = true;
+        else
+            enum bool hasAnyDestructor = anySatisfy!(.hasAnyDestructor, Fields!T);
+    } else
         enum bool hasAnyDestructor = false;
 }
 

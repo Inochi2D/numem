@@ -94,7 +94,7 @@ public:
     */
     void reset() @trusted nothrow {
         static if (isHeapAllocated!T) {
-            static if (hasElaborateDestructor!T)
+            static if (hasAnyDestructor!T)
                 nogc_trydelete(this.value_);
             else {
                 nu_free(this.value_);
