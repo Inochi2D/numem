@@ -27,7 +27,7 @@ alias AliasSeq(AliasList...) = AliasList;
 */
 template allSatisfy(alias F, T...) {
     static foreach(U; T) {
-        static if (!is(typeof(allSatisfy) == bool) && isValidTemplate!(F, U) && !F!(U))
+        static if (!is(typeof(allSatisfy) == bool) && is(typeof(F!U)) && !F!(U))
             enum allSatisfy = false;
     }
 
@@ -41,18 +41,13 @@ template allSatisfy(alias F, T...) {
 */
 template anySatisfy(alias F, T...) {
     static foreach(U; T) {
-        static if (!is(typeof(anySatisfy) == bool) && isValidTemplate!(F, U) && F!U)
+        static if (!is(typeof(anySatisfy) == bool) && is(typeof(F!U)) && F!U)
             enum anySatisfy = true;
     }
 
     static if (!is(typeof(anySatisfy) == bool))
         enum anySatisfy = false;
 }
-
-/**
-    Gets whether template invocation $(D F) is valid.
-*/
-enum isValidTemplate(alias F, Args...) = is(typeof(F!Args)) || is(F!Args);
 
 /**
     Returns a sequence of F!(T[0]), F!(T[1]), ..., F!(T[$-1])
