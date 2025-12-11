@@ -175,6 +175,15 @@ void* nu_memset(return scope void* dst, ubyte value, size_t bytes) @nogc nothrow
 export
 extern(C)
 void nu_fatal(const(char)[] errMsg) @nogc nothrow @system pure @weak {
+    pragma(mangle, "printf")
+    extern extern(C) void printf(const(char)*, ...) @nogc nothrow @system pure;
+    pragma(mangle, "abort")
+    extern extern(C) void abort() @nogc nothrow @system pure;
+
+    // Print to stderr
+    printf("fatal error: %.*s\n", cast(int)errMsg.length, errMsg.ptr);
+
+    // Debugger trap
     debug {
         version(LDC) {
             import ldc.intrinsics : llvm_debugtrap;    
@@ -197,12 +206,7 @@ void nu_fatal(const(char)[] errMsg) @nogc nothrow @system pure @weak {
         }
     }
 
-    pragma(mangle, "printf")
-    extern extern(C) int printf(const(char)*, ...) @nogc nothrow @system pure;
-    pragma(mangle, "abort")
-    extern extern(C) void abort() @nogc nothrow @system pure;
-
-    printf("%.*s", cast(int)errMsg.length, errMsg.ptr);
+    // Final abort.
     abort();
 }
 
