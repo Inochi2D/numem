@@ -225,7 +225,7 @@ enum isIntegral(T) = __traits(isIntegral, T);
     Gets whether type T is a numeric type.
 */
 enum isNumeric(T) = 
-    __traits(isFloating, T) && 
+    __traits(isFloating, T) || 
     __traits(isIntegral, T);
 
 template FtoI(T) {
