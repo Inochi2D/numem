@@ -105,17 +105,19 @@ void destruct(T, bool reInit=true)(ref T obj_) @nogc {
             if (obj_ !is null) {
                 static if (hasAnyDestructor!RealT) {
                     static if (__traits(getLinkage, RealT) == "D") {
-                        auto cInfo = cast(ClassInfo)typeid(obj_);
-                        if (cInfo) {
-                            auto c = cInfo;
+                        static if (is(RealT == class)) {
+                            auto cInfo = cast(TypeInfo_Class)typeid(obj_);
+                            if (cInfo) {
+                                auto c = cInfo;
 
-                            // Call destructors in order of most specific
-                            // to least-specific
-                            do {
-                                if (c.destructor)
-                                    (cast(fp_t)c.destructor)(cast(Object)obj_);
-                            } while((c = c.base) !is null);
-                            
+                                // Call destructors in order of most specific
+                                // to least-specific
+                                do {
+                                    if (c.destructor)
+                                        (cast(fp_t)c.destructor)(cast(Object)obj_);
+                                } while((c = c.base) !is null);
+                                
+                            }
                         } else {
 
                             // Item is a struct, we can destruct it directly.
