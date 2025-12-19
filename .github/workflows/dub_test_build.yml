@@ -70,7 +70,8 @@ jobs:
     - name: 'Install linux dependencies...'
       if: ${{ inputs.linux_deps != '' && matrix.os == 'ubuntu-latest' }}
       run: |
-        sudo apt install -y ${{ inputs.linux_deps }}
+        sudo apt-get update -y
+        sudo apt-get install -y ${{ inputs.linux_deps }}
       
     - name: 'Install osx dependencies...'
       if: ${{ inputs.osx_deps != '' && matrix.os == 'macOS-latest' }}
