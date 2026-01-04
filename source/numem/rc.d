@@ -29,6 +29,23 @@ public:
     this(T value) @trusted {
         this.rc = nogc_new!__rc(1, value);
     }
+
+    /**
+        Retains a reference to the stored value.
+    */
+    auto ref retain()() @trusted {
+        this.__retain();
+        return this;
+    }
+
+    /**
+        Releases a reference to the stored value.
+        This invalidates the Rc instance.
+    */
+    auto ref release()() @trusted {
+        this.__release();
+        return this;
+    }
 }
 
 /**
@@ -41,7 +58,7 @@ public:
 
     /// Destructor
     ~this() {
-        this.release();
+        this.__release();
     }
 
     /**
@@ -59,6 +76,7 @@ public:
     */
     this(ref return scope inout(typeof(this)) rhs) inout @trusted {
         this.rc = rhs.rc;
+        (cast(Arc!T)this).__retain();
     }
 }
 
@@ -74,29 +92,16 @@ private:
     }
 
     __rc* rc;
-public:
-    alias value this;
 
-    /**
-        The value stored in the rc type.
-    */
-    @property T value() @safe => rc ? rc.value : T.init;
-
-    /**
-        Retains a reference to the stored value.
-    */
-    auto ref retain()() @trusted {
+    pragma(inline, true)
+    void __retain() @trusted nothrow {
         if (rc) {
             nu_atomic_add_32(rc.refs, 1);
         }
-        return this;
     }
 
-    /**
-        Releases a reference to the stored value.
-        This invalidates the Rc instance.
-    */
-    auto ref release()() @trusted {
+    pragma(inline, true)
+    void __release() @trusted nothrow {
         if (rc) {
             if (nu_atomic_sub_32(rc.refs, 1) == 1) {
                 nogc_delete(rc.value);
@@ -105,4 +110,12 @@ public:
         }
         this.rc = null;
     }
+
+public:
+    alias value this;
+
+    /**
+        The value stored in the rc type.
+    */
+    @property T value() @safe => rc ? rc.value : T.init;
 }

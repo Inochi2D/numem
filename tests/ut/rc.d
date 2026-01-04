@@ -1,5 +1,6 @@
 module tests.ut.rc;
 import numem.rc;
+import numem.lifetime : nogc_delete;
 
 @("Rc!int")
 unittest {
@@ -15,6 +16,6 @@ unittest {
     Arc!int a = 24;
     assert(a == 24);
     
-    a.release();
+    nogc_delete(a);
     assert(a == 0);
 }
