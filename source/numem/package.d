@@ -17,6 +17,7 @@ public import numem.casting;
 public import numem.lifetime;
 public import numem.object;
 public import numem.optional;
+public import numem.rc;
 
 /**
     Container for numem version.
