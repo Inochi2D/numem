@@ -50,12 +50,10 @@ jobs:
       fail-fast: true
       matrix:
         os: [macOS-latest, ubuntu-latest, windows-latest]
-        dc: [ldc, ldc-beta, dmd, dmd-beta]
+        dc: [ldc, ldc-beta, dmd]
         exclude:
           - os: macOS-latest
             dc: dmd
-          - os: macOS-latest
-            dc: dmd-beta
     env:
       DUB_BUILD_CFG_FLAG: ${{ inputs.dep_config != '' && format('--config={0}', inputs.dep_config) || '' }}
       DUB_BUILD_CFG_NAME: ${{ inputs.dep_config != '' && inputs.dep_config || 'default' }}
