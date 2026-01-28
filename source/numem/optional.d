@@ -168,7 +168,7 @@ struct Result(T) {
 private:
 @nogc:
     string error_ = "Generic error";
-    T value_;
+    T value_ = T.init;
 
 public:
     alias isOK this; // Allows using Result in if statements.
