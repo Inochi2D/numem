@@ -183,6 +183,21 @@ void nu_freea(T)(ref T[] slice) {
 }
 
 /**
+    Clears a slice.
+
+    Note:
+        This function does *not* free the elements within in the
+        slice, only the direct pointer of the slice is freed.
+
+    Params:
+        slice = The slice to clear.
+*/
+void nu_cleara(T)(ref T[] slice) {
+    nu_free(cast(void*)slice.ptr);
+    slice = null;
+}
+
+/**
     Creates a shallow duplicate of the given buffer.
 
     Params:
@@ -335,7 +350,7 @@ if (is(T == char) || is(T == wchar) || is(T == dchar)) {
         a = First item to swap
         b = Second item to swap.
 */
-void nu_swap(T)(ref T a, ref T b) {
+void nu_swap(T)(ref T a, ref T b) @nogc {
     static if (is(typeof((ref T a, ref T b) { a.moveTo(b); b.moveTo(a); }))) {
         auto tmp = a.move;
         b.moveTo(a);
