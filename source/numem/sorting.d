@@ -2,6 +2,7 @@
     Sorting utilities.
 
     Copyright:
+        Copyright © 2026, Kitsunebi Games
         Copyright © 2026, Inochi2D Project
         Copyright © 2008-2026, Andrei Alexandrescu
 
