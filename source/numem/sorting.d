@@ -44,7 +44,7 @@ private:
 //
 template TimSortImpl(alias pred, R) {
 @nogc nothrow:
-    import numem.core.math : nu_min;
+    import numem.core.math : nu_min, nu_bsr;
     import numem.core.traits;
     import numem.lifetime;
 
@@ -146,15 +146,9 @@ template TimSortImpl(alias pred, R) {
     // Calculates optimal value for minRun:
     // take first 6 bits of n and add 1 if any lower bits are set
     size_t minRunLength()(size_t n) {
-        immutable shift = bsr(n) - 5;
+        immutable shift = nu_bsr(n) - 5;
         auto result = (n >> shift) + !!(n & ~((1 << shift) - 1));
         return result;
-    }
-
-    int bsr(T)(T v) {
-        import ldc.intrinsics : llvm_ctlz;
-
-        return cast(int)(typeof(v).sizeof * 8 - 1 - llvm_ctlz(v, true));
     }
 
     // Returns length of first run in range
@@ -253,7 +247,7 @@ template TimSortImpl(alias pred, R) {
     // Enlarge size of temporary memory if needed
     T[] ensureCapacity()(size_t minCapacity, T[] temp) {
         if (temp.length < minCapacity) {
-            size_t newSize = 1 << (bsr(minCapacity) + 1);
+            size_t newSize = 1 << (nu_bsr(minCapacity) + 1);
             //Test for overflow
             if (newSize < minCapacity)
                 newSize = minCapacity;

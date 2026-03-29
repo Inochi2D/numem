@@ -81,3 +81,71 @@ auto ref T nu_min(T)(auto ref T a, auto ref T b) @nogc nothrow @trusted pure if 
 auto ref T nu_max(T)(auto ref T a, auto ref T b) @nogc nothrow @trusted pure if (is(typeof(() => T.init > T.init))) {
     return (a > b) ? a : b;
 }
+
+/**
+    Scans the bits in the provided value from the most
+    significant bit to the least significant bit, getting
+    the offset of the first set bit.
+
+    Params:
+        value = The value to scan
+    
+    Returns:
+        The index of the first bit set, value is undefined
+        if value is zero.
+*/
+T nu_bsr(T)(T value) @nogc nothrow @trusted pure
+if (__traits(isIntegral, T)) {
+    version(LDC) {
+        import ldc.intrinsics : llvm_ctlz;
+        return cast(int)(value.sizeof * 8 - 1 - llvm_ctlz(value, true));
+    } else {
+        
+        // Slow software implementation.
+        uint offset = 0;
+        T mask = cast(T)~(T.max >>> 1);
+        foreach(i; 0..T.sizeof*8) {
+            if (value & mask)
+                break;
+            
+            offset++;
+            mask >>>= 1;
+        }
+
+        return offset;
+    }
+}
+
+/**
+    Scans the bits in the provided value from the least
+    significant bit to the most significant bit, getting
+    the offset of the first set bit.
+
+    Params:
+        value = The value to scan
+    
+    Returns:
+        The index of the first bit set, value is undefined
+        if value is zero.
+*/
+T nu_bsf(T)(T value) @nogc nothrow @trusted pure
+if (__traits(isIntegral, T)) {
+    version(LDC) {
+        import ldc.intrinsics : llvm_cttz;
+        return cast(int)(value.sizeof * 8 - 1 - llvm_cttz(value, true));
+    } else {
+        
+        // Slow software implementation.
+        uint offset = 0;
+        T mask = 1;
+        foreach(i; 0..T.sizeof*8) {
+            if (value & mask)
+                break;
+            
+            offset++;
+            mask <<= 1;
+        }
+
+        return offset;
+    }
+}
