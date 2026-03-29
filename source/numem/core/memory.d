@@ -198,6 +198,27 @@ void nu_cleara(T)(ref T[] slice) {
 }
 
 /**
+    Reverses the contents of the given range.
+
+    Params:
+        range = The range to reverse the contents of.
+*/
+pragma(inline, true)
+void nu_reverse(T)(auto ref T[] range) @nogc nothrow {
+    import numem.core.memory : nu_swap;
+    import numem.core.hooks : nu_memmove;
+
+    foreach (i; 0 .. range.length / 2) {
+        T tmp;
+        T* a = &range[i];
+        T* b = &range[range.length - i];
+        nu_memmove(&tmp, &a, T.sizeof);
+        nu_memmove(&a, &b, T.sizeof);
+        nu_memmove(&b, &tmp, T.sizeof);
+    }
+}
+
+/**
     Creates a shallow duplicate of the given buffer.
 
     Params:

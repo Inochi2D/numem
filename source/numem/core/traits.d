@@ -46,6 +46,16 @@ template BaseElemOf(T) {
 }
 
 /**
+    Gets the element type of the given range type $(D T).
+*/
+template ElementType(T) {
+    static if (is(typeof(T.init[0]) Y))
+        alias ElementType = Y;
+    else
+        alias ElementType = void;
+}
+
+/**
     Gets the original type of $(D T).
 */
 template OriginalType(T) {
