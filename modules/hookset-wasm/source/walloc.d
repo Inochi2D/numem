@@ -4,14 +4,14 @@
     Copyright (c) 2023-2025, Kitsunebi Games
     Copyright (c) 2023-2025, Inochi2D Project
     Copyright (c) 2020, Igalia, S.L.
-    
+
     Distributed under an MIT-style License.
     (See accompanying LICENSE file or copy at
     https://github.com/wingo/walloc/blob/master/LICENSE.md)
 */
 module walloc;
-import ldc.intrinsics : 
-    llvm_wasm_memory_grow, 
+import ldc.intrinsics :
+    llvm_wasm_memory_grow,
     llvm_wasm_memory_size,
     llvm_memmove;
 
@@ -54,9 +54,9 @@ void* realloc(void* ptr, size_t newSize) @nogc nothrow @system {
         return malloc(newSize);
 
     size_t oldSize = get_alloc_size(ptr);
-    if (oldSize <= newSize)
+    if (newSize <= oldSize)
         return ptr;
-    
+
     // Size is bigger, realloc just to be sure.
     void* n_mem = malloc(newSize);
     llvm_memmove(n_mem, ptr, oldSize, true);
@@ -75,11 +75,12 @@ size_t get_alloc_size(void* ptr) {
         _large_object_t* obj = get_large_object(ptr);
         return obj.size;
     }
-    
-    ptrdiff_t granules = chunk_kind_to_granules(kind);
-    if (granules <= chunk_kind.SMALL_OBJECT_CHUNK_KINDS)
+
+    if (kind < chunk_kind.SMALL_OBJECT_CHUNK_KINDS) {
+        ptrdiff_t granules = chunk_kind_to_granules(kind);
         return granules * GRANULE_SIZE;
-    
+    }
+
     return 0;
 }
 
@@ -120,7 +121,7 @@ static assert(PAGE_SIZE == CHUNK_SIZE * CHUNKS_PER_PAGE);
 static assert(CHUNK_SIZE == 1 << CHUNK_SIZE_LOG_2);
 static assert(PAGE_SIZE == 1 << PAGE_SIZE_LOG_2);
 static assert(GRANULE_SIZE == 1 << GRANULE_SIZE_LOG_2);
-static assert(LARGE_OBJECT_THRESHOLD == 
+static assert(LARGE_OBJECT_THRESHOLD ==
     LARGE_OBJECT_GRANULE_THRESHOLD * GRANULE_SIZE);
 
 struct _chunk_t {
@@ -151,7 +152,7 @@ __gshared const ubyte[] small_object_granule_sizes = [
 pragma(inline, true)
 chunk_kind granules_to_chunk_kind(size_t granules) {
     static foreach(gsize; small_object_granule_sizes) {
-        if (granules <= gsize) 
+        if (granules <= gsize)
             return mixin(q{chunk_kind.GRANULES_}, cast(int)gsize);
     }
     return chunk_kind.LARGE_OBJECT;
@@ -160,7 +161,7 @@ chunk_kind granules_to_chunk_kind(size_t granules) {
 pragma(inline, true)
 ubyte chunk_kind_to_granules(chunk_kind kind) {
     static foreach(gsize; small_object_granule_sizes) {
-        if (kind == mixin(q{chunk_kind.GRANULES_}, cast(int)gsize)) 
+        if (kind == mixin(q{chunk_kind.GRANULES_}, cast(int)gsize))
             return gsize;
     }
     return cast(ubyte)-1;
@@ -203,7 +204,7 @@ void* get_large_object_payload(_large_object_t *obj) {
 
 pragma(inline, true)
 _large_object_t* get_large_object(void *ptr) {
-  return cast(_large_object_t*)ptr - LARGE_OBJECT_HEADER_SIZE;
+  return cast(_large_object_t*)(ptr - LARGE_OBJECT_HEADER_SIZE);
 }
 
 _page_t* allocate_pages(size_t payloadSize, size_t* allocated) {
@@ -225,7 +226,7 @@ _page_t* allocate_pages(size_t payloadSize, size_t* allocated) {
         // Always grow the walloc heap at least by 50%.
         grow = _alignv(_max(walloc_heap_size / 2, needed - preallocated),
                         PAGE_SIZE);
-        
+
         assert(grow);
         if (llvm_wasm_memory_grow(0, cast(int)(grow >> PAGE_SIZE_LOG_2)) == -1) {
             return null;
@@ -493,9 +494,9 @@ void* allocate_small(chunk_kind kind) {
     _freelist_t** loc = get_small_object_freelist(kind);
     if (!*loc) {
         _freelist_t* freelist = obtain_small_objects(kind);
-        if (!freelist) 
+        if (!freelist)
             return null;
-        
+
         *loc = freelist;
     }
 
