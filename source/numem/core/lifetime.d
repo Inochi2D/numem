@@ -451,7 +451,7 @@ void __move_postblit(T)(ref T newLocation, ref T oldLocation) @nogc @system {
 */
 template forward(args...)
 {
-    import core.internal.traits : AliasSeq;
+    import numem.core.meta : AliasSeq;
     import numem.object;
 
     template fwd(alias arg)
