@@ -132,7 +132,7 @@ T nu_bsf(T)(T value) @nogc nothrow @trusted pure
 if (__traits(isIntegral, T)) {
     version(LDC) {
         import ldc.intrinsics : llvm_cttz;
-        return cast(int)(value.sizeof * 8 - 1 - llvm_cttz(value, true));
+        return cast(int)(llvm_cttz(value, true));
     } else {
         
         // Slow software implementation.
