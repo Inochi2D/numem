@@ -94,7 +94,7 @@ auto ref T nu_max(T)(auto ref T a, auto ref T b) @nogc nothrow @trusted pure if 
         The index of the first bit set, value is undefined
         if value is zero.
 */
-T nu_bsr(T)(T value) @nogc nothrow @trusted pure
+int nu_bsr(T)(T value) @nogc nothrow @trusted pure
 if (__traits(isIntegral, T)) {
     version(LDC) {
         import ldc.intrinsics : llvm_ctlz;
@@ -102,7 +102,7 @@ if (__traits(isIntegral, T)) {
     } else {
         
         // Slow software implementation.
-        uint offset = 0;
+        int offset = 0;
         T mask = cast(T)~(T.max >>> 1);
         foreach(i; 0..T.sizeof*8) {
             if (value & mask)
@@ -128,7 +128,7 @@ if (__traits(isIntegral, T)) {
         The index of the first bit set, value is undefined
         if value is zero.
 */
-T nu_bsf(T)(T value) @nogc nothrow @trusted pure
+int nu_bsf(T)(T value) @nogc nothrow @trusted pure
 if (__traits(isIntegral, T)) {
     version(LDC) {
         import ldc.intrinsics : llvm_cttz;
@@ -136,7 +136,7 @@ if (__traits(isIntegral, T)) {
     } else {
         
         // Slow software implementation.
-        uint offset = 0;
+        int offset = 0;
         T mask = 1;
         foreach(i; 0..T.sizeof*8) {
             if (value & mask)
