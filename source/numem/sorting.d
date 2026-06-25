@@ -15,6 +15,7 @@
 */
 module numem.sorting;
 import numem.core.memory;
+import numem.core.traits;
 
 /**
     Sorts the given range using the given predicate function
@@ -37,6 +38,18 @@ void nu_sort(alias pred, R)(R range) @nogc nothrow {
 private:
 
 
+ElementType!R moveAt(R)(R r, size_t i) {
+    static if (is(typeof(&r.moveAt))) {
+        return r.moveAt(i);
+    } else static if (!hasElaborateCopyConstructor!(ElementType!R)) {
+        return r[i];
+    } else static if (is(typeof(&r[i]) == ElementType!R*)) {
+        return r[i];
+    } else {
+        static assert(0, "Cannot move element of range with a postblit or rvalue elements.");
+    }
+}
+
 
 
 //
@@ -45,28 +58,16 @@ private:
 template TimSortImpl(alias pred, R) {
 @nogc nothrow:
     import numem.core.math : nu_min, nu_bsr;
-    import numem.core.traits;
     import numem.lifetime;
 
     enum hasLvalueElements(X) = is(lvalueOf!(ElementType!X));
 
     alias T = ElementType!R;
 
-    bool less()(auto ref T a, auto ref T b) {
-        return pred(a, b);
-    }
-
-    bool greater()(auto ref T a, auto ref T b) {
-        return pred(b, a);
-    }
-
-    bool greaterEqual()(auto ref T a, auto ref T b) {
-        return !less(a, b);
-    }
-
-    bool lessEqual()(auto ref T a, auto ref T b) {
-        return !less(b, a);
-    }
+    alias less = pred;
+    bool greater()(auto ref T a, auto ref T b) { return less(b, a); }
+    bool greaterEqual()(auto ref T a, auto ref T b) { return !less(a, b); }
+    bool lessEqual()(auto ref T a, auto ref T b) { return !less(b, a); }
 
     enum minimalMerge = 128;
     enum minimalGallop = 7;
@@ -168,14 +169,10 @@ template TimSortImpl(alias pred, R) {
         return i;
     }
 
-    ElementType!R moveAt(R range, size_t offset) {
-        return range[offset].move();
-    }
-
     // A binary insertion sort for building runs up to minRun length
     void binaryInsertionSort()(R range, size_t sortedLen = 1) {
         for (; sortedLen < range.length; ++sortedLen) {
-            T item = moveAt(range, sortedLen);
+            T item = range[sortedLen];
             size_t lower = 0;
             size_t upper = sortedLen;
             while (upper != lower) {
@@ -185,6 +182,7 @@ template TimSortImpl(alias pred, R) {
                 else
                     lower = center + 1;
             }
+
             //Currently (DMD 2.061) moveAll+retro is slightly less
             //efficient then stright 'for' loop
             //11 instructions vs 7 in the innermost loop [checked on Win32]

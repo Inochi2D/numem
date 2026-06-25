@@ -358,6 +358,11 @@ void __moveImpl(S, T)(ref S source, ref T target) @nogc @system {
                 __move(source[i], target[i]);
             }
         }
+    } else static if (is(T == class) || is(T == interface)) {
+
+        // We don't want to end up obliterating class references.
+        target = source;
+        source = null;
     } else {
         target = source;
         initializeAt(source);
