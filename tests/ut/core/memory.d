@@ -43,3 +43,18 @@ unittest {
     assert(!nu_is_overlapping(null, arr1len, arr2.ptr, arr2len));
     assert(!nu_is_overlapping(arr1.ptr, arr1len, null, arr2len));
 }
+
+@("nu_reverse")
+unittest {
+    foreach(i; 1..32) {
+        int[] arr1;
+        int[] arr2;
+
+        foreach(y; 1..i) {
+            arr1 ~= y;
+            arr2 ~= i-y;
+        }
+        
+        assert(arr1.nu_reverse() == arr2);
+    }
+}
