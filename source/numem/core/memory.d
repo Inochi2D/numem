@@ -34,7 +34,7 @@ enum size_t ALIGN_PTR_SIZE = (void*).sizeof;
         independent of the libc allocator, memory allocated with
         $(D nu_malloc) should $(B always) be freed with $(D nu_free)!
 */
-ref void[AllocSize!T] nu_mallocT(T)() @nogc nothrow @trusted {
+ref void[AllocSize!T] nu_mallocT(T)() @trusted @nogc nothrow pure {
     return nu_malloc(AllocSize!T)[0..AllocSize!T];
 }
 
@@ -48,7 +48,7 @@ ref void[AllocSize!T] nu_mallocT(T)() @nogc nothrow @trusted {
         The storage of the provided object; cast to a static
         void array reference.
 */
-ref void[AllocSize!T] nu_storageT(T)(ref T object) @nogc nothrow @trusted {
+ref void[AllocSize!T] nu_storageT(T)(ref T object) @trusted @nogc nothrow pure {
     static if (AllocSize!T == T.sizeof)
         return object;
     else {
@@ -151,11 +151,10 @@ ref T[] nu_resize(T)(ref T[] buffer, size_t length, int alignment = 1) @nogc {
         The allocated array or a zero-length array on
         error.
 */
-T[] nu_malloca(T)(size_t count) {
-    T[] tmp;
-    tmp = tmp.nu_resize(count);
+T[] nu_malloca(T)(size_t count) @trusted @nogc nothrow pure {
+    T* tmp = cast(T*)nu_malloc(T.sizeof*count);
     nogc_initialize(tmp[0..count]);
-    return tmp;
+    return tmp[0..count];
 }
 
 /**
@@ -169,14 +168,17 @@ T[] nu_malloca(T)(size_t count) {
     Params:
         slice = The slice to free.
 */
-void nu_freea(T)(ref T[] slice) {
-    static if (isRefcounted!T) {
-        foreach(i; 0..slice.length) {
-            nu_release(slice[i]);
+void nu_freea(T)(ref T[] slice) @trusted @nogc nothrow pure {
+    import numem.core.exception : assumeNoThrowNoGCPure;
+    assumeNoThrowNoGCPure((ref T[] slice) {
+        static if (isRefcounted!T) {
+            foreach(i; 0..slice.length) {
+                nu_release(slice[i]);
+            }
+        } else static if (hasAnyDestructor!T) {
+            nogc_delete(slice[0..$]);
         }
-    } else static if (hasAnyDestructor!T) {
-        nogc_delete(slice[0..$]);
-    }
+    }, slice);
 
     nu_free(cast(void*)slice.ptr);
     slice = null;
@@ -192,7 +194,7 @@ void nu_freea(T)(ref T[] slice) {
     Params:
         slice = The slice to clear.
 */
-void nu_cleara(T)(ref T[] slice) {
+void nu_cleara(T)(ref T[] slice) @trusted @nogc nothrow pure {
     nu_free(cast(void*)slice.ptr);
     slice = null;
 }
@@ -239,12 +241,11 @@ T[] nu_reverse(T)(auto ref T[] range) @nogc nothrow {
     Returns:
         Duplicated slice, must be freed with $(D nu_resize)
 */
-inout(T)[] nu_dup(T)(inout(T)[] buffer) @nogc @trusted {
-    T[] buf;
+inout(T)[] nu_dup(T)(inout(T)[] buffer) @trusted @nogc nothrow pure {
 
-    buf.nu_resize(buffer.length);
-    nu_memcpy(cast(void*)buf.ptr, cast(void*)buffer.ptr, buf.length*T.sizeof);
-    return cast(inout(T)[])buf;
+    T* buf = cast(T*)nu_malloc(T.sizeof * buffer.length);
+    nu_memcpy(cast(void*)buf, cast(void*)buffer.ptr, buffer.length*T.sizeof);
+    return cast(inout(T)[])buf[0..buffer.length];
 }
 
 /**
@@ -262,7 +263,7 @@ inout(T)[] nu_dup(T)(inout(T)[] buffer) @nogc @trusted {
     Returns:
         Duplicated slice, must be freed with $(D nu_resize)
 */
-immutable(T)[] nu_idup(T)(inout(T)[] buffer) @nogc @trusted {
+immutable(T)[] nu_idup(T)(inout(T)[] buffer) @trusted @nogc nothrow pure {
     return cast(immutable(T)[])nu_dup(buffer);
 }
 
