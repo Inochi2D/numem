@@ -116,6 +116,8 @@ Ref!T nogc_new(T, Args...)(NuHeap heap, auto ref Args args) @trusted {
     if (Ref!T newobject = cast(Ref!T)heap.alloc(AllocSize!T)) {
         try {
             nogc_construct(newobject, args);
+            return newobject;
+
         } catch(Exception ex) {
             nu_free(cast(void*)newobject);
             throw ex;
