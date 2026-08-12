@@ -424,7 +424,7 @@ void nu_swap(T)(ref T a, ref T b) @nogc {
 */
 export
 extern(C)
-bool nu_is_overlapping(void* a, size_t aLength, void* b, size_t bLength) @nogc nothrow {
+bool nu_is_overlapping(void* a, size_t aLength, void* b, size_t bLength) @nogc nothrow pure {
     
     // Early exit, null don't overlap.
     if (a is null || b is null)
