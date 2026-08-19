@@ -227,7 +227,7 @@ T[] nu_reverse(T)(auto ref T[] range) @nogc nothrow {
 }
 
 /**
-    Creates a shallow duplicate of the given buffer.
+    Creates a shallow mutable duplicate of the given buffer.
 
     Params:
         buffer = Buffer to duplicate.
@@ -241,11 +241,11 @@ T[] nu_reverse(T)(auto ref T[] range) @nogc nothrow {
     Returns:
         Duplicated slice, must be freed with $(D nu_resize)
 */
-inout(T)[] nu_dup(T)(inout(T)[] buffer) @trusted @nogc nothrow pure {
+T[] nu_dup(T)(const(T)[] buffer) @trusted @nogc nothrow pure {
 
     T* buf = cast(T*)nu_malloc(T.sizeof * buffer.length);
     nu_memcpy(cast(void*)buf, cast(void*)buffer.ptr, buffer.length*T.sizeof);
-    return cast(inout(T)[])buf[0..buffer.length];
+    return buf[0..buffer.length];
 }
 
 /**
