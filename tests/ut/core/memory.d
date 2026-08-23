@@ -11,11 +11,14 @@ unittest {
 
 @("nu_dup")
 unittest {
+    char[] str0 = "Hello, world!".nu_mdup();
     const(char)[] str1 = "Hello, world!".nu_dup();
     immutable(char)[] str2 = "Hello, world!".nu_idup();
+    assert(str0 == "Hello, world!");
     assert(str1 == "Hello, world!");
     assert(str2 == "Hello, world!");
 
+    assert(!str0.nu_resize(0).ptr);
     assert(!str1.nu_resize(0).ptr);
     assert(!str2.nu_resize(0).ptr);
 }
