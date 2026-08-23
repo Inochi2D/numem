@@ -227,7 +227,10 @@ T[] nu_reverse(T)(auto ref T[] range) @nogc nothrow {
 }
 
 /**
-    Creates a shallow mutable duplicate of the given buffer.
+    Creates a shallow duplicate of the given buffer.
+
+    `nu_dup` is preserving the constness qualifiers. 
+    If you're looking for a mutable duplicate, see also `nu_mdup`.
 
     Params:
         buffer = Buffer to duplicate.
@@ -241,11 +244,11 @@ T[] nu_reverse(T)(auto ref T[] range) @nogc nothrow {
     Returns:
         Duplicated slice, must be freed with $(D nu_resize)
 */
-T[] nu_dup(T)(const(T)[] buffer) @trusted @nogc nothrow pure {
+inout(T)[] nu_dup(T)(inout(T)[] buffer) @trusted @nogc nothrow pure {
 
     T* buf = cast(T*)nu_malloc(T.sizeof * buffer.length);
     nu_memcpy(cast(void*)buf, cast(void*)buffer.ptr, buffer.length*T.sizeof);
-    return buf[0..buffer.length];
+    return cast(inout(T)[])buf[0..buffer.length];
 }
 
 /**
@@ -265,6 +268,25 @@ T[] nu_dup(T)(const(T)[] buffer) @trusted @nogc nothrow pure {
 */
 immutable(T)[] nu_idup(T)(inout(T)[] buffer) @trusted @nogc nothrow pure {
     return cast(immutable(T)[])nu_dup(buffer);
+}
+
+/**
+    Creates a shallow mutable duplicate of the given buffer.
+
+    Params:
+        buffer = Buffer to duplicate.
+
+    Memorysafety:
+        This function copies data out of the slice into a new
+        memory allocation; as such it has to be freed.
+        It is otherwise safe, in that it won't modify
+        the original memory provided.
+
+    Returns:
+        Duplicated slice, must be freed with $(D nu_resize)
+*/
+T[] nu_mdup(T)(inout(T)[] buffer) @trusted @nogc nothrow pure {
+    return cast(T[])nu_dup(buffer);
 }
 
 /**
