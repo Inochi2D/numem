@@ -404,7 +404,7 @@ void nu_swap(T)(ref T a, ref T b) @nogc {
     static if (is(typeof((ref T a, ref T b) { a.moveTo(b); b.moveTo(a); }))) {
         auto tmp = a.move;
         b.moveTo(a);
-        tmp.moveTo(a);
+        tmp.moveTo(b);
     } else {
         T tmp;
         nu_memmove(&tmp, &a, T.sizeof);
